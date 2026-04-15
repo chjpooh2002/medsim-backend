@@ -1,19 +1,25 @@
 package com.medsim.backend.domain;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
-@NoArgsConstructor  // 기본 생성자 추가
-@AllArgsConstructor // 모든 필드 생성자 추가 (Builder가 내부적으로 필요로 함)
 public class MonthlyData {
 
-    private int month;        // 몇 번째 달 (1 ~ 36)
-    private long revenue;     // 매출 (원)
-    private long fixedCost;   // 고정비 (원)
-    private long profit;      // 순이익 (원) = 매출 - 고정비
-    private long cashflow;    // 현금잔고 (원) = 누적 합산
+    private Integer month;           // 월 (1~36)
+
+    // 손익계산서 (P&L)
+    private Long revenue;            // 매출액
+    private Long variableCost;       // 변동비 (재료비 등)
+    private Long fixedCost;          // 고정비 합계
+    private Long operatingProfit;    // 영업이익
+    private Long interestExpense;    // 이자비용
+    private Long netProfit;          // 당기순이익
+
+    // 현금흐름표
+    private Long operatingCashFlow;  // 영업활동 현금흐름
+    private Long investingCashFlow;  // 투자활동 현금흐름 (초기에만)
+    private Long financingCashFlow;  // 재무활동 현금흐름 (대출상환)
+    private Long cumulativeCash;     // 누적 현금잔고
 }
