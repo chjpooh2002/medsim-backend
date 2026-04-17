@@ -36,7 +36,7 @@ public class SimulationService {
         List<Long>        cumRevList  = new ArrayList<>();
         List<Long>        cumCostList = new ArrayList<>();
 
-        long cashBalance   = 0L;
+        long cashBalance = req.getInitialInvestment();
         long cumRevenue    = 0L;
         long cumCost       = 0L;
         int  bepMonth      = -1;   // -1이면 36개월 내 미달성
