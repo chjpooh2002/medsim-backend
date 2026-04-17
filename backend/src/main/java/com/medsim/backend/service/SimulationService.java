@@ -2,7 +2,6 @@ package com.medsim.backend.service;
 
 import com.medsim.backend.domain.MonthlyData;
 import com.medsim.backend.domain.SimulationRequest;
-import com.medsim.backend.domain.SimulationResult;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

@@ -1,7 +1,6 @@
 package com.medsim.backend.controller;
 
 import com.medsim.backend.domain.SimulationRequest;
-import com.medsim.backend.domain.SimulationResult;
 import com.medsim.backend.service.SimulationService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
