@@ -148,7 +148,7 @@ public class SimulationService {
         if (req.getMonthlyMarketing() == null || req.getMonthlyMarketing() == 0) return 0L;
         int  basePatients = getBasePatients(req.getDeptCategory()) * WORKING_DAYS;
         long newPatients  = Math.round(basePatients * 0.3);
-        return newPatients > 0 ? req.getMonthlyMarketing() / newPatients : 0L;
+        return newPatients > 0 ? Math.round((double) req.getMonthlyMarketing() / newPatients) : 0L;
     }
 
     // 매출 무관 고정비 합산 (기타관리비는 매출 연동이라 루프 안에서 별도 계산)
