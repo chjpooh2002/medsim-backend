@@ -13,7 +13,7 @@ import java.util.List;
 public class SimulationResult {
 
     // KPI 요약
-    private Integer bepMonth;           // 예상 BEP 달성 시점 (개월
+    private Integer bepMonth;           // 예상 BEP 달성 시점 (개월)
     private Double  fixedCostRatio;     // 고정비 비율 (3년 평균, %)
     private Long    finalCashBalance;   // 3년차 기말 현금잔고 (만원)
     private Integer bepMonthBase;       // BEP 매출 달성 개월수
