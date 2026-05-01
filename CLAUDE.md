@@ -85,6 +85,12 @@ Output includes contextual alerts generated from simulation results:
 | Database | MySQL (dependency present; **JPA/DataSource auto-config is currently excluded** in `application.yaml`) |
 | Frontend | Static HTML/CSS/JS |
 
+## Commit Rules
+
+- 커밋 메시지에 Co-Authored-By, co-authored-by, Claude 관련 내용 절대 포함하지 말 것
+- 커밋 메시지는 `feat` / `fix` / `refactor` / `chore` / `build` / `docs` 타입만 사용
+- 커밋 전 항상 `./gradlew build` 로 빌드 확인
+
 ## Key Constraints
 
 - **No DB yet**: `DataSourceAutoConfiguration` and `HibernateJpaAutoConfiguration` are excluded in `application.yaml`. Domain entities and JPA repositories are not wired. Do not enable them until a DB is configured.
