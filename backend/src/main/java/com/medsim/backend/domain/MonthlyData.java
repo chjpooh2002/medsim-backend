@@ -1,10 +1,14 @@
 package com.medsim.backend.domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MonthlyData {
 
     private Integer month;           // 몇 번째 달 (1~36)

@@ -2,10 +2,12 @@ package com.medsim.backend.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 // KPI 피드백 알림창 1개 — 메시지 텍스트와 심각도 테마를 함께 반환
 // theme: "success"(초록) | "warning"(주황) | "danger"(빨강)
 @Getter
+@NoArgsConstructor
 @AllArgsConstructor
 public class KpiMessage {
 
