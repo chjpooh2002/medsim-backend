@@ -42,6 +42,17 @@ public class JwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/swagger-ui.html") ||
+               path.startsWith("/swagger-ui/") ||
+               path.equals("/v3/api-docs") ||
+               path.startsWith("/v3/api-docs/") ||
+               path.startsWith("/swagger-resources/") ||
+               path.startsWith("/webjars/");
+    }
+
     private String resolveToken(HttpServletRequest request) {
         String bearer = request.getHeader("Authorization");
         if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
