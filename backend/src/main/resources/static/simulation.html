@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEDSIM — 개원 시뮬레이션</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+          --blue:#1a55cc;--blue-lt:#4a7fe0;--blue-pale:#e8f0fd;--blue-pale2:#f0f5ff;
+          --text:#1a1a2e;--text2:#4a5568;--text3:#9aa5b4;
+          --border:#e2e8f0;--border2:#cbd5e0;
+          --bg:#ffffff;--bg2:#f7f9fc;
+          --sans:'Pretendard',sans-serif;--mono:'DM Mono',monospace;
+          --r:8px;--rl:12px;
+        }
+        body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+        /* 헤더 */
+        header{background:var(--bg);border-bottom:1px solid var(--border);padding:0 40px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+        .logo{display:flex;align-items:center;gap:8px;text-decoration:none}
+        .logo-icon{width:28px;height:28px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700}
+        .logo-text{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-0.02em}
+        nav{display:flex;align-items:center;gap:20px}
+        .nav-link{font-size:13px;color:var(--text2);text-decoration:none;font-weight:500}
+        .nav-link:hover{color:var(--blue)}
+        .nav-sep{color:var(--border2);font-size:12px}
+        .btn-logout{font-size:13px;color:var(--blue);font-weight:600;background:none;border:none;cursor:pointer;padding:0}
+
+        /* 레이아웃 */
+        .layout{display:grid;grid-template-columns:368px 1fr;flex:1}
+
+        /* 사이드바 */
+        .sidebar{border-right:1px solid var(--border);padding:20px 18px;overflow-y:auto;max-height:calc(100vh - 56px);position:sticky;top:56px;background:var(--bg)}
+
+        /* 스텝 바 */
+        .steps{display:flex;align-items:center;margin-bottom:20px}
+        .step{display:flex;flex-direction:column;align-items:center;gap:3px}
+        .step-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+        .step-dot.active{background:var(--blue);color:#fff}
+        .step-dot.done{background:var(--blue);color:#fff}
+        .step-dot.idle{background:#f0f2f5;color:var(--text3);border:1px solid var(--border)}
+        .step-name{font-size:9px;color:var(--text3);white-space:nowrap}
+        .step-name.active{color:var(--blue);font-weight:600}
+        .step-line{flex:1;height:2px;background:var(--border);margin:0 3px 13px}
+        .step-line.done{background:var(--blue)}
+
+        /* 섹션 */
+        .sec-title{font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:0.08em;margin:16px 0 8px;display:flex;align-items:center;gap:6px}
+        .sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+        .field{margin-bottom:9px}
+        label{display:block;font-size:12px;color:var(--text2);margin-bottom:3px;font-weight:500}
+        .req{color:var(--blue)}
+        input,select{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--sans);font-size:13px;padding:7px 11px;border-radius:var(--r);outline:none;transition:border-color 0.15s;-webkit-appearance:none}
+        input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,85,204,0.1)}
+        input::placeholder{color:var(--text3)}
+        .r2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+        .r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+        .irow{display:flex;align-items:center;gap:6px}
+        .irow input{flex:1}
+        .iunit{font-size:12px;color:var(--text3);white-space:nowrap}
+        .calc-hint{background:var(--blue-pale2);border:1px solid #c8d8f8;border-radius:var(--r);padding:5px 10px;font-size:11px;color:var(--blue);margin-top:4px}
+
+        /* 인력 */
+        .staff-tbl{width:100%;border-collapse:collapse}
+        .staff-tbl th{font-size:11px;color:var(--text3);font-weight:500;padding:3px 5px;text-align:left;border-bottom:1px solid var(--border)}
+        .staff-tbl td{padding:3px 5px}
+        .staff-tbl input{padding:5px 7px;font-size:12px}
+        .staff-sum{display:flex;align-items:center;justify-content:space-between;padding:7px 0 0;border-top:1px solid var(--border);margin-top:4px}
+        .staff-sum-lbl{font-size:12px;color:var(--text2)}
+        .staff-sum-val{font-size:13px;font-weight:600;color:var(--blue);font-family:var(--mono)}
+        .btn-add{background:none;border:1px dashed var(--border2);color:var(--text3);font-family:var(--sans);font-size:12px;padding:5px 12px;border-radius:var(--r);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:4px;margin-top:6px}
+        .btn-add:hover{border-color:var(--blue);color:var(--blue)}
+        .btn-run{width:100%;margin-top:18px;padding:11px;background:var(--blue);color:#fff;font-family:var(--sans);font-size:14px;font-weight:600;border:none;border-radius:var(--r);cursor:pointer;transition:background 0.15s;display:flex;align-items:center;justify-content:center;gap:8px}
+        .btn-run:hover{background:#1445a8}
+        .btn-run:disabled{background:var(--text3);cursor:not-allowed}
+
+        /* 메인 */
+        .main{padding:24px 28px;background:var(--bg2);overflow-y:auto}
+
+        /* 빈 상태 */
+        .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:12px;color:var(--text3)}
+        .empty-icon{width:52px;height:52px;background:var(--blue-pale);border-radius:50%;display:flex;align-items:center;justify-content:center}
+
+        /* 로딩 */
+        .loading{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:16px}
+        .spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* 결과 */
+        .result{display:none}
+        .res-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+        .res-title{font-size:15px;font-weight:600;color:var(--text)}
+        .res-meta{font-size:12px;color:var(--text3)}
+
+        /* KPI */
+        .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+        .kpi-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:12px 14px;position:relative;overflow:hidden}
+        .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue)}
+        .kpi-card.success::before{background:#0e9f6e}
+        .kpi-card.warning::before{background:#f59e0b}
+        .kpi-card.danger::before{background:#e53e3e}
+        .kpi-lbl{font-size:10px;color:var(--text3);font-weight:500;margin-bottom:5px;margin-top:2px}
+        .kpi-val{font-family:var(--mono);font-size:21px;font-weight:500;color:var(--text);line-height:1}
+        .kpi-val.success{color:#0e9f6e}
+        .kpi-val.danger{color:#e53e3e}
+        .kpi-unit{font-size:10px;color:var(--text3);margin-top:3px}
+
+        /* 차트+피드백 */
+        .mid{display:grid;grid-template-columns:1fr 268px;gap:10px;margin-bottom:12px}
+        .card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px}
+        .card-ttl{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px}
+        .fb-item{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border)}
+        .fb-item:last-child{border-bottom:none;padding-bottom:0}
+        .fb-dot{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0}
+        .fb-dot.success{background:#0e9f6e}
+        .fb-dot.warning{background:#f59e0b}
+        .fb-dot.danger{background:#e53e3e}
+        .fb-txt{font-size:12px;color:var(--text2);line-height:1.5}
+
+        /* 테이블 */
+        .tbl-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+        .tbl-hdr{padding:10px 14px;border-bottom:1px solid var(--border);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em}
+        .pl-tbl{width:100%;border-collapse:collapse;font-size:12px}
+        .pl-tbl th{font-family:var(--mono);font-size:10px;color:var(--text3);font-weight:500;padding:7px 10px;text-align:right;border-bottom:1px solid var(--border);background:var(--bg2);white-space:nowrap}
+        .pl-tbl th:first-child{text-align:left}
+        .pl-tbl td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;color:var(--text2);white-space:nowrap}
+        .pl-tbl td:first-child{text-align:left;color:var(--text3);font-family:var(--sans);font-size:12px}
+        .pl-tbl tr:last-child td{border-bottom:none}
+        .pl-tbl tr:hover td{background:var(--blue-pale2)}
+        .pl-tbl .pos{color:var(--blue);font-weight:500}
+        .pl-tbl .neg{color:#e53e3e}
+
+        /* 토스트 */
+        .toast{position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#fff;padding:10px 16px;border-radius:var(--r);font-size:13px;z-index:999;display:none}
+
+        /* 웨이브 하단 */
+        .wave-wrap{position:relative;height:80px;margin-top:auto;overflow:hidden;pointer-events:none}
+        .wave-wrap svg{position:absolute;bottom:0;width:100%}
+    </style>
+</head>
+<body>
+
+<header>
+    <a class="logo" href="/">
+        <div class="logo-icon">M</div>
+        <span class="logo-text">MEDSIM</span>
+    </a>
+    <nav>
+        <a class="nav-link" href="#">MEDSIM</a>
+        <span class="nav-sep">|</span>
+        <a class="nav-link" href="#">공지사항</a>
+        <span class="nav-sep">|</span>
+        <a class="nav-link" href="#">고객센터</a>
+        <span class="nav-sep">|</span>
+        <a class="nav-link" href="#">FAQ</a>
+        <span class="nav-sep">|</span>
+        <a class="nav-link" href="#">마이페이지</a>
+        <button class="btn-logout">Logout</button>
+    </nav>
+</header>
+
+<div class="layout">
+
+    <aside class="sidebar">
+        <!-- 스텝 바 -->
+        <div class="steps">
+            <div class="step"><div class="step-dot done">1</div><div class="step-name">기본정보</div></div>
+            <div class="step-line done"></div>
+            <div class="step"><div class="step-dot active">2</div><div class="step-name active">자금·운영비</div></div>
+            <div class="step-line"></div>
+            <div class="step"><div class="step-dot idle">3</div><div class="step-name">마케팅</div></div>
+            <div class="step-line"></div>
+            <div class="step"><div class="step-dot idle">4</div><div class="step-name">결과확인</div></div>
+        </div>
+
+        <div class="sec-title">진료과목 및 예상 상권</div>
+        <div class="field">
+            <label>진료과목 <span class="req">*</span></label>
+            <div class="r2">
+                <select id="deptCategory">
+                    <option value="">카테고리 선택</option>
+                    <option value="내과">내과</option>
+                    <option value="소아청소년과">소아청소년과</option>
+                    <option value="피부과">피부과</option>
+                    <option value="정형외과">정형외과</option>
+                    <option value="이비인후과">이비인후과</option>
+                    <option value="안과">안과</option>
+                </select>
+                <select><option value="">주요 진료 선택</option></select>
+            </div>
+        </div>
+        <div class="field">
+            <label>예상 상권 <span class="req">*</span></label>
+            <div class="r2">
+                <input type="text" id="regionSiGun" placeholder="시/군/구">
+                <input type="text" placeholder="상세주소">
+            </div>
+        </div>
+
+        <div class="sec-title">자금 및 투자 계획</div>
+        <div class="field">
+            <label>초기 투자금 <span class="req">*</span></label>
+            <div class="irow">
+                <input type="number" id="initialInvestment" placeholder="예: 30,000">
+                <span class="iunit">만원</span>
+            </div>
+        </div>
+        <div class="field">
+            <label>대출 조건</label>
+            <div class="r3" style="margin-bottom:5px;">
+                <div class="irow"><input type="number" id="loanAmount" placeholder="대출금액"><span class="iunit">만원</span></div>
+                <div class="irow"><input type="number" id="loanRate" placeholder="연이율" step="0.1"><span class="iunit">%</span></div>
+                <div class="irow"><input type="number" id="loanMonths" placeholder="상환기간"><span class="iunit">개월</span></div>
+            </div>
+            <div class="calc-hint" id="loanHint">월 이자상환비(예상) 약 — 만원 / 월</div>
+        </div>
+
+        <div class="sec-title">공간 및 필수 운영비</div>
+        <div class="field">
+            <label>시설 평수 / 월 예상 임대료</label>
+            <div class="r2">
+                <div class="irow"><input type="number" id="rentArea" placeholder="평수"><span class="iunit">평</span></div>
+                <div class="irow"><input type="number" id="monthlyRent" placeholder="임대료"><span class="iunit">만원</span></div>
+            </div>
+        </div>
+        <div class="field">
+            <label>월 마케팅 비용</label>
+            <div class="irow"><input type="number" id="monthlyMarketing" placeholder="예: 200"><span class="iunit">만원</span></div>
+        </div>
+
+        <div class="sec-title">인력 및 인건비(월) <span style="font-size:10px;color:var(--blue);cursor:pointer;font-weight:400;margin-left:4px;" onclick="addRow()">+ 항목추가</span></div>
+        <table class="staff-tbl">
+            <thead><tr><th>직종</th><th>인원</th><th>월 급여(만원)</th><th></th></tr></thead>
+            <tbody id="staffBody">
+            <tr>
+                <td><input type="text" placeholder="직종" oninput="calcTotal()"></td>
+                <td><input type="number" style="width:46px" placeholder="0" oninput="calcTotal()"></td>
+                <td><input type="number" placeholder="0" oninput="calcTotal()"></td>
+                <td><button onclick="removeRow(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 3px" onmouseover="this.style.color='#e53e3e'" onmouseout="this.style.color='var(--text3)'">✕</button></td>
+            </tr>
+            <tr>
+                <td><input type="text" placeholder="직종" oninput="calcTotal()"></td>
+                <td><input type="number" style="width:46px" placeholder="0" oninput="calcTotal()"></td>
+                <td><input type="number" placeholder="0" oninput="calcTotal()"></td>
+                <td><button onclick="removeRow(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 3px" onmouseover="this.style.color='#e53e3e'" onmouseout="this.style.color='var(--text3)'">✕</button></td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="staff-sum">
+            <span class="staff-sum-lbl">월 인건비 합계</span>
+            <span class="staff-sum-val" id="staffTotal">0 만원</span>
+        </div>
+
+        <button class="btn-run" id="btnRun" onclick="runSimulation()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            재결과 확인하기
+        </button>
+    </aside>
+
+    <main class="main" id="mainPanel">
+        <div class="empty" id="emptyState">
+            <div class="empty-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a55cc" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            </div>
+            <p style="font-size:14px;font-weight:500;color:var(--text2);">입력값을 설정하고 시뮬레이션을 실행하세요</p>
+            <p style="font-size:12px;color:var(--text3);">좌측 폼을 작성한 뒤 재결과 확인하기 버튼을 눌러주세요</p>
+        </div>
+
+        <div class="loading" id="loadingState">
+            <div class="spinner"></div>
+            <span style="font-size:13px;color:var(--text2);">3년 개원 시뮬레이션 중...</span>
+        </div>
+
+        <div class="result" id="resultPanel">
+            <div class="res-hdr">
+                <div class="res-title">시뮬레이션 결과</div>
+                <div class="res-meta" id="resultMeta"></div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card" id="card-bep"><div class="kpi-lbl">BEP 달성 시점</div><div class="kpi-val" id="val-bep">—</div><div class="kpi-unit">개월</div></div>
+                <div class="kpi-card" id="card-fcr"><div class="kpi-lbl">고정비 비율 (3년 평균)</div><div class="kpi-val" id="val-fcr">—</div><div class="kpi-unit">%</div></div>
+                <div class="kpi-card" id="card-cash"><div class="kpi-lbl">3년차 기말 현금잔고</div><div class="kpi-val" id="val-cash">—</div><div class="kpi-unit">만원</div></div>
+                <div class="kpi-card" id="card-btr"><div class="kpi-lbl">BEP 목표 월 매출</div><div class="kpi-val" id="val-btr">—</div><div class="kpi-unit">만원/월</div></div>
+                <div class="kpi-card" id="card-pgr"><div class="kpi-lbl">환자수 증가율 (M1→M36)</div><div class="kpi-val" id="val-pgr">—</div><div class="kpi-unit">%</div></div>
+                <div class="kpi-card" id="card-cpa"><div class="kpi-lbl">마케팅 CPA</div><div class="kpi-val" id="val-cpa">—</div><div class="kpi-unit">만원/신환 1명</div></div>
+            </div>
+
+            <div class="mid">
+                <div class="card">
+                    <div class="card-ttl">36개월 누적 손익 교차</div>
+                    <canvas id="lineChart" height="155"></canvas>
+                </div>
+                <div class="card">
+                    <div class="card-ttl">KPI 피드백</div>
+                    <div id="feedbackList"></div>
+                </div>
+            </div>
+
+            <div class="tbl-card">
+                <div class="tbl-hdr">손익계산서 + 현금흐름 — 기준월</div>
+                <table class="pl-tbl">
+                    <thead><tr id="plHead"></tr></thead>
+                    <tbody id="plBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    let chartInstance = null;
+
+    ['loanAmount','loanRate','loanMonths'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateLoanHint);
+    });
+
+    function updateLoanHint() {
+      const amt   = parseFloat(document.getElementById('loanAmount').value) || 0;
+      const rate  = parseFloat(document.getElementById('loanRate').value) || 0;
+      const months = parseInt(document.getElementById('loanMonths').value) || 0;
+      const hint  = document.getElementById('loanHint');
+      if (amt > 0 && rate > 0 && months > 0) {
+        const mi = Math.round(amt * (rate / 100) / 12);
+        hint.textContent = `월 이자상환비(예상) 약 ${mi.toLocaleString()} 만원 / 월`;
+      } else {
+        hint.textContent = '월 이자상환비(예상) 약 — 만원 / 월';
+      }
+    }
+
+    function addRow() {
+      const tbody = document.getElementById('staffBody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" placeholder="직종" oninput="calcTotal()"></td>
+        <td><input type="number" style="width:46px" placeholder="0" oninput="calcTotal()"></td>
+        <td><input type="number" placeholder="0" oninput="calcTotal()"></td>
+        <td><button onclick="removeRow(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 3px" onmouseover="this.style.color='#e53e3e'" onmouseout="this.style.color='var(--text3)'">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function removeRow(btn) {
+      const tbody = document.getElementById('staffBody');
+      if (tbody.rows.length <= 1) return;
+      btn.closest('tr').remove();
+      calcTotal();
+    }
+
+    function calcTotal() {
+      let total = 0;
+      document.querySelectorAll('#staffBody tr').forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        total += (parseInt(inputs[1].value) || 0) * (parseInt(inputs[2].value) || 0);
+      });
+      document.getElementById('staffTotal').textContent = total.toLocaleString('ko-KR') + ' 만원';
+    }
+
+    async function runSimulation() {
+      const btn = document.getElementById('btnRun');
+      btn.disabled = true;
+      show('loadingState'); hide('emptyState'); hide('resultPanel');
+
+      const staffList = [];
+      document.querySelectorAll('#staffBody tr').forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        const role = inputs[0].value.trim();
+        const count = parseInt(inputs[1].value) || 0;
+        const salary = parseInt(inputs[2].value) || 0;
+        if (role && count > 0) staffList.push({ role, count, salary });
+      });
+
+      const body = {
+        deptCategory:     document.getElementById('deptCategory').value || '피부과',
+        regionSiGun:      document.getElementById('regionSiGun').value || '강남구',
+        initialInvestment:parseInt(document.getElementById('initialInvestment').value) || 0,
+        loanAmount:       parseInt(document.getElementById('loanAmount').value) || null,
+        loanRate:         parseFloat(document.getElementById('loanRate').value) || null,
+        loanMonths:       parseInt(document.getElementById('loanMonths').value) || null,
+        monthlyRent:      parseInt(document.getElementById('monthlyRent').value) || 0,
+        monthlyMarketing: parseInt(document.getElementById('monthlyMarketing').value) || 0,
+        staffList
+      };
+
+      try {
+        const res = await fetch('/api/simulation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderResult(data, body.deptCategory, body.regionSiGun);
+      } catch(e) {
+        showToast('API 호출 실패: ' + e.message);
+        show('emptyState'); hide('loadingState');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderResult(data, dept, region) {
+      hide('loadingState'); hide('emptyState'); show('resultPanel');
+      document.getElementById('resultMeta').textContent =
+        `${dept} · ${region} · ${new Date().toLocaleTimeString('ko-KR')}`;
+
+      const bep = data.bepMonth === 999 ? '36↑' : data.bepMonth;
+      setKpi('bep',  bep,  data.bepMonth <= 6 ? 'success' : data.bepMonth <= 12 ? '' : 'danger', data.bepMonth === 999);
+      setKpi('fcr',  data.fixedCostRatio, data.fixedCostRatio <= 40 ? 'success' : data.fixedCostRatio <= 59 ? '' : 'danger');
+      setKpi('cash', fmt(data.finalCashBalance), data.finalCashBalance > 0 ? 'success' : 'danger', data.finalCashBalance < 0);
+      setKpi('btr',  fmt(data.bepTargetRevenue), '');
+      setKpi('pgr',  data.patientGrowthRate, data.patientGrowthRate >= 5 ? 'success' : '');
+      setKpi('cpa',  data.marketingCpa === 0 ? '—' : data.marketingCpa, '');
+
+      if (chartInstance) chartInstance.destroy();
+      const labels = Array.from({length:36},(_,i)=>i%6===0||i===35?`M${i+1}`:'');
+      chartInstance = new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label:'누적 매출', data:data.cumulativeRevenue, borderColor:'#1a55cc', backgroundColor:'rgba(26,85,204,0.06)', borderWidth:2, pointRadius:0, fill:true, tension:0.3 },
+            { label:'누적 비용', data:data.cumulativeCost,    borderColor:'#e53e3e', backgroundColor:'rgba(229,62,62,0.04)',  borderWidth:2, pointRadius:0, fill:true, tension:0.3 }
+          ]
+        },
+        options: {
+          responsive:true,
+          interaction:{mode:'index',intersect:false},
+          plugins:{
+            legend:{labels:{color:'#9aa5b4',font:{family:'DM Mono',size:11},boxWidth:12}},
+            tooltip:{backgroundColor:'#1a1a2e',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#9aa5b4',bodyColor:'#fff',callbacks:{label:ctx=>` ${ctx.dataset.label}: ${fmt(ctx.raw)}만원`}}
+          },
+          scales:{
+            x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#9aa5b4',font:{family:'DM Mono',size:10}}},
+            y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#9aa5b4',font:{family:'DM Mono',size:10},callback:v=>v>=10000?`${(v/10000).toFixed(0)}억`:v.toLocaleString()}}
+          }
+        }
+      });
+
+      const list = document.getElementById('feedbackList');
+      list.innerHTML = '';
+      data.kpiMessages.forEach((msg,i)=>{
+        const div = document.createElement('div');
+        div.className = 'fb-item';
+        div.innerHTML = `<div class="fb-dot ${msg.theme}"></div><div class="fb-txt">${msg.message}</div>`;
+        list.appendChild(div);
+      });
+
+      const months = [1,6,12,18,24,36];
+      const rows = months.map(m=>data.monthly.find(d=>d.month===m)).filter(Boolean);
+      document.getElementById('plHead').innerHTML =
+        '<th>항목</th>' + rows.map(r=>`<th>M${r.month}</th>`).join('');
+
+      const fields = [
+        {key:'revenue',         label:'매출액',       type:'pos'},
+        {key:'variableCost',    label:'변동비',        type:'neg'},
+        {key:'fixedCost',       label:'고정비',        type:'neg'},
+        {key:'operatingProfit', label:'영업이익',      type:'auto'},
+        {key:'interestExpense', label:'이자비용',      type:'neg'},
+        {key:'taxExpense',      label:'세금 (20%)',    type:'neg'},
+        {key:'netProfit',       label:'당기순이익',    type:'auto', bold:true},
+        {key:null},
+        {key:'operatingCashFlow',  label:'영업 현금흐름', type:'auto'},
+        {key:'investingCashFlow',  label:'투자 현금흐름', type:'auto'},
+        {key:'financingCashFlow',  label:'재무 현금흐름', type:'auto'},
+        {key:'cumulativeCash',     label:'누적 현금잔고', type:'auto', bold:true},
+      ];
+
+      const tbody = document.getElementById('plBody');
+      tbody.innerHTML = '';
+      fields.forEach(f=>{
+        if (!f.key) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td colspan="${rows.length+1}" style="height:1px;padding:0;background:var(--border);"></td>`;
+          tbody.appendChild(tr); return;
+        }
+        const tr = document.createElement('tr');
+        const cells = rows.map(r=>{
+          const v = r[f.key];
+          let cls = '';
+          if (f.type==='pos') cls='pos';
+          else if (f.type==='neg') cls = v!==0?'neg':'';
+          else cls = v>0?'pos':v<0?'neg':'';
+          return `<td class="${cls}">${fmt(v)}</td>`;
+        }).join('');
+        tr.innerHTML = `<td style="${f.bold?'font-weight:600;color:var(--text)':''}">${f.label}</td>${cells}`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function setKpi(id, value, theme, isNeg=false) {
+      document.getElementById(`card-${id}`).className = `kpi-card ${theme}`;
+      const val = document.getElementById(`val-${id}`);
+      val.className = `kpi-val ${isNeg?'danger':theme==='success'?'success':''}`;
+      val.textContent = typeof value==='number'?value.toLocaleString():value;
+    }
+
+    function fmt(n) {
+      if (n===null||n===undefined) return '—';
+      return n.toLocaleString('ko-KR');
+    }
+
+    function show(id) {
+      const el = document.getElementById(id);
+      el.style.display = ['loadingState','emptyState'].includes(id)?'flex':'block';
+    }
+
+    function hide(id) { document.getElementById(id).style.display='none'; }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.style.display = 'block';
+      setTimeout(()=>t.style.display='none', 3000);
+    }
+</script>
+</body>
+</html>

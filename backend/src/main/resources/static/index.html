@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEDSIM — 개원 실패비용 '0'원</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+          --blue:#1a55cc;--blue-lt:#4a7fe0;--blue-pale:#e8f0fd;--blue-pale2:#f0f5ff;
+          --text:#1a1a2e;--text2:#4a5568;--text3:#9aa5b4;
+          --border:#e2e8f0;--bg:#ffffff;--bg2:#f7f9fc;
+          --sans:'Pretendard',sans-serif;--r:8px;--rl:14px;
+        }
+        body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+        /* 헤더 */
+        header{background:var(--bg);border-bottom:1px solid var(--border);padding:0 48px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+        .logo{display:flex;align-items:center;gap:8px;text-decoration:none}
+        .logo-icon{width:30px;height:30px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+        .logo-text{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-0.02em}
+        nav{display:flex;align-items:center;gap:24px}
+        .nav-link{font-size:13px;color:var(--text2);text-decoration:none;font-weight:500;transition:color 0.15s}
+        .nav-link:hover{color:var(--blue)}
+        .nav-sep{color:var(--border);font-size:12px}
+        .nav-actions{display:flex;align-items:center;gap:10px}
+        .btn-login{font-size:13px;color:var(--blue);font-weight:600;background:none;border:1.5px solid var(--blue);padding:6px 16px;border-radius:var(--r);cursor:pointer;transition:all 0.15s;text-decoration:none}
+        .btn-login:hover{background:var(--blue-pale)}
+        .btn-join{font-size:13px;color:#fff;font-weight:600;background:var(--blue);border:none;padding:7px 16px;border-radius:var(--r);cursor:pointer;transition:background 0.15s;text-decoration:none}
+        .btn-join:hover{background:#1445a8}
+
+        /* 히어로 */
+        .hero{position:relative;background:var(--blue);padding:80px 48px 0;overflow:hidden;min-height:480px;display:flex;align-items:flex-start}
+        .hero-content{position:relative;z-index:2;max-width:520px}
+        .hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:12px;font-weight:500;padding:5px 12px;border-radius:20px;margin-bottom:24px;backdrop-filter:blur(4px)}
+        .hero-badge-dot{width:6px;height:6px;border-radius:50%;background:#7ee8a2;flex-shrink:0}
+        .hero-title{font-size:48px;font-weight:800;color:#fff;line-height:1.15;letter-spacing:-0.03em;margin-bottom:16px}
+        .hero-title span{color:#93c5fd}
+        .hero-sub{font-size:16px;color:rgba(255,255,255,0.75);line-height:1.7;margin-bottom:32px;max-width:400px}
+        .btn-cta{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--blue);font-size:15px;font-weight:700;padding:14px 28px;border-radius:var(--r);cursor:pointer;border:none;transition:all 0.15s;text-decoration:none}
+        .btn-cta:hover{background:#f0f5ff;transform:translateY(-1px)}
+        .btn-cta svg{transition:transform 0.15s}
+        .btn-cta:hover svg{transform:translateX(3px)}
+        .hero-sub-text{font-size:12px;color:rgba(255,255,255,0.5);margin-top:12px}
+
+        /* 히어로 우측 카드 미리보기 */
+        .hero-preview{position:absolute;right:48px;bottom:0;z-index:2;width:380px}
+        .preview-card{background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-radius:var(--rl) var(--rl) 0 0;padding:20px;border:1px solid rgba(255,255,255,0.3)}
+        .preview-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px}
+        .preview-kpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+        .pkpi{background:var(--bg2);border-radius:var(--r);padding:10px;border-top:2.5px solid var(--blue)}
+        .pkpi.s{border-top-color:#0e9f6e}
+        .pkpi.w{border-top-color:#f59e0b}
+        .pkpi-lbl{font-size:9px;color:var(--text3);margin-bottom:4px}
+        .pkpi-val{font-size:17px;font-weight:700;color:var(--text);font-family:monospace;line-height:1}
+        .pkpi-val.s{color:#0e9f6e}
+        .pkpi-val.w{color:#f59e0b}
+        .pkpi-unit{font-size:9px;color:var(--text3);margin-top:2px}
+        .preview-bar{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-bottom:6px}
+        .preview-bar-inner{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--blue),#60a5fa)}
+        .preview-bar-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:10px}
+
+        /* 웨이브 */
+        .wave-wrap{position:relative;background:var(--blue);margin-top:-1px}
+        .wave-wrap svg{display:block;width:100%}
+
+        /* 개원 유형 섹션 */
+        .types-section{padding:64px 48px}
+        .section-badge{display:inline-block;background:var(--blue-pale);color:var(--blue);font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;margin-bottom:16px;letter-spacing:0.04em}
+        .section-title{font-size:32px;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:8px}
+        .section-sub{font-size:15px;color:var(--text2);margin-bottom:40px}
+        .type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+        .type-card{border:1.5px solid var(--border);border-radius:var(--rl);padding:28px 24px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;background:var(--bg)}
+        .type-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 8px 24px rgba(26,85,204,0.1)}
+        .type-card.active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,85,204,0.12)}
+        .type-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:transparent;transition:background 0.2s}
+        .type-card.active::before,.type-card:hover::before{background:var(--blue)}
+        .type-icon{width:44px;height:44px;background:var(--blue-pale);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+        .type-name{font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px}
+        .type-desc{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px}
+        .type-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px}
+        .type-badge.live{background:var(--blue-pale);color:var(--blue)}
+        .type-badge.soon{background:#f1f3f5;color:var(--text3)}
+        .type-badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+        /* 특징 섹션 */
+        .features-section{padding:64px 48px;background:var(--bg2)}
+        .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+        .feat-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:24px}
+        .feat-icon{width:40px;height:40px;background:var(--blue-pale);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+        .feat-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
+        .feat-desc{font-size:13px;color:var(--text2);line-height:1.7}
+
+        /* 웨이브 하단 */
+        .wave-bottom{background:linear-gradient(180deg,var(--bg) 0%,#dbeafe 50%,var(--blue) 100%);height:100px;margin-top:auto}
+
+        /* 토스트 */
+        .toast{position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#fff;padding:11px 18px;border-radius:var(--r);font-size:13px;z-index:999;display:none;align-items:center;gap:8px}
+    </style>
+</head>
+<body>
+
+<header>
+    <a class="logo" href="/">
+        <div class="logo-icon">M</div>
+        <span class="logo-text">MEDSIM</span>
+    </a>
+    <nav>
+        <a class="nav-link" href="#">MEDSIM</a>
+        <span class="nav-sep">|</span>
+        <a class="nav-link" href="#">공지사항</a>
+        <span class="nav-sep">|</span>
+        <a class="nav-link" href="#">고객센터</a>
+        <span class="nav-sep">|</span>
+        <a class="nav-link" href="#">FAQ</a>
+    </nav>
+    <div class="nav-actions">
+        <a class="btn-login" href="#">Login</a>
+        <a class="btn-join" href="#">Join</a>
+    </div>
+</header>
+
+<!-- 히어로 -->
+<div class="hero">
+    <div class="hero-content">
+        <div class="hero-badge">
+            <div class="hero-badge-dot"></div>
+            개원 실패비용 '0'원
+        </div>
+        <h1 class="hero-title">
+            3년의 개원 결과를<br>
+            <span>지금 확인하세요</span>
+        </h1>
+        <p class="hero-sub">
+            개원 전 재무 시뮬레이션으로 BEP, 현금흐름, 손익을<br>
+            미리 파악하고 실패 비용을 0원으로 만드세요.
+        </p>
+        <a class="btn-cta" href="simulation.html">
+            개원하기
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <div class="hero-sub-text">3년의 개원 결과를 지금 확인하세요.</div>
+    </div>
+
+    <!-- 미리보기 카드 -->
+    <div class="hero-preview">
+        <div class="preview-card">
+            <div class="preview-title">시뮬레이션 결과 미리보기</div>
+            <div class="preview-kpi">
+                <div class="pkpi w">
+                    <div class="pkpi-lbl">BEP 달성</div>
+                    <div class="pkpi-val w">8</div>
+                    <div class="pkpi-unit">개월</div>
+                </div>
+                <div class="pkpi s">
+                    <div class="pkpi-lbl">기말 현금</div>
+                    <div class="pkpi-val s" style="font-size:13px;">29,683</div>
+                    <div class="pkpi-unit">만원</div>
+                </div>
+                <div class="pkpi">
+                    <div class="pkpi-lbl">환자 증가율</div>
+                    <div class="pkpi-val s">204</div>
+                    <div class="pkpi-unit">%</div>
+                </div>
+            </div>
+            <div class="preview-bar-label"><span>누적 매출</span><span>11.4억</span></div>
+            <div class="preview-bar"><div class="preview-bar-inner" style="width:88%"></div></div>
+            <div class="preview-bar-label"><span>누적 비용</span><span>8.2억</span></div>
+            <div class="preview-bar"><div class="preview-bar-inner" style="width:64%;background:linear-gradient(90deg,#e53e3e,#fc8181)"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- 웨이브 -->
+<div class="wave-wrap">
+    <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style="height:80px;">
+        <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#ffffff"/>
+    </svg>
+</div>
+
+<!-- 개원 유형 -->
+<div class="types-section">
+    <div class="section-badge">개원 유형 선택</div>
+    <div class="section-title">어떤 방식으로 개원하시나요?</div>
+    <div class="section-sub">개원 유형에 맞는 시뮬레이션을 선택하세요.</div>
+
+    <div class="type-grid">
+        <!-- 단독 개원 -->
+        <div class="type-card active" onclick="goSim(event, '단독 개원', true)">
+            <div class="type-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a55cc" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div class="type-name">단독 개원</div>
+            <div class="type-desc">혼자 개원하는 경우의 재무 시뮬레이션. 투자금, 대출, 인건비, 임대료를 입력하면 3년간 손익과 현금흐름을 분석해드려요.</div>
+            <div class="type-badge live">
+                <div class="type-badge-dot"></div>
+                LIVE
+            </div>
+        </div>
+
+        <!-- 공동 개원 -->
+        <div class="type-card" onclick="goSim(event, '공동 개원', false)">
+            <div class="type-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="type-name" style="color:var(--text2)">공동 개원</div>
+            <div class="type-desc" style="color:var(--text3)">2인 이상이 함께 개원하는 경우의 지분 배분, 수익 분배, 투자 비율을 반영한 시뮬레이션을 준비 중이에요.</div>
+            <div class="type-badge soon">
+                <div class="type-badge-dot"></div>
+                준비 중
+            </div>
+        </div>
+
+        <!-- 양도양수 -->
+        <div class="type-card" onclick="goSim(event, '양도양수', false)">
+            <div class="type-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9aa5b4" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            </div>
+            <div class="type-name" style="color:var(--text2)">양도양수</div>
+            <div class="type-desc" style="color:var(--text3)">기존 의원을 인수하는 경우의 권리금, 시설 비용, 환자 인수율을 반영한 시뮬레이션을 준비 중이에요.</div>
+            <div class="type-badge soon">
+                <div class="type-badge-dot"></div>
+                준비 중
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 특징 섹션 -->
+<div class="features-section">
+    <div class="section-badge">왜 MEDSIM인가요?</div>
+    <div class="section-title">개원 전 꼭 해봐야 할 시뮬레이션</div>
+    <div class="section-sub">실제 개원의 데이터를 기반으로 현실적인 재무 예측을 제공해요.</div>
+
+    <div class="features-grid">
+        <div class="feat-card">
+            <div class="feat-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a55cc" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div class="feat-title">36개월 손익 예측</div>
+            <div class="feat-desc">S커브 환자 성장 모델을 적용해 개원 초기부터 안정화까지 매월 매출, 비용, 순이익을 계산해드려요.</div>
+        </div>
+        <div class="feat-card">
+            <div class="feat-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a55cc" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            </div>
+            <div class="feat-title">BEP 자동 산출</div>
+            <div class="feat-desc">이자·세금까지 반영한 당기순이익 기준으로 손익분기점 달성 시점을 자동으로 계산해드려요.</div>
+        </div>
+        <div class="feat-card">
+            <div class="feat-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a55cc" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div class="feat-title">KPI 피드백</div>
+            <div class="feat-desc">고정비 비율, 현금잔고, 환자수 증가율 등 12가지 조건을 분석해 경영 인사이트를 제공해드려요.</div>
+        </div>
+    </div>
+</div>
+
+<!-- 웨이브 하단 -->
+<div class="wave-bottom"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    function goSim(e, name, available) {
+      if (!available) {
+        const t = document.getElementById('toast');
+        t.style.display = 'flex';
+        t.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg> ${name}는 현재 준비 중이에요.`;
+        setTimeout(() => t.style.display = 'none', 2800);
+        return;
+      }
+      window.location.href = 'simulation.html';
+    }
+</script>
+</body>
+</html>
