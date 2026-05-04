@@ -133,12 +133,37 @@
         .pl-tbl .pos{color:var(--blue);font-weight:500}
         .pl-tbl .neg{color:#e53e3e}
 
+        /* 차트 컨테이너 */
+        .chart-wrap{position:relative;height:230px}
+
+        /* 테이블 스크롤 */
+        .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
         /* 토스트 */
         .toast{position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#fff;padding:10px 16px;border-radius:var(--r);font-size:13px;z-index:999;display:none}
 
         /* 웨이브 하단 */
         .wave-wrap{position:relative;height:80px;margin-top:auto;overflow:hidden;pointer-events:none}
         .wave-wrap svg{position:absolute;bottom:0;width:100%}
+
+        /* 반응형 */
+        @media(max-width:1100px){
+            .layout{grid-template-columns:300px 1fr}
+        }
+        @media(max-width:860px){
+            .layout{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+            .sidebar{max-height:none;position:relative;top:0;border-right:none;border-bottom:1px solid var(--border)}
+            .mid{grid-template-columns:1fr}
+            .kpi-grid{grid-template-columns:repeat(2,1fr)}
+            header{padding:0 20px}
+            nav .nav-sep:nth-child(n+5),
+            nav .nav-link:nth-child(n+5){display:none}
+        }
+        @media(max-width:480px){
+            .kpi-grid{grid-template-columns:1fr 1fr}
+            .main{padding:14px 12px}
+            .r3{grid-template-columns:1fr 1fr}
+        }
     </style>
 </head>
 <body>
@@ -292,7 +317,7 @@
             <div class="mid">
                 <div class="card">
                     <div class="card-ttl">36개월 누적 손익 교차</div>
-                    <canvas id="lineChart" height="155"></canvas>
+                    <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
                 </div>
                 <div class="card">
                     <div class="card-ttl">KPI 피드백</div>
@@ -302,10 +327,10 @@
 
             <div class="tbl-card">
                 <div class="tbl-hdr">손익계산서 + 현금흐름 — 기준월</div>
-                <table class="pl-tbl">
+                <div class="tbl-scroll"><table class="pl-tbl">
                     <thead><tr id="plHead"></tr></thead>
                     <tbody id="plBody"></tbody>
-                </table>
+                </table></div>
             </div>
         </div>
     </main>
@@ -430,6 +455,7 @@
         },
         options: {
           responsive:true,
+          maintainAspectRatio:false,
           interaction:{mode:'index',intersect:false},
           plugins:{
             legend:{labels:{color:'#9aa5b4',font:{family:'DM Mono',size:11},boxWidth:12}},

@@ -97,6 +97,39 @@
 
         /* 토스트 */
         .toast{position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#fff;padding:11px 18px;border-radius:var(--r);font-size:13px;z-index:999;display:none;align-items:center;gap:8px}
+
+        /* 반응형 */
+        @media(max-width:1024px){
+            .hero-preview{width:320px;right:24px}
+            .hero{padding:72px 32px 0}
+        }
+        @media(max-width:860px){
+            .hero{padding:56px 32px 56px;min-height:unset;justify-content:flex-start}
+            .hero-preview{display:none}
+            .hero-content{max-width:100%}
+            .hero-title{font-size:38px}
+        }
+        @media(max-width:768px){
+            header{padding:0 20px}
+            nav{display:none}
+            .nav-actions{gap:8px}
+            .hero{padding:48px 20px 48px}
+            .hero-title{font-size:32px}
+            .hero-sub{font-size:14px}
+            .types-section,.features-section{padding:48px 20px}
+            .section-title{font-size:26px}
+            .type-grid{grid-template-columns:1fr}
+            .features-grid{grid-template-columns:1fr}
+        }
+        @media(max-width:480px){
+            .hero-title{font-size:28px}
+            .hero-badge{font-size:11px}
+            .type-grid,.features-grid{grid-template-columns:1fr}
+        }
+        @media(min-width:769px) and (max-width:1024px){
+            .type-grid{grid-template-columns:repeat(2,1fr)}
+            .features-grid{grid-template-columns:repeat(2,1fr)}
+        }
     </style>
 </head>
 <body>
