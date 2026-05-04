@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 — MEDSIM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --blue:#1a55cc;--blue-lt:#4a7fe0;--blue-pale:#e8f0fd;
+            --text:#1a1a2e;--text2:#4a5568;--text3:#9aa5b4;
+            --border:#e2e8f0;--bg:#ffffff;--bg2:#f7f9fc;
+            --sans:'Pretendard',sans-serif;--r:8px;--rl:14px;
+        }
+        body{
+            font-family:var(--sans);
+            background:linear-gradient(135deg,var(--blue) 0%,var(--blue-lt) 100%);
+            min-height:100vh;display:flex;flex-direction:column;
+            align-items:center;justify-content:center;padding:24px;
+        }
+        .auth-card{
+            background:#fff;border-radius:var(--rl);padding:40px;
+            width:100%;max-width:420px;
+            box-shadow:0 20px 60px rgba(0,0,0,0.15);
+        }
+        .logo{
+            display:flex;align-items:center;gap:8px;text-decoration:none;
+            margin-bottom:28px;justify-content:center;
+        }
+        .logo-icon{
+            width:32px;height:32px;background:var(--blue);border-radius:7px;
+            display:flex;align-items:center;justify-content:center;
+            color:#fff;font-size:15px;font-weight:700;
+        }
+        .logo-text{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-0.02em}
+        .auth-title{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:6px;text-align:center}
+        .auth-sub{font-size:13px;color:var(--text3);text-align:center;margin-bottom:28px}
+        .input-group{margin-bottom:14px}
+        label{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px;display:block}
+        input[type="email"],input[type="password"]{
+            width:100%;padding:11px 14px;
+            border:1.5px solid var(--border);border-radius:var(--r);
+            font-size:14px;font-family:var(--sans);color:var(--text);
+            outline:none;transition:border-color 0.15s;background:#fff;
+        }
+        input:focus{border-color:var(--blue)}
+        .btn-submit{
+            width:100%;padding:12px;background:var(--blue);color:#fff;
+            font-size:15px;font-weight:600;font-family:var(--sans);
+            border:none;border-radius:var(--r);cursor:pointer;
+            transition:background 0.15s;margin-top:6px;
+        }
+        .btn-submit:hover{background:#1445a8}
+        .btn-submit:disabled{background:#a0aec0;cursor:not-allowed}
+        .error-msg{
+            background:#fff5f5;border:1px solid #fed7d7;color:#c53030;
+            border-radius:var(--r);padding:10px 14px;font-size:13px;
+            margin-bottom:14px;display:none;line-height:1.5;
+        }
+        .divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+        .auth-footer{text-align:center;font-size:13px;color:var(--text3)}
+        .auth-footer a{color:var(--blue);font-weight:600;text-decoration:none}
+        .auth-footer a:hover{text-decoration:underline}
+    </style>
+</head>
+<body>
+<div class="auth-card">
+    <a class="logo" href="/">
+        <div class="logo-icon">M</div>
+        <span class="logo-text">MEDSIM</span>
+    </a>
+    <h1 class="auth-title">로그인</h1>
+    <p class="auth-sub">MEDSIM 계정으로 로그인하세요</p>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <form id="loginForm">
+        <div class="input-group">
+            <label for="email">이메일</label>
+            <input type="email" id="email" placeholder="example@email.com" required autocomplete="email">
+        </div>
+        <div class="input-group">
+            <label for="password">비밀번호</label>
+            <input type="password" id="password" placeholder="비밀번호를 입력하세요" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-submit" id="submitBtn">로그인</button>
+    </form>
+
+    <hr class="divider">
+    <div class="auth-footer">
+        계정이 없으신가요? <a href="signup.html">회원가입</a>
+    </div>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const errorMsg = document.getElementById('errorMsg');
+        const submitBtn = document.getElementById('submitBtn');
+        errorMsg.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.textContent = '로그인 중...';
+
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.message || '이메일 또는 비밀번호가 올바르지 않습니다.');
+            }
+
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('email', data.email);
+            if (data.name) localStorage.setItem('name', data.name);
+            window.location.href = '/';
+        } catch (err) {
+            errorMsg.textContent = err.message;
+            errorMsg.style.display = 'block';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '로그인';
+        }
+    });
+</script>
+</body>
+</html>
