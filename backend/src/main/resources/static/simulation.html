@@ -339,6 +339,21 @@
 <div class="toast" id="toast"></div>
 
 <script>
+    // 로그인 가드
+    (function() {
+      if (!localStorage.getItem('token')) {
+        window.location.href = 'login.html';
+      }
+    })();
+
+    // 로그아웃
+    document.querySelector('.btn-logout').addEventListener('click', function() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('email');
+      localStorage.removeItem('name');
+      window.location.href = '/';
+    });
+
     let chartInstance = null;
 
     ['loanAmount','loanRate','loanMonths'].forEach(id => {

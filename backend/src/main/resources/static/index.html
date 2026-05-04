@@ -148,7 +148,7 @@
         <span class="nav-sep">|</span>
         <a class="nav-link" href="#">FAQ</a>
     </nav>
-    <div class="nav-actions">
+    <div class="nav-actions" id="navActions">
         <a class="btn-login" href="login.html">Login</a>
         <a class="btn-join" href="signup.html">Join</a>
     </div>
@@ -169,7 +169,7 @@
             개원 전 재무 시뮬레이션으로 BEP, 현금흐름, 손익을<br>
             미리 파악하고 실패 비용을 0원으로 만드세요.
         </p>
-        <a class="btn-cta" href="simulation.html">
+        <a class="btn-cta" href="#" onclick="goCta(event)">
             개원하기
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
@@ -297,6 +297,20 @@
 <div class="toast" id="toast"></div>
 
 <script>
+    function isLoggedIn() {
+      return !!localStorage.getItem('token');
+    }
+
+    function requireLogin() {
+      window.location.href = 'login.html';
+    }
+
+    function goCta(e) {
+      e.preventDefault();
+      if (!isLoggedIn()) { requireLogin(); return; }
+      window.location.href = 'simulation.html';
+    }
+
     function goSim(e, name, available) {
       if (!available) {
         const t = document.getElementById('toast');
@@ -305,8 +319,28 @@
         setTimeout(() => t.style.display = 'none', 2800);
         return;
       }
+      if (!isLoggedIn()) { requireLogin(); return; }
       window.location.href = 'simulation.html';
     }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('email');
+      localStorage.removeItem('name');
+      window.location.reload();
+    }
+
+    (function initAuth() {
+      const token = localStorage.getItem('token');
+      const navActions = document.getElementById('navActions');
+      if (token) {
+        const displayName = localStorage.getItem('name') || localStorage.getItem('email') || '';
+        navActions.innerHTML = `
+          <span style="font-size:13px;color:var(--text2);font-weight:500;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${displayName}</span>
+          <button onclick="logout()" class="btn-login" style="cursor:pointer">Logout</button>
+        `;
+      }
+    })();
 </script>
 </body>
 </html>
