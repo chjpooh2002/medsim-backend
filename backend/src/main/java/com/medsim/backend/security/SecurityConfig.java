@@ -1,5 +1,6 @@
 package com.medsim.backend.security;
 
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,7 +28,16 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR).permitAll()
                         .requestMatchers(
+                                "/",
+                                "/index.html",
+                                "/simulation.html",
+                                "/*.html",
+                                "/static/**",
+                                "/css/**",
+                                "/js/**",
+                                "/api/simulation",
                                 "/api/auth/**",
                                 "/health",
                                 "/swagger-ui.html",
