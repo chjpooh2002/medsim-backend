@@ -79,7 +79,7 @@
         .btn-run:disabled{background:var(--text3);cursor:not-allowed}
 
         /* 메인 */
-        .main{padding:24px 28px;background:var(--bg2);overflow-y:auto}
+        .main{padding:0;background:var(--bg2);overflow-y:auto;display:flex;flex-direction:column}
 
         /* 빈 상태 */
         .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:12px;color:var(--text3)}
@@ -91,7 +91,7 @@
         @keyframes spin{to{transform:rotate(360deg)}}
 
         /* 결과 */
-        .result{display:none}
+        .result{display:none;padding:24px 28px}
         .res-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
         .res-title{font-size:15px;font-weight:600;color:var(--text)}
         .res-meta{font-size:12px;color:var(--text3)}
@@ -141,10 +141,10 @@
         .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
         /* 지도 */
-        .map-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:14px;transition:all 0.25s ease}
-        .map-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-        .map-wrap{position:relative}
-        #kakaoMap{width:100%;height:420px;border-radius:8px;border:1px solid var(--border);display:block}
+        .map-card{background:var(--bg);border:none;border-radius:0;padding:0;margin:0;height:calc(100vh - 56px);flex-shrink:0;display:flex;flex-direction:column;transition:all 0.25s ease}
+        .map-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)}
+        .map-wrap{position:relative;flex:1;min-height:0}
+        #kakaoMap{width:100%;height:100%;display:block}
         /* 임대료 오버레이 */
         #rentOverlay{position:absolute;top:12px;right:12px;background:#fff;border-radius:var(--rl);padding:12px 14px;box-shadow:0 4px 24px rgba(0,0,0,0.14);z-index:10;min-width:260px;display:none;border:1px solid var(--border)}
         .rent-overlay-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
@@ -163,11 +163,10 @@
         .layout.map-expanded{grid-template-columns:1fr;height:calc(100vh - 56px)}
         .layout.map-expanded .sidebar{display:none}
         .layout.map-expanded .main{padding:0;overflow:hidden;display:flex;flex-direction:column}
-        .layout.map-expanded .map-card{flex:1;margin:0;border:none;border-radius:0;padding:0;display:flex;flex-direction:column}
+        .layout.map-expanded .map-card{flex:1;height:auto;margin:0;border:none;border-radius:0;padding:0;display:flex;flex-direction:column}
         .layout.map-expanded .map-card-hdr{padding:8px 14px;margin-bottom:0;border-bottom:1px solid var(--border);flex-shrink:0}
         .layout.map-expanded .map-wrap{flex:1;min-height:0}
         .layout.map-expanded #kakaoMap{height:100%;border-radius:0;border:none}
-        .layout.map-expanded #emptyState,
         .layout.map-expanded #loadingState,
         .layout.map-expanded #resultPanel{display:none!important}
 
@@ -368,14 +367,6 @@
             </div>
         </div>
 
-        <div class="empty" id="emptyState">
-            <div class="empty-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a55cc" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-            </div>
-            <p style="font-size:14px;font-weight:500;color:var(--text2);">입력값을 설정하고 시뮬레이션을 실행하세요</p>
-            <p style="font-size:12px;color:var(--text3);">좌측 폼을 작성한 뒤 재결과 확인하기 버튼을 눌러주세요</p>
-        </div>
-
         <div class="loading" id="loadingState">
             <div class="spinner"></div>
             <span style="font-size:13px;color:var(--text2);">3년 개원 시뮬레이션 중...</span>
@@ -486,7 +477,7 @@
     async function runSimulation() {
       const btn = document.getElementById('btnRun');
       btn.disabled = true;
-      show('loadingState'); hide('emptyState'); hide('resultPanel');
+      show('loadingState'); hide('resultPanel');
 
       const staffList = [];
       document.querySelectorAll('#staffBody tr').forEach(row => {
@@ -520,14 +511,14 @@
         renderResult(data, body.deptCategory, body.regionSiGun);
       } catch(e) {
         showToast('API 호출 실패: ' + e.message);
-        show('emptyState'); hide('loadingState');
+        hide('loadingState');
       } finally {
         btn.disabled = false;
       }
     }
 
     function renderResult(data, dept, region) {
-      hide('loadingState'); hide('emptyState'); show('resultPanel');
+      hide('loadingState'); show('resultPanel');
       document.getElementById('resultMeta').textContent =
         `${dept} · ${region} · ${new Date().toLocaleTimeString('ko-KR')}`;
 
@@ -630,7 +621,8 @@
 
     function show(id) {
       const el = document.getElementById(id);
-      el.style.display = ['loadingState','emptyState'].includes(id)?'flex':'block';
+      if (!el) return;
+      el.style.display = id === 'loadingState' ? 'flex' : 'block';
     }
 
     function hide(id) { document.getElementById(id).style.display='none'; }
@@ -729,6 +721,7 @@
       document.getElementById('rentMax').textContent            = rent.maxRent.toLocaleString('ko-KR');
       document.getElementById('rentFloor').textContent          = rent.floor;
       document.getElementById('rentOverlay').style.display      = 'block';
+      document.getElementById('monthlyRent').value              = rent.avgRentPerPyeong;
     }
 
     function calcRentFromArea() {
