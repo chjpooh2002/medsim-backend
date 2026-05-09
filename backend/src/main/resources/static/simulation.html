@@ -334,7 +334,7 @@
 
         <button class="btn-run" id="btnRun" onclick="runSimulation()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            재결과 확인하기
+            <span id="btnRunText">결과 확인하기</span>
         </button>
     </aside>
 
@@ -365,7 +365,13 @@
         <div class="result" id="resultPanel">
             <div class="res-hdr">
                 <div class="res-title">시뮬레이션 결과</div>
-                <div class="res-meta" id="resultMeta"></div>
+                <div style="display:flex;align-items:center;gap:10px">
+                    <div class="res-meta" id="resultMeta"></div>
+                    <button class="btn-map-expand" onclick="showMapPanel()">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                        지도로 돌아가기
+                    </button>
+                </div>
             </div>
 
             <div class="kpi-grid">
@@ -418,6 +424,7 @@
     });
 
     let chartInstance = null;
+    let hasResult     = false;
 
     ['loanAmount','loanRate','loanMonths'].forEach(id => {
       document.getElementById(id).addEventListener('input', updateLoanHint);
@@ -467,6 +474,7 @@
     async function runSimulation() {
       const btn = document.getElementById('btnRun');
       btn.disabled = true;
+      document.getElementById('mapCard').style.display = 'none';
       show('loadingState'); hide('resultPanel');
 
       const staffList = [];
@@ -502,6 +510,7 @@
       } catch(e) {
         showToast('API 호출 실패: ' + e.message);
         hide('loadingState');
+        document.getElementById('mapCard').style.display = 'flex';
       } finally {
         btn.disabled = false;
       }
@@ -509,6 +518,8 @@
 
     function renderResult(data, dept, region) {
       hide('loadingState'); show('resultPanel');
+      hasResult = true;
+      document.getElementById('btnRunText').textContent = '재결과 확인하기';
       document.getElementById('resultMeta').textContent =
         `${dept} · ${region} · ${new Date().toLocaleTimeString('ko-KR')}`;
 
@@ -621,6 +632,13 @@
       const t = document.getElementById('toast');
       t.textContent = msg; t.style.display = 'block';
       setTimeout(()=>t.style.display='none', 3000);
+    }
+
+    function showMapPanel() {
+      hide('resultPanel');
+      hide('loadingState');
+      document.getElementById('mapCard').style.display = 'flex';
+      setTimeout(() => { if (kakaoMapInstance) kakaoMapInstance.relayout(); }, 50);
     }
 
     // ===== 카카오맵 =====
