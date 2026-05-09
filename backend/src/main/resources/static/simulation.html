@@ -141,16 +141,35 @@
         .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
         /* 지도 */
-        .map-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:14px}
+        .map-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:14px;transition:all 0.25s ease}
+        .map-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+        .map-wrap{position:relative}
         #kakaoMap{width:100%;height:260px;border-radius:8px;border:1px solid var(--border);display:block}
-        .rent-info{margin-top:10px;background:var(--blue-pale2);border:1px solid #c8d8f8;border-radius:var(--r);padding:10px 14px}
-        .rent-info-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+        /* 임대료 오버레이 */
+        #rentOverlay{position:absolute;top:12px;right:12px;background:#fff;border-radius:var(--rl);padding:12px 14px;box-shadow:0 4px 24px rgba(0,0,0,0.14);z-index:10;min-width:260px;display:none;border:1px solid var(--border)}
+        .rent-overlay-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+        .btn-overlay-close{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 0 0 8px;line-height:1;flex-shrink:0}
+        .btn-overlay-close:hover{color:var(--text)}
+        /* 전체화면 버튼 */
+        .btn-map-expand{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:500;color:var(--blue);background:var(--blue-pale2);border:1px solid #c8d8f8;border-radius:var(--r);padding:4px 10px;cursor:pointer;white-space:nowrap;transition:background 0.15s}
+        .btn-map-expand:hover{background:var(--blue-pale)}
         .rent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
         .rent-cell-lbl{font-size:10px;color:var(--text3);margin-bottom:2px}
         .rent-cell-val{font-family:var(--mono);font-weight:600;color:var(--text)}
         .rent-cell-val.accent{color:var(--blue);font-size:16px}
         .rent-cell-val.sm{font-size:14px}
         .rent-cell-unit{font-size:10px;color:var(--text3)}
+        /* 전체화면 모드 */
+        .layout.map-expanded{grid-template-columns:1fr;height:calc(100vh - 56px)}
+        .layout.map-expanded .sidebar{display:none}
+        .layout.map-expanded .main{padding:0;overflow:hidden;display:flex;flex-direction:column}
+        .layout.map-expanded .map-card{flex:1;margin:0;border:none;border-radius:0;padding:0;display:flex;flex-direction:column}
+        .layout.map-expanded .map-card-hdr{padding:8px 14px;margin-bottom:0;border-bottom:1px solid var(--border);flex-shrink:0}
+        .layout.map-expanded .map-wrap{flex:1;min-height:0}
+        .layout.map-expanded #kakaoMap{height:100%;border-radius:0;border:none}
+        .layout.map-expanded #emptyState,
+        .layout.map-expanded #loadingState,
+        .layout.map-expanded #resultPanel{display:none!important}
 
         /* 토스트 */
         .toast{position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#fff;padding:10px 16px;border-radius:var(--r);font-size:13px;z-index:999;display:none}
@@ -302,37 +321,48 @@
     <main class="main" id="mainPanel">
 
         <!-- 카카오맵 상권 선택 -->
-        <div class="map-card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="map-card" id="mapCard">
+            <div class="map-card-hdr">
                 <span class="card-ttl" style="margin-bottom:0">상권 지도 선택</span>
-                <span style="font-size:11px;color:var(--text3)">지도를 클릭하면 구/동이 자동 입력됩니다</span>
-            </div>
-            <div id="kakaoMap"></div>
-            <div id="rentInfoCard" class="rent-info" style="display:none">
-                <div class="rent-info-hdr">
-                    <span style="font-size:12px;font-weight:600;color:var(--text)" id="rentLocation"></span>
-                    <span style="font-size:11px;color:var(--blue);font-weight:500" id="rentSpecialtyBadge"></span>
+                <div style="display:flex;align-items:center;gap:10px">
+                    <span style="font-size:11px;color:var(--text3)">클릭하면 구/동이 자동 입력됩니다</span>
+                    <button class="btn-map-expand" id="mapToggleBtn" onclick="toggleMapExpand()">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                        전체화면
+                    </button>
                 </div>
-                <div class="rent-grid">
-                    <div>
-                        <div class="rent-cell-lbl">평당 평균</div>
-                        <div class="rent-cell-val accent" id="rentAvg"></div>
-                        <div class="rent-cell-unit">만원/평</div>
+            </div>
+            <div class="map-wrap">
+                <div id="kakaoMap"></div>
+                <div id="rentOverlay">
+                    <div class="rent-overlay-hdr">
+                        <div>
+                            <div style="font-size:12px;font-weight:600;color:var(--text)" id="rentLocation"></div>
+                            <div style="font-size:11px;color:var(--blue);font-weight:500;margin-top:2px" id="rentSpecialtyBadge"></div>
+                        </div>
+                        <button class="btn-overlay-close" onclick="document.getElementById('rentOverlay').style.display='none'">✕</button>
                     </div>
-                    <div>
-                        <div class="rent-cell-lbl">월 최소</div>
-                        <div class="rent-cell-val sm" id="rentMin"></div>
-                        <div class="rent-cell-unit">만원</div>
-                    </div>
-                    <div>
-                        <div class="rent-cell-lbl">월 최대</div>
-                        <div class="rent-cell-val sm" id="rentMax"></div>
-                        <div class="rent-cell-unit">만원</div>
-                    </div>
-                    <div>
-                        <div class="rent-cell-lbl">선호 층수</div>
-                        <div class="rent-cell-val sm" id="rentFloor"></div>
-                        <div class="rent-cell-unit">층</div>
+                    <div class="rent-grid">
+                        <div>
+                            <div class="rent-cell-lbl">평당 평균</div>
+                            <div class="rent-cell-val accent" id="rentAvg"></div>
+                            <div class="rent-cell-unit">만원/평</div>
+                        </div>
+                        <div>
+                            <div class="rent-cell-lbl">월 최소</div>
+                            <div class="rent-cell-val sm" id="rentMin"></div>
+                            <div class="rent-cell-unit">만원</div>
+                        </div>
+                        <div>
+                            <div class="rent-cell-lbl">월 최대</div>
+                            <div class="rent-cell-val sm" id="rentMax"></div>
+                            <div class="rent-cell-unit">만원</div>
+                        </div>
+                        <div>
+                            <div class="rent-cell-lbl">선호 층수</div>
+                            <div class="rent-cell-val sm" id="rentFloor"></div>
+                            <div class="rent-cell-unit">층</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -612,21 +642,23 @@
     }
 
     // ===== 카카오맵 =====
-    let currentRentData = null;
+    let currentRentData  = null;
+    let kakaoMapInstance = null;
+    let isMapExpanded    = false;
 
     kakao.maps.load(function() {
       const container = document.getElementById('kakaoMap');
-      const map = new kakao.maps.Map(container, {
+      kakaoMapInstance = new kakao.maps.Map(container, {
         center: new kakao.maps.LatLng(37.5665, 126.9780),
         level: 8
       });
       const geocoder = new kakao.maps.services.Geocoder();
       const marker   = new kakao.maps.Marker();
 
-      kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
+      kakao.maps.event.addListener(kakaoMapInstance, 'click', function(mouseEvent) {
         const latlng = mouseEvent.latLng;
         marker.setPosition(latlng);
-        marker.setMap(map);
+        marker.setMap(kakaoMapInstance);
 
         geocoder.coord2RegionCode(latlng.getLng(), latlng.getLat(), function(result, status) {
           if (status !== kakao.maps.services.Status.OK) return;
@@ -634,8 +666,8 @@
           const region = result.find(r => r.region_type === 'H') || result[0];
           if (!region || !region.region_2depth_name) return;
 
-          const district = region.region_2depth_name; // 강남구
-          const dong     = region.region_3depth_name; // 역삼동
+          const district = region.region_2depth_name;
+          const dong     = region.region_3depth_name;
 
           document.getElementById('regionSiGun').value = district;
           document.querySelector('input[placeholder="상세주소"]').value = dong;
@@ -645,6 +677,24 @@
         });
       });
     });
+
+    function toggleMapExpand() {
+      const layout = document.querySelector('.layout');
+      const btn    = document.getElementById('mapToggleBtn');
+      isMapExpanded = !isMapExpanded;
+
+      if (isMapExpanded) {
+        layout.classList.add('map-expanded');
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg> 패널로 돌아가기`;
+      } else {
+        layout.classList.remove('map-expanded');
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg> 전체화면`;
+      }
+
+      setTimeout(() => {
+        if (kakaoMapInstance) kakaoMapInstance.relayout();
+      }, 280);
+    }
 
     async function fetchRentData(district) {
       const specialty = document.getElementById('deptCategory').value;
@@ -662,8 +712,8 @@
           calcRentFromArea();
         } else {
           currentRentData = null;
-          document.getElementById('rentInfoCard').style.display = 'none';
-          document.getElementById('rentCalcHint').style.display  = 'none';
+          document.getElementById('rentOverlay').style.display  = 'none';
+          document.getElementById('rentCalcHint').style.display = 'none';
           showToast(`${district}의 임대료 데이터가 없습니다`);
         }
       } catch(e) {
@@ -672,13 +722,13 @@
     }
 
     function renderRentInfo(rent) {
-      document.getElementById('rentLocation').textContent     = `${rent.district} ${rent.dong}`;
+      document.getElementById('rentLocation').textContent       = `${rent.district} ${rent.dong}`;
       document.getElementById('rentSpecialtyBadge').textContent = rent.specialty || '';
-      document.getElementById('rentAvg').textContent          = rent.avgRentPerPyeong;
-      document.getElementById('rentMin').textContent          = rent.minRent.toLocaleString('ko-KR');
-      document.getElementById('rentMax').textContent          = rent.maxRent.toLocaleString('ko-KR');
-      document.getElementById('rentFloor').textContent        = rent.floor;
-      document.getElementById('rentInfoCard').style.display   = 'block';
+      document.getElementById('rentAvg').textContent            = rent.avgRentPerPyeong;
+      document.getElementById('rentMin').textContent            = rent.minRent.toLocaleString('ko-KR');
+      document.getElementById('rentMax').textContent            = rent.maxRent.toLocaleString('ko-KR');
+      document.getElementById('rentFloor').textContent          = rent.floor;
+      document.getElementById('rentOverlay').style.display      = 'block';
     }
 
     function calcRentFromArea() {
@@ -690,7 +740,7 @@
       document.getElementById('monthlyRent').value = estimated;
 
       const hint = document.getElementById('rentCalcHint');
-      hint.textContent  = `${area}평 × 평당 ${currentRentData.avgRentPerPyeong}만원 = ${estimated.toLocaleString('ko-KR')}만원 (자동계산)`;
+      hint.textContent   = `${area}평 × 평당 ${currentRentData.avgRentPerPyeong}만원 = ${estimated.toLocaleString('ko-KR')}만원 (자동계산)`;
       hint.style.display = 'block';
     }
 
