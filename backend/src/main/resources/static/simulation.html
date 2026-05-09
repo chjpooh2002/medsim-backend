@@ -334,7 +334,7 @@
 
         <button class="btn-run" id="btnRun" onclick="runSimulation()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            <span id="btnRunText">결과 확인하기</span>
+            시뮬레이션 결과 확인하기
         </button>
     </aside>
 
@@ -424,7 +424,6 @@
     });
 
     let chartInstance = null;
-    let hasResult     = false;
 
     ['loanAmount','loanRate','loanMonths'].forEach(id => {
       document.getElementById(id).addEventListener('input', updateLoanHint);
@@ -518,8 +517,7 @@
 
     function renderResult(data, dept, region) {
       hide('loadingState'); show('resultPanel');
-      hasResult = true;
-      document.getElementById('btnRunText').textContent = '재결과 확인하기';
+
       document.getElementById('resultMeta').textContent =
         `${dept} · ${region} · ${new Date().toLocaleTimeString('ko-KR')}`;
 
