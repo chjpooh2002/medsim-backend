@@ -145,20 +145,16 @@
         .map-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)}
         .map-wrap{position:relative;flex:1;min-height:0}
         #kakaoMap{width:100%;height:100%;display:block}
-        /* 임대료 오버레이 */
-        #rentOverlay{position:absolute;top:12px;right:12px;background:#fff;border-radius:var(--rl);padding:12px 14px;box-shadow:0 4px 24px rgba(0,0,0,0.14);z-index:10;min-width:260px;display:none;border:1px solid var(--border)}
-        .rent-overlay-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
-        .btn-overlay-close{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 0 0 8px;line-height:1;flex-shrink:0}
-        .btn-overlay-close:hover{color:var(--text)}
         /* 전체화면 버튼 */
         .btn-map-expand{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:500;color:var(--blue);background:var(--blue-pale2);border:1px solid #c8d8f8;border-radius:var(--r);padding:4px 10px;cursor:pointer;white-space:nowrap;transition:background 0.15s}
         .btn-map-expand:hover{background:var(--blue-pale)}
-        .rent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
-        .rent-cell-lbl{font-size:10px;color:var(--text3);margin-bottom:2px}
-        .rent-cell-val{font-family:var(--mono);font-weight:600;color:var(--text)}
-        .rent-cell-val.accent{color:var(--blue);font-size:16px}
-        .rent-cell-val.sm{font-size:14px}
-        .rent-cell-unit{font-size:10px;color:var(--text3)}
+        /* 임대료 인라인 카드 */
+        .rent-inline{background:var(--blue-pale2);border:1px solid #c8d8f8;border-radius:var(--r);padding:8px 10px;margin:8px 0}
+        .rent-inline-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+        .rent-inline-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+        .rent-inline-lbl{font-size:9px;color:var(--text3);margin-bottom:1px}
+        .rent-inline-val{font-family:var(--mono);font-weight:600}
+        .rent-inline-unit{font-size:9px;color:var(--text3)}
         /* 전체화면 모드 */
         .layout.map-expanded{grid-template-columns:1fr;height:calc(100vh - 56px)}
         .layout.map-expanded .sidebar{display:none}
@@ -274,6 +270,31 @@
             <div class="calc-hint" id="loanHint">월 이자상환비(예상) 약 — 만원 / 월</div>
         </div>
 
+        <div id="rentInfoInline" style="display:none">
+            <div class="rent-inline">
+                <div class="rent-inline-hdr">
+                    <span style="font-size:11px;font-weight:600;color:var(--blue)" id="rentInfoDistrict"></span>
+                    <span style="font-size:10px;color:var(--text3)" id="rentInfoSpecialty"></span>
+                </div>
+                <div class="rent-inline-grid">
+                    <div>
+                        <div class="rent-inline-lbl">평당 평균</div>
+                        <div class="rent-inline-val" style="font-size:14px;color:var(--blue)" id="rentInfoAvg"></div>
+                        <div class="rent-inline-unit">만원/평</div>
+                    </div>
+                    <div>
+                        <div class="rent-inline-lbl">최소</div>
+                        <div class="rent-inline-val" style="font-size:13px;color:var(--text)" id="rentInfoMin"></div>
+                        <div class="rent-inline-unit">만원</div>
+                    </div>
+                    <div>
+                        <div class="rent-inline-lbl">최대</div>
+                        <div class="rent-inline-val" style="font-size:13px;color:var(--text)" id="rentInfoMax"></div>
+                        <div class="rent-inline-unit">만원</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="sec-title">공간 및 필수 운영비</div>
         <div class="field">
             <label>시설 평수 / 월 예상 임대료</label>
@@ -333,37 +354,6 @@
             </div>
             <div class="map-wrap">
                 <div id="kakaoMap"></div>
-                <div id="rentOverlay">
-                    <div class="rent-overlay-hdr">
-                        <div>
-                            <div style="font-size:12px;font-weight:600;color:var(--text)" id="rentLocation"></div>
-                            <div style="font-size:11px;color:var(--blue);font-weight:500;margin-top:2px" id="rentSpecialtyBadge"></div>
-                        </div>
-                        <button class="btn-overlay-close" onclick="document.getElementById('rentOverlay').style.display='none'">✕</button>
-                    </div>
-                    <div class="rent-grid">
-                        <div>
-                            <div class="rent-cell-lbl">평당 평균</div>
-                            <div class="rent-cell-val accent" id="rentAvg"></div>
-                            <div class="rent-cell-unit">만원/평</div>
-                        </div>
-                        <div>
-                            <div class="rent-cell-lbl">월 최소</div>
-                            <div class="rent-cell-val sm" id="rentMin"></div>
-                            <div class="rent-cell-unit">만원</div>
-                        </div>
-                        <div>
-                            <div class="rent-cell-lbl">월 최대</div>
-                            <div class="rent-cell-val sm" id="rentMax"></div>
-                            <div class="rent-cell-unit">만원</div>
-                        </div>
-                        <div>
-                            <div class="rent-cell-lbl">선호 층수</div>
-                            <div class="rent-cell-val sm" id="rentFloor"></div>
-                            <div class="rent-cell-unit">층</div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -637,6 +627,57 @@
     let currentRentData  = null;
     let kakaoMapInstance = null;
     let isMapExpanded    = false;
+    let currentPolygon   = null;
+
+    // 서울 주요 구 경계 좌표 (근사 폴리곤)
+    const DISTRICT_POLYGONS = {
+      '강남구': [
+        {lat:37.5317,lng:127.0194},{lat:37.5317,lng:127.0850},
+        {lat:37.5040,lng:127.1047},{lat:37.4800,lng:127.0900},
+        {lat:37.4651,lng:127.0400},{lat:37.4900,lng:127.0194}
+      ],
+      '서초구': [
+        {lat:37.5317,lng:126.9950},{lat:37.5317,lng:127.0194},
+        {lat:37.4900,lng:127.0194},{lat:37.4651,lng:127.0400},
+        {lat:37.4400,lng:126.9950},{lat:37.4650,lng:126.9600},
+        {lat:37.5050,lng:126.9600}
+      ],
+      '송파구': [
+        {lat:37.5317,lng:127.0850},{lat:37.5317,lng:127.1400},
+        {lat:37.4800,lng:127.1750},{lat:37.4500,lng:127.1400},
+        {lat:37.4800,lng:127.0900},{lat:37.5040,lng:127.1047}
+      ],
+      '마포구': [
+        {lat:37.5650,lng:126.9000},{lat:37.5650,lng:126.9600},
+        {lat:37.5317,lng:126.9600},{lat:37.5050,lng:126.9200},
+        {lat:37.5050,lng:126.8900},{lat:37.5300,lng:126.8700}
+      ],
+      '종로구': [
+        {lat:37.6200,lng:126.9400},{lat:37.6200,lng:127.0050},
+        {lat:37.5700,lng:127.0050},{lat:37.5500,lng:126.9700},
+        {lat:37.5500,lng:126.9400},{lat:37.5800,lng:126.9100}
+      ],
+      '노원구': [
+        {lat:37.6700,lng:127.0550},{lat:37.6700,lng:127.1000},
+        {lat:37.6200,lng:127.1150},{lat:37.5900,lng:127.0900},
+        {lat:37.5900,lng:127.0400},{lat:37.6400,lng:127.0400}
+      ]
+    };
+
+    function drawDistrictPolygon(districtName) {
+      if (currentPolygon) { currentPolygon.setMap(null); currentPolygon = null; }
+      const coords = DISTRICT_POLYGONS[districtName];
+      if (!coords) return;
+      currentPolygon = new kakao.maps.Polygon({
+        map: kakaoMapInstance,
+        path: coords.map(c => new kakao.maps.LatLng(c.lat, c.lng)),
+        strokeWeight: 2,
+        strokeColor: '#1a55cc',
+        strokeOpacity: 0.9,
+        fillColor: '#1a55cc',
+        fillOpacity: 0.12
+      });
+    }
 
     kakao.maps.load(function() {
       const container = document.getElementById('kakaoMap');
@@ -648,6 +689,11 @@
       const marker   = new kakao.maps.Marker();
 
       kakao.maps.event.addListener(kakaoMapInstance, 'click', function(mouseEvent) {
+        if (!document.getElementById('deptCategory').value) {
+          showToast('진료과를 먼저 선택해주세요');
+          return;
+        }
+
         const latlng = mouseEvent.latLng;
         marker.setPosition(latlng);
         marker.setMap(kakaoMapInstance);
@@ -665,6 +711,7 @@
           document.querySelector('input[placeholder="상세주소"]').value = dong;
 
           showToast(`📍 ${district} ${dong}`);
+          drawDistrictPolygon(district);
           fetchRentData(district);
         });
       });
@@ -704,8 +751,8 @@
           calcRentFromArea();
         } else {
           currentRentData = null;
-          document.getElementById('rentOverlay').style.display  = 'none';
-          document.getElementById('rentCalcHint').style.display = 'none';
+          document.getElementById('rentInfoInline').style.display = 'none';
+          document.getElementById('rentCalcHint').style.display   = 'none';
           showToast(`${district}의 임대료 데이터가 없습니다`);
         }
       } catch(e) {
@@ -714,14 +761,13 @@
     }
 
     function renderRentInfo(rent) {
-      document.getElementById('rentLocation').textContent       = `${rent.district} ${rent.dong}`;
-      document.getElementById('rentSpecialtyBadge').textContent = rent.specialty || '';
-      document.getElementById('rentAvg').textContent            = rent.avgRentPerPyeong;
-      document.getElementById('rentMin').textContent            = rent.minRent.toLocaleString('ko-KR');
-      document.getElementById('rentMax').textContent            = rent.maxRent.toLocaleString('ko-KR');
-      document.getElementById('rentFloor').textContent          = rent.floor;
-      document.getElementById('rentOverlay').style.display      = 'block';
-      document.getElementById('monthlyRent').value              = rent.avgRentPerPyeong;
+      document.getElementById('rentInfoDistrict').textContent  = `${rent.district} ${rent.dong}`;
+      document.getElementById('rentInfoSpecialty').textContent = rent.specialty || '';
+      document.getElementById('rentInfoAvg').textContent       = rent.avgRentPerPyeong;
+      document.getElementById('rentInfoMin').textContent       = rent.minRent.toLocaleString('ko-KR');
+      document.getElementById('rentInfoMax').textContent       = rent.maxRent.toLocaleString('ko-KR');
+      document.getElementById('rentInfoInline').style.display  = 'block';
+      document.getElementById('monthlyRent').value             = rent.avgRentPerPyeong;
     }
 
     function calcRentFromArea() {
