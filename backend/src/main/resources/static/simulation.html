@@ -6,6 +6,7 @@
     <title>MEDSIM — 개원 시뮬레이션</title>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=f26eb17ba8fd4ab4399206b4665037ca&libraries=services"></script>
     <style>
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         :root{
@@ -81,7 +82,7 @@
         .main{padding:24px 28px;background:var(--bg2);overflow-y:auto}
 
         /* 빈 상태 */
-        .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:12px;color:var(--text3)}
+        .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:12px;color:var(--text3)}
         .empty-icon{width:52px;height:52px;background:var(--blue-pale);border-radius:50%;display:flex;align-items:center;justify-content:center}
 
         /* 로딩 */
@@ -138,6 +139,18 @@
 
         /* 테이블 스크롤 */
         .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+        /* 지도 */
+        .map-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:14px}
+        #kakaoMap{width:100%;height:260px;border-radius:8px;border:1px solid var(--border);display:block}
+        .rent-info{margin-top:10px;background:var(--blue-pale2);border:1px solid #c8d8f8;border-radius:var(--r);padding:10px 14px}
+        .rent-info-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+        .rent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+        .rent-cell-lbl{font-size:10px;color:var(--text3);margin-bottom:2px}
+        .rent-cell-val{font-family:var(--mono);font-weight:600;color:var(--text)}
+        .rent-cell-val.accent{color:var(--blue);font-size:16px}
+        .rent-cell-val.sm{font-size:14px}
+        .rent-cell-unit{font-size:10px;color:var(--text3)}
 
         /* 토스트 */
         .toast{position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#fff;padding:10px 16px;border-radius:var(--r);font-size:13px;z-index:999;display:none}
@@ -250,6 +263,7 @@
                 <div class="irow"><input type="number" id="rentArea" placeholder="평수"><span class="iunit">평</span></div>
                 <div class="irow"><input type="number" id="monthlyRent" placeholder="임대료"><span class="iunit">만원</span></div>
             </div>
+            <div class="calc-hint" id="rentCalcHint" style="display:none"></div>
         </div>
         <div class="field">
             <label>월 마케팅 비용</label>
@@ -286,6 +300,44 @@
     </aside>
 
     <main class="main" id="mainPanel">
+
+        <!-- 카카오맵 상권 선택 -->
+        <div class="map-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <span class="card-ttl" style="margin-bottom:0">상권 지도 선택</span>
+                <span style="font-size:11px;color:var(--text3)">지도를 클릭하면 구/동이 자동 입력됩니다</span>
+            </div>
+            <div id="kakaoMap"></div>
+            <div id="rentInfoCard" class="rent-info" style="display:none">
+                <div class="rent-info-hdr">
+                    <span style="font-size:12px;font-weight:600;color:var(--text)" id="rentLocation"></span>
+                    <span style="font-size:11px;color:var(--blue);font-weight:500" id="rentSpecialtyBadge"></span>
+                </div>
+                <div class="rent-grid">
+                    <div>
+                        <div class="rent-cell-lbl">평당 평균</div>
+                        <div class="rent-cell-val accent" id="rentAvg"></div>
+                        <div class="rent-cell-unit">만원/평</div>
+                    </div>
+                    <div>
+                        <div class="rent-cell-lbl">월 최소</div>
+                        <div class="rent-cell-val sm" id="rentMin"></div>
+                        <div class="rent-cell-unit">만원</div>
+                    </div>
+                    <div>
+                        <div class="rent-cell-lbl">월 최대</div>
+                        <div class="rent-cell-val sm" id="rentMax"></div>
+                        <div class="rent-cell-unit">만원</div>
+                    </div>
+                    <div>
+                        <div class="rent-cell-lbl">선호 층수</div>
+                        <div class="rent-cell-val sm" id="rentFloor"></div>
+                        <div class="rent-cell-unit">층</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="empty" id="emptyState">
             <div class="empty-icon">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a55cc" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
@@ -558,6 +610,98 @@
       t.textContent = msg; t.style.display = 'block';
       setTimeout(()=>t.style.display='none', 3000);
     }
+
+    // ===== 카카오맵 =====
+    let currentRentData = null;
+
+    kakao.maps.load(function() {
+      const container = document.getElementById('kakaoMap');
+      const map = new kakao.maps.Map(container, {
+        center: new kakao.maps.LatLng(37.5665, 126.9780),
+        level: 8
+      });
+      const geocoder = new kakao.maps.services.Geocoder();
+      const marker   = new kakao.maps.Marker();
+
+      kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
+        const latlng = mouseEvent.latLng;
+        marker.setPosition(latlng);
+        marker.setMap(map);
+
+        geocoder.coord2RegionCode(latlng.getLng(), latlng.getLat(), function(result, status) {
+          if (status !== kakao.maps.services.Status.OK) return;
+
+          const region = result.find(r => r.region_type === 'H') || result[0];
+          if (!region || !region.region_2depth_name) return;
+
+          const district = region.region_2depth_name; // 강남구
+          const dong     = region.region_3depth_name; // 역삼동
+
+          document.getElementById('regionSiGun').value = district;
+          document.querySelector('input[placeholder="상세주소"]').value = dong;
+
+          showToast(`📍 ${district} ${dong}`);
+          fetchRentData(district);
+        });
+      });
+    });
+
+    async function fetchRentData(district) {
+      const specialty = document.getElementById('deptCategory').value;
+      let url = `/api/region/rent?district=${encodeURIComponent(district)}`;
+      if (specialty) url += `&specialty=${encodeURIComponent(specialty)}`;
+
+      try {
+        const res  = await fetch(url);
+        if (!res.ok) throw new Error(res.status);
+        const list = await res.json();
+
+        if (list.length > 0) {
+          currentRentData = list[0];
+          renderRentInfo(currentRentData);
+          calcRentFromArea();
+        } else {
+          currentRentData = null;
+          document.getElementById('rentInfoCard').style.display = 'none';
+          document.getElementById('rentCalcHint').style.display  = 'none';
+          showToast(`${district}의 임대료 데이터가 없습니다`);
+        }
+      } catch(e) {
+        console.error('임대료 조회 실패', e);
+      }
+    }
+
+    function renderRentInfo(rent) {
+      document.getElementById('rentLocation').textContent     = `${rent.district} ${rent.dong}`;
+      document.getElementById('rentSpecialtyBadge').textContent = rent.specialty || '';
+      document.getElementById('rentAvg').textContent          = rent.avgRentPerPyeong;
+      document.getElementById('rentMin').textContent          = rent.minRent.toLocaleString('ko-KR');
+      document.getElementById('rentMax').textContent          = rent.maxRent.toLocaleString('ko-KR');
+      document.getElementById('rentFloor').textContent        = rent.floor;
+      document.getElementById('rentInfoCard').style.display   = 'block';
+    }
+
+    function calcRentFromArea() {
+      if (!currentRentData) return;
+      const area = parseInt(document.getElementById('rentArea').value);
+      if (!area || area <= 0) return;
+
+      const estimated = area * currentRentData.avgRentPerPyeong;
+      document.getElementById('monthlyRent').value = estimated;
+
+      const hint = document.getElementById('rentCalcHint');
+      hint.textContent  = `${area}평 × 평당 ${currentRentData.avgRentPerPyeong}만원 = ${estimated.toLocaleString('ko-KR')}만원 (자동계산)`;
+      hint.style.display = 'block';
+    }
+
+    // 진료과 변경 시 임대료 재조회
+    document.getElementById('deptCategory').addEventListener('change', function() {
+      const district = document.getElementById('regionSiGun').value;
+      if (district) fetchRentData(district);
+    });
+
+    // 평수 변경 시 임대료 자동계산
+    document.getElementById('rentArea').addEventListener('input', calcRentFromArea);
 </script>
 </body>
 </html>
