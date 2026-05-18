@@ -24,4 +24,11 @@ public class SimulationController {
             @RequestBody SimulationRequest request) {
         return ResponseEntity.ok(simulationService.simulate(request));
     }
+
+    @Operation(summary = "목업 시뮬레이션 결과 조회",
+            description = "강남구/내과 기준 36개월 하드코딩 결과 — 프론트 연동용")
+    @GetMapping("/mock")
+    public ResponseEntity<SimulationResult> mock() {
+        return ResponseEntity.ok(simulationService.getMockResult());
+    }
 }

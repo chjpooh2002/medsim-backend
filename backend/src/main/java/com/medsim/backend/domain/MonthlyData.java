@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Getter
 @Builder
@@ -27,4 +28,11 @@ public class MonthlyData {
     private Long investingCashFlow;  // 투자 현금흐름 (1개월차 초기투자금 지출만)
     private Long financingCashFlow;  // 재무 현금흐름 (대출 실행 및 원금 상환)
     private Long cumulativeCash;     // 누적 현금잔고 (마이너스면 자금 고갈 위험)
+
+    // 비재무 지표
+    private Double reputationScore;     // 병원 평판 0~5.0
+    private Double patientSatisfaction; // 환자 만족도 0~5.0
+    private Double returnPatientRate;   // 재진율 0~1.0
+    private Double staffMorale;         // 직원 사기 0~1.0
+    private List<String> activeEvents;  // 해당 월 발생 이벤트 ID 목록
 }

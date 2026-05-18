@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import java.util.List;
+import java.util.Map;
 
 
 
@@ -32,4 +33,12 @@ public class SimulationResult {
 
     // KPI 피드백 알림창 목록 (message + theme)
     private List<KpiMessage> kpiMessages;
+
+    // 비재무 최종 지표
+    private Double finalReputation;          // 36개월 최종 평판 (0~5.0)
+    private Double finalSatisfaction;        // 최종 환자 만족도 (0~5.0)
+    private Double finalReturnRate;          // 최종 재진율 (0~1.0)
+    private Map<String, Long> costBreakdown; // 비용 항목별 36개월 누적 합계
+    private Boolean isBankrupt;              // 파산 여부 (현금잔고 0 이하 도달)
+    private String grade;                    // 경영 등급 S/A/B/C/F
 }
