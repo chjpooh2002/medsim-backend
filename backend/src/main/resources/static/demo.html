@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEDSIM - 개원 시뮬레이션 데모</title>
+<style>
+:root {
+  --primary:       #2563EB;
+  --primary-dark:  #1D4ED8;
+  --primary-light: #EFF6FF;
+  --success:       #16A34A;
+  --success-light: #F0FDF4;
+  --danger:        #DC2626;
+  --danger-light:  #FEF2F2;
+  --warning:       #D97706;
+  --warning-light: #FFFBEB;
+  --gray-50:  #F8FAFC;
+  --gray-100: #F1F5F9;
+  --gray-200: #E2E8F0;
+  --gray-500: #64748B;
+  --gray-700: #334155;
+  --gray-900: #0F172A;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --r: 12px; --rs: 8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray-50);color:var(--gray-900);min-height:100vh}
+
+/* Header */
+.hdr{background:#fff;border-bottom:1px solid var(--gray-200);padding:.875rem 1.5rem;display:flex;align-items:center;gap:.75rem;position:sticky;top:0;z-index:10}
+.hdr-logo{font-size:1.25rem;font-weight:800;color:var(--primary);letter-spacing:-.5px}
+.hdr-sub{font-size:.8125rem;color:var(--gray-500)}
+
+/* Layout */
+.wrap{max-width:720px;margin:0 auto;padding:1.25rem 1rem 3rem}
+
+/* Screen toggle */
+.screen{display:none}
+.screen.active{display:block}
+
+/* Card */
+.card{background:#fff;border-radius:var(--r);padding:1.375rem 1.5rem;box-shadow:var(--shadow);margin-bottom:.875rem}
+.card-ttl{font-size:.75rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.875rem}
+
+/* Form */
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:.875rem}
+.fg{margin-bottom:.875rem}
+.fg:last-child{margin-bottom:0}
+.fg label{display:block;font-size:.8125rem;font-weight:600;color:var(--gray-700);margin-bottom:.3rem}
+.fg input,.fg select{width:100%;padding:.575rem .875rem;border:1.5px solid var(--gray-200);border-radius:var(--rs);font-size:.9375rem;color:var(--gray-900);background:#fff;outline:none;transition:border-color .15s}
+.fg input:focus,.fg select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.suf{position:relative}
+.suf input{padding-right:2.75rem}
+.suf span{position:absolute;right:.875rem;top:50%;transform:translateY(-50%);font-size:.8125rem;color:var(--gray-500);pointer-events:none}
+
+/* Staff tags */
+.staff-wrap{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.25rem}
+.stag{background:var(--primary-light);color:var(--primary-dark);border-radius:999px;padding:.25rem .75rem;font-size:.8125rem;font-weight:500}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.375rem;padding:.75rem 1.375rem;border-radius:var(--rs);font-size:.9375rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;line-height:1}
+.btn-primary{background:var(--primary);color:#fff;width:100%}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-primary:active{transform:scale(.98)}
+.btn-ghost{background:var(--gray-100);color:var(--gray-700);border:1.5px solid var(--gray-200)}
+.btn-ghost:hover{background:var(--gray-200)}
+.act-row{display:grid;grid-template-columns:1fr 2fr;gap:.625rem;margin-top:.875rem}
+
+/* Progress */
+.prog-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+.month-lbl{font-size:1.125rem;font-weight:700}
+.prog-pct{font-size:.8125rem;color:var(--gray-500)}
+.prog-track{background:var(--gray-100);border-radius:999px;height:8px;overflow:hidden;margin-bottom:1.25rem}
+.prog-fill{height:100%;background:var(--primary);border-radius:999px;transition:width .5s ease}
+
+/* Stat grid */
+.sg{display:grid;grid-template-columns:repeat(2,1fr);gap:.625rem;margin-bottom:.875rem}
+.sc{background:#fff;border-radius:var(--r);padding:.875rem 1rem;box-shadow:var(--shadow);border-left:4px solid transparent}
+.sc.cash{border-left-color:var(--primary)}
+.sc.rev{border-left-color:#8B5CF6}
+.sc.pnl{border-left-color:var(--success)}
+.sc.rep{border-left-color:var(--warning)}
+.sc-lbl{font-size:.6875rem;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.2rem}
+.sc-val{font-size:1.0625rem;font-weight:700;color:var(--gray-900);word-break:break-all}
+.sc-val.neg{color:var(--danger)}
+.sc-val.pos{color:var(--success)}
+
+/* Mini stats */
+.ms-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.ms{background:var(--gray-50);border-radius:var(--rs);padding:.5rem .625rem;text-align:center}
+.ms-lbl{font-size:.6875rem;color:var(--gray-500);margin-bottom:.15rem}
+.ms-val{font-size:.875rem;font-weight:700;color:var(--gray-900)}
+
+/* Event box */
+.ev{display:flex;align-items:flex-start;gap:.625rem;padding:.75rem .875rem;border-radius:var(--rs);margin-bottom:.5rem;border:1px solid}
+.ev:last-child{margin-bottom:0}
+.ev.warn{background:var(--warning-light);border-color:#FDE68A}
+.ev.danger{background:var(--danger-light);border-color:#FECACA}
+.ev.ok{background:var(--success-light);border-color:#BBF7D0}
+.ev.info{background:var(--primary-light);border-color:#BFDBFE}
+.ev-ico{font-size:1.125rem;flex-shrink:0;line-height:1.4}
+.ev-body{font-size:.8125rem;color:var(--gray-700);line-height:1.5}
+.ev-badge{display:inline-block;font-size:.6875rem;font-weight:700;padding:.1rem .4rem;border-radius:4px;background:rgba(0,0,0,.07);margin-bottom:.2rem}
+
+/* Decision buttons */
+.dec-btn{display:flex;align-items:flex-start;gap:.625rem;width:100%;padding:.75rem .875rem;margin-bottom:.5rem;border:1.5px solid var(--gray-200);border-radius:var(--rs);background:#fff;cursor:pointer;text-align:left;transition:all .15s;font-size:.875rem;color:var(--gray-700)}
+.dec-btn:hover{border-color:var(--primary);background:var(--primary-light)}
+.dec-btn.sel{border-color:var(--primary);background:var(--primary-light);color:var(--primary-dark)}
+.dec-btn:last-child{margin-bottom:0}
+.chk{width:18px;height:18px;border:2px solid var(--gray-200);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:all .15s;margin-top:1px}
+.dec-btn.sel .chk{background:var(--primary);border-color:var(--primary);color:#fff}
+.dec-info strong{display:block;font-weight:600;margin-bottom:.15rem}
+.dec-info small{color:var(--gray-500);font-size:.8125rem}
+
+/* Result */
+.grade-wrap{text-align:center;padding:1.5rem 0 1.25rem}
+.grade{font-size:5.5rem;font-weight:800;line-height:1;margin-bottom:.375rem}
+.grade.S{color:#7C3AED}.grade.A{color:var(--primary)}.grade.B{color:var(--success)}.grade.C{color:var(--warning)}.grade.F{color:var(--danger)}
+.grade-sub{font-size:.9375rem;color:var(--gray-500);font-weight:500}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.625rem;margin-bottom:.875rem}
+.kpi{background:var(--gray-50);border-radius:var(--rs);padding:.75rem .875rem}
+.kpi-lbl{font-size:.6875rem;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
+.kpi-val{font-size:1rem;font-weight:700;color:var(--gray-900)}
+
+.cost-row{display:flex;align-items:center;gap:.75rem;padding:.5rem 0;border-bottom:1px solid var(--gray-100);font-size:.875rem}
+.cost-row:last-child{border-bottom:none}
+.cost-nm{min-width:70px;color:var(--gray-700)}
+.cost-bar{flex:1;background:var(--gray-100);border-radius:999px;height:6px;overflow:hidden}
+.cost-fill{height:100%;background:var(--primary);border-radius:999px}
+.cost-amt{min-width:80px;text-align:right;font-weight:600;color:var(--gray-900);font-size:.8125rem}
+
+/* Bankrupt banner */
+.bk-banner{background:var(--danger-light);border:1px solid #FECACA;border-radius:var(--rs);padding:.875rem;text-align:center;color:var(--danger);font-weight:700;margin-bottom:.875rem;font-size:.9375rem}
+
+/* Divider */
+.divider{display:flex;align-items:center;gap:.625rem;font-size:.75rem;font-weight:700;color:var(--gray-500);margin:1rem 0 .75rem}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--gray-200)}
+
+/* Spinner */
+.sp-ov{position:fixed;inset:0;background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(2px)}
+.sp{width:38px;height:38px;border:3px solid var(--gray-200);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--danger);color:#fff;padding:.6875rem 1.125rem;border-radius:var(--rs);font-size:.875rem;font-weight:500;z-index:60;max-width:90vw;box-shadow:0 4px 12px rgba(0,0,0,.15);white-space:nowrap}
+
+.hidden{display:none!important}
+
+@media(max-width:480px){
+  .frow,.act-row,.kpi-grid{grid-template-columns:1fr}
+  .ms-row{grid-template-columns:repeat(3,1fr)}
+  .grade{font-size:4rem}
+  .hdr{padding:.75rem 1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="hdr">
+  <div>
+    <div class="hdr-logo">💊 MEDSIM</div>
+    <div class="hdr-sub">의료 개원 시뮬레이션 — 턴제 데모</div>
+  </div>
+</header>
+
+<!-- Spinner -->
+<div id="spinner" class="sp-ov hidden"><div class="sp"></div></div>
+
+<!-- Error toast -->
+<div id="toast" class="toast hidden"></div>
+
+<main class="wrap">
+
+  <!-- ═══════════════════════════════════════ SETUP SCREEN -->
+  <div id="s-setup" class="screen active">
+    <div class="card">
+      <div class="card-ttl">기본 정보</div>
+      <div class="frow">
+        <div class="fg">
+          <label>진료과목</label>
+          <select id="dept">
+            <option value="내과" selected>내과</option>
+            <option value="소아청소년과">소아청소년과</option>
+            <option value="피부과">피부과</option>
+            <option value="정형외과">정형외과</option>
+            <option value="이비인후과">이비인후과</option>
+            <option value="안과">안과</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>지역 (시/군/구)</label>
+          <input type="text" id="region" value="강남구" placeholder="예: 강남구, 서초구">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-ttl">자금 계획</div>
+      <div class="frow">
+        <div class="fg">
+          <label>초기 투자금</label>
+          <div class="suf"><input type="number" id="investment" value="30000" min="1000"><span>만원</span></div>
+        </div>
+        <div class="fg">
+          <label>대출 금액</label>
+          <div class="suf"><input type="number" id="loan-amt" value="15000" min="0"><span>만원</span></div>
+        </div>
+        <div class="fg">
+          <label>대출 연이율</label>
+          <div class="suf"><input type="number" id="loan-rate" value="4.5" step="0.1" min="0"><span>%</span></div>
+        </div>
+        <div class="fg">
+          <label>상환 기간</label>
+          <div class="suf"><input type="number" id="loan-mo" value="36" min="1"><span>개월</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-ttl">월 운영비</div>
+      <div class="frow">
+        <div class="fg">
+          <label>월 임대료</label>
+          <div class="suf"><input type="number" id="rent" value="500" min="0"><span>만원</span></div>
+        </div>
+        <div class="fg">
+          <label>월 마케팅비</label>
+          <div class="suf"><input type="number" id="mkt" value="200" min="0"><span>만원</span></div>
+        </div>
+      </div>
+      <div class="divider">직원 구성 (프리셋 고정)</div>
+      <div class="staff-wrap">
+        <span class="stag">👨‍⚕️ 의사 1명 · 1,000만원</span>
+        <span class="stag">👩‍⚕️ 간호사 2명 · 300만원</span>
+        <span class="stag">📋 원무행정 1명 · 250만원</span>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="doStart()">▶&nbsp; 시뮬레이션 시작</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════ GAME SCREEN -->
+  <div id="s-game" class="screen">
+
+    <!-- Progress + stats card -->
+    <div class="card">
+      <div class="prog-hdr">
+        <span class="month-lbl" id="g-month">Month 1 / 36</span>
+        <span class="prog-pct" id="g-pct">3%</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="g-bar" style="width:3%"></div></div>
+
+      <div class="sg">
+        <div class="sc cash"><div class="sc-lbl">현금잔고</div><div class="sc-val" id="g-cash">—</div></div>
+        <div class="sc rev"> <div class="sc-lbl">월 매출</div> <div class="sc-val" id="g-rev">—</div></div>
+        <div class="sc pnl"> <div class="sc-lbl">순이익</div>  <div class="sc-val" id="g-pnl">—</div></div>
+        <div class="sc rep"> <div class="sc-lbl">평판</div>    <div class="sc-val" id="g-rep">—</div></div>
+      </div>
+
+      <div class="ms-row">
+        <div class="ms"><div class="ms-lbl">환자 만족도</div><div class="ms-val" id="g-sat">—</div></div>
+        <div class="ms"><div class="ms-lbl">재진율</div>     <div class="ms-val" id="g-rr">—</div></div>
+        <div class="ms"><div class="ms-lbl">직원 사기</div>  <div class="ms-val" id="g-mor">—</div></div>
+      </div>
+    </div>
+
+    <!-- Current month events -->
+    <div id="ev-now" class="card hidden">
+      <div class="card-ttl">⚡ 이번 달 이벤트</div>
+      <div id="ev-now-list"></div>
+    </div>
+
+    <!-- Next month preview -->
+    <div id="ev-next" class="card hidden">
+      <div class="card-ttl">🔮 다음 달 예고</div>
+      <div id="ev-next-list"></div>
+    </div>
+
+    <!-- Decisions -->
+    <div class="card">
+      <div class="card-ttl">📋 이번 달 의사결정 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--gray-500)">(복수 선택 가능)</span></div>
+      <div id="dec-list"></div>
+      <div class="act-row">
+        <button class="btn btn-ghost" onclick="doNext(true)">건너뛰기</button>
+        <button class="btn btn-primary" onclick="doNext(false)">다음 달로 진행 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ RESULT SCREEN -->
+  <div id="s-result" class="screen">
+    <div class="card">
+      <div id="bk-banner" class="bk-banner hidden">💔 파산 — 현금잔고가 소진되었습니다</div>
+      <div class="grade-wrap">
+        <div class="grade" id="r-grade">—</div>
+        <div class="grade-sub">경영 등급</div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-lbl">BEP 달성</div>  <div class="kpi-val" id="r-bep">—</div></div>
+        <div class="kpi"><div class="kpi-lbl">최종 현금잔고</div><div class="kpi-val" id="r-cash">—</div></div>
+        <div class="kpi"><div class="kpi-lbl">최종 평판</div>  <div class="kpi-val" id="r-rep">—</div></div>
+        <div class="kpi"><div class="kpi-lbl">파산 여부</div>  <div class="kpi-val" id="r-bk">—</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-ttl">📊 비용 구조 분석 (누적)</div>
+      <div id="r-cost"></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="doReset()" style="margin-top:.25rem">↺&nbsp; 다시 시작</button>
+  </div>
+
+</main>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let SIM_ID    = null;
+let SELECTED  = new Set();   // selected decision IDs
+
+// ─── Event / Decision metadata ────────────────────────────────────────────────
+const EV_META = {
+  COMPETITOR_OPEN: { ico:'🏥', cls:'danger',  lbl:'경쟁 병원 개원' },
+  PATIENT_SURGE:   { ico:'📈', cls:'ok',      lbl:'환자 급증' },
+  STAFF_QUIT:      { ico:'👋', cls:'danger',  lbl:'직원 이탈' },
+  EQUIPMENT_BREAK: { ico:'🔧', cls:'warn',    lbl:'장비 고장' },
+  REVIEW_VIRAL:    { ico:'⭐', cls:'ok',      lbl:'바이럴 리뷰' },
+};
+const EV_DESC = {
+  EVT_COMPETITOR_OPEN: '인근에 경쟁 내과가 개원했습니다. 신환 유입이 감소하고 평판에 영향을 줍니다.',
+  EVT_REVIEW_VIRAL:    '포털에 긍정 리뷰가 퍼졌습니다. 신환이 급증하고 평판이 상승합니다.',
+  EVT_EQUIPMENT_BREAK: '초음파 장비가 고장났습니다. 수리비가 발생하고 진료에 차질이 생깁니다.',
+  EVT_PATIENT_SURGE:   '독감 시즌으로 환자가 급증했습니다. 매출은 오르지만 직원 피로도가 증가합니다.',
+  EVT_STAFF_QUIT:      '직원이 이탈했습니다. 서비스 품질과 사기에 영향을 줍니다.',
+};
+const DEC_ICO = { MARKETING_UP:'📢', STAFF_HIRE:'👥', COST_CUT:'✂️', SERVICE_IMPROVE:'⭐' };
+
+// ─── DOM helpers ──────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function showScreen(name) {
+  ['s-setup','s-game','s-result'].forEach(id => $(id).classList.remove('active'));
+  $(name).classList.add('active');
+}
+
+function setHidden(id, hide) { $(id).classList.toggle('hidden', hide); }
+
+function showToast(msg, duration = 5000) {
+  const t = $('toast');
+  t.textContent = '⚠ ' + msg;
+  t.classList.remove('hidden');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.add('hidden'), duration);
+}
+
+function spin(on) { setHidden('spinner', !on); }
+
+// ─── Formatting ───────────────────────────────────────────────────────────────
+function fmtW(n) {               // e.g. 30000 → "3억", 1500 → "1,500만원"
+  if (n == null) return '—';
+  const s = n < 0 ? '-' : '';
+  const a = Math.abs(n);
+  if (a >= 10000) return s + (a / 10000).toFixed(1) + '억원';
+  return s + a.toLocaleString('ko-KR') + '만원';
+}
+function fmtSign(n) {            // with ± prefix
+  if (n == null) return '—';
+  return (n >= 0 ? '+' : '') + fmtW(n);
+}
+function fmtPct(rate) { return ((rate || 0) * 100).toFixed(1) + '%'; }
+
+// ─── Build SimulationRequest ──────────────────────────────────────────────────
+function buildReq() {
+  const loanAmt = parseInt($('loan-amt').value) || 0;
+  return {
+    deptCategory:      $('dept').value,
+    regionSiGun:       $('region').value.trim(),
+    initialInvestment: parseInt($('investment').value) || 10000,
+    loanAmount:   loanAmt > 0 ? loanAmt : null,
+    loanRate:     loanAmt > 0 ? (parseFloat($('loan-rate').value) || null) : null,
+    loanMonths:   loanAmt > 0 ? (parseInt($('loan-mo').value)    || null) : null,
+    monthlyRent:      parseInt($('rent').value) || 0,
+    monthlyMarketing: parseInt($('mkt').value)  || 0,
+    staffList: [
+      { role:'의사',    salary:1000, count:1 },
+      { role:'간호사',  salary:300,  count:2 },
+      { role:'원무행정', salary:250, count:1 },
+    ]
+  };
+}
+
+// ─── API calls ────────────────────────────────────────────────────────────────
+async function doStart() {
+  spin(true);
+  try {
+    const res = await fetch('/api/simulation/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildReq())
+    });
+    if (!res.ok) throw new Error((await res.json().catch(()=>({}))).message || `서버 오류 (${res.status})`);
+    const data = await res.json();
+    SIM_ID = data.simulationId;
+    SELECTED.clear();
+    showScreen('s-game');
+    applyTurn(data);
+  } catch(e) { showToast(e.message); }
+  finally { spin(false); }
+}
+
+async function doNext(skip) {
+  if (!SIM_ID) return;
+  spin(true);
+  try {
+    const decisions = skip ? [] : [...SELECTED];
+    const res = await fetch(`/api/simulation/${SIM_ID}/next`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(decisions)
+    });
+    if (!res.ok) throw new Error((await res.json().catch(()=>({}))).message || `서버 오류 (${res.status})`);
+    const data = await res.json();
+    SELECTED.clear();
+
+    if (data.isBankrupt || data.isCompleted) {
+      showScreen('s-result');
+      applyResult(data);
+    } else {
+      applyTurn(data);
+    }
+  } catch(e) { showToast(e.message); }
+  finally { spin(false); }
+}
+
+function doReset() {
+  SIM_ID = null;
+  SELECTED.clear();
+  showScreen('s-setup');
+}
+
+// ─── Render: game turn ────────────────────────────────────────────────────────
+function applyTurn(data) {
+  const md    = data.monthlyData || {};
+  const month = data.currentMonth || 1;
+
+  // Progress
+  const pct = Math.round(month / 36 * 100);
+  $('g-month').textContent = `Month ${month} / 36`;
+  $('g-pct').textContent   = pct + '%';
+  $('g-bar').style.width   = pct + '%';
+
+  // Stat cards
+  const cash = md.cumulativeCash;
+  const pnl  = md.netProfit;
+  $('g-cash').textContent = fmtW(cash);
+  $('g-cash').className   = 'sc-val' + (cash < 0 ? ' neg' : '');
+  $('g-rev').textContent  = fmtW(md.revenue);
+  $('g-pnl').textContent  = fmtSign(pnl);
+  $('g-pnl').className    = 'sc-val' + (pnl < 0 ? ' neg' : ' pos');
+  $('g-rep').textContent  = (md.reputationScore || 0).toFixed(2) + ' / 5.0';
+
+  // Mini stats
+  $('g-sat').textContent = (md.patientSatisfaction || 0).toFixed(2);
+  $('g-rr').textContent  = fmtPct(md.returnPatientRate);
+  $('g-mor').textContent = fmtPct(md.staffMorale);
+
+  // Active events this month
+  const active = md.activeEvents || [];
+  setHidden('ev-now', active.length === 0);
+  if (active.length > 0) {
+    $('ev-now-list').innerHTML = active.map(id => renderEvBox(id)).join('');
+  }
+
+  // Next month preview
+  const nextEvs = data.nextEvents || [];
+  setHidden('ev-next', nextEvs.length === 0);
+  if (nextEvs.length > 0) {
+    $('ev-next-list').innerHTML = nextEvs.map(ev => renderEvBoxFull(ev)).join('');
+  }
+
+  // Decisions
+  renderDecisions(data.availableDecisions || []);
+}
+
+function renderEvBox(evId) {
+  const key  = evId.replace('EVT_', '');
+  const meta = EV_META[key] || { ico: '📌', cls: 'info', lbl: key };
+  const desc = EV_DESC[evId] || evId;
+  return `<div class="ev ${meta.cls}">
+    <span class="ev-ico">${meta.ico}</span>
+    <div class="ev-body"><span class="ev-badge">${meta.lbl}</span><br>${desc}</div>
+  </div>`;
+}
+
+function renderEvBoxFull(ev) {
+  const key  = (ev.eventType || '').replace('EVT_', '');
+  const meta = EV_META[key] || EV_META[(ev.eventId || '').replace('EVT_','')] || { ico:'📌', cls:'info', lbl:'이벤트' };
+  return `<div class="ev ${meta.cls}">
+    <span class="ev-ico">${meta.ico}</span>
+    <div class="ev-body"><span class="ev-badge">다음 달 예정</span><br>${ev.description || ev.eventId}</div>
+  </div>`;
+}
+
+function renderDecisions(decs) {
+  $('dec-list').innerHTML = decs.map(d => {
+    const sel = SELECTED.has(d.decisionId);
+    const ico = DEC_ICO[d.decisionType] || '📋';
+    return `<button class="dec-btn${sel ? ' sel' : ''}"
+        onclick="toggleDec('${d.decisionId}', this)">
+      <div class="chk">${sel ? '✓' : ''}</div>
+      <div class="dec-info">
+        <strong>${ico}&nbsp;${decTitle(d.decisionType)}</strong>
+        <small>${d.description}</small>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+function decTitle(t) {
+  return { MARKETING_UP:'마케팅 강화', STAFF_HIRE:'직원 채용', COST_CUT:'비용 절감', SERVICE_IMPROVE:'서비스 개선' }[t] || t;
+}
+
+function toggleDec(id, btn) {
+  if (SELECTED.has(id)) {
+    SELECTED.delete(id);
+    btn.classList.remove('sel');
+    btn.querySelector('.chk').textContent = '';
+  } else {
+    SELECTED.add(id);
+    btn.classList.add('sel');
+    btn.querySelector('.chk').textContent = '✓';
+  }
+}
+
+// ─── Render: final result ─────────────────────────────────────────────────────
+function applyResult(data) {
+  const fr = data.finalResult || {};
+  const bk = data.isBankrupt;
+
+  setHidden('bk-banner', !bk);
+
+  const grade  = fr.grade || 'F';
+  const gradeEl = $('r-grade');
+  gradeEl.textContent = grade;
+  gradeEl.className   = `grade ${grade}`;
+
+  const bep = fr.bepMonth;
+  $('r-bep').textContent  = bep && bep < 999 ? `${bep}개월` : '미달성 (999)';
+  $('r-cash').textContent = fmtW(fr.finalCashBalance);
+  $('r-rep').textContent  = fr.finalReputation != null ? `${Number(fr.finalReputation).toFixed(2)} / 5.0` : '—';
+  const bkEl = $('r-bk');
+  bkEl.textContent  = bk ? '⚠ 파산' : '✅ 정상';
+  bkEl.style.color  = bk ? 'var(--danger)' : 'var(--success)';
+
+  // Cost breakdown bar chart
+  const bd = fr.costBreakdown || {};
+  const total = Object.values(bd).reduce((s, v) => s + (v || 0), 0) || 1;
+  $('r-cost').innerHTML = Object.entries(bd)
+    .sort(([,a],[,b]) => b - a)
+    .map(([nm, amt]) => {
+      const pct = ((amt / total) * 100).toFixed(1);
+      return `<div class="cost-row">
+        <span class="cost-nm">${nm}</span>
+        <div class="cost-bar"><div class="cost-fill" style="width:${pct}%"></div></div>
+        <span class="cost-amt">${fmtW(amt)}</span>
+      </div>`;
+    }).join('');
+}
+</script>
+</body>
+</html>

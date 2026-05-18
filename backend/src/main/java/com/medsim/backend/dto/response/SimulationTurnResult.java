@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 public class SimulationTurnResult {
 
+    private String simulationId;
     private int    currentMonth;
     private MonthlyData monthlyData;          // 이번 달 결과
     private List<SimulationEvent> nextEvents; // 다음 달 발생할 이벤트

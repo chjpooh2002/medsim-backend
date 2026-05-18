@@ -252,6 +252,7 @@ public class SimulationService {
                 : getEventsForMonth(state.getPendingEvents(), state.getCurrentMonth());
 
         return SimulationTurnResult.builder()
+                .simulationId(simId)
                 .currentMonth(executedMonth)
                 .monthlyData(monthData)
                 .nextEvents(nextEvents)
