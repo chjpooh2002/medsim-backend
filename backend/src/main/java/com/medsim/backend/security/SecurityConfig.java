@@ -40,6 +40,7 @@ public class SecurityConfig {
                                 "/css/**",
                                 "/js/**",
                                 "/api/simulation",
+                                "/api/simulation/mock",
                                 "/api/auth/**",
                                 "/api/region/**",
                                 "/health",
