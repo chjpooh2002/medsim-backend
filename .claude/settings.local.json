@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\82109\\\\Desktop\\\\MEDSIM_Project\" -Force)",
+      "Bash(Select-Object Name, Attributes)",
+      "PowerShell(cd \"C:\\\\Users\\\\82109\\\\Desktop\\\\MEDSIM_Project\"; Get-ChildItem -Recurse -Directory | Where-Object { $_.Name -notmatch '\\\\.git|build|gradle' } | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\(\"C:\\\\Users\\\\82109\\\\Desktop\\\\MEDSIM_Project\\\\\", \"\"\\) } | Sort-Object)",
+      "Bash(cmd /c gradlew.bat --help)",
+      "Bash(git checkout *)",
+      "Bash(./gradlew build *)",
+      "Bash(git restore *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git stash *)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --msg-filter 'grep -v \"Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\" || true' 73b9310~1..HEAD)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git remote *)"
+    ]
+  }
+}
