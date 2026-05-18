@@ -17,6 +17,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalState(IllegalStateException e) {
+        return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleBadCredentials(BadCredentialsException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", e.getMessage()));

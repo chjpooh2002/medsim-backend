@@ -2,12 +2,14 @@ package com.medsim.backend.controller;
 
 import com.medsim.backend.dto.request.SimulationRequest;
 import com.medsim.backend.dto.response.SimulationResult;
+import com.medsim.backend.dto.response.SimulationTurnResult;
 import com.medsim.backend.service.SimulationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @Tag(name = "Simulation", description = "개원 시뮬레이션 API")
 @RestController
@@ -30,5 +32,22 @@ public class SimulationController {
     @GetMapping("/mock")
     public ResponseEntity<SimulationResult> mock() {
         return ResponseEntity.ok(simulationService.getMockResult());
+    }
+
+    @Operation(summary = "턴제 시뮬레이션 시작",
+            description = "1개월차를 실행하고 simulationId 와 상태를 반환. 이후 /{id}/next 로 진행")
+    @PostMapping("/start")
+    public ResponseEntity<SimulationTurnResult> startSimulation(
+            @RequestBody SimulationRequest request) {
+        return ResponseEntity.ok(simulationService.startSimulation(request));
+    }
+
+    @Operation(summary = "다음 달 진행",
+            description = "의사결정 ID 목록을 제출하고 다음 달 시뮬레이션 실행. 완료/파산 시 finalResult 포함")
+    @PostMapping("/{id}/next")
+    public ResponseEntity<SimulationTurnResult> nextTurn(
+            @PathVariable String id,
+            @RequestBody List<String> decisionIds) {
+        return ResponseEntity.ok(simulationService.nextTurn(id, decisionIds));
     }
 }
