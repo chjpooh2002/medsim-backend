@@ -140,10 +140,10 @@ public class SimulationService {
         }
 
         // ② 이벤트 효과 적용
-        List<String> activeEventIds = new ArrayList<>();
+        List<SimulationEvent> activeEventIds = new ArrayList<>();
         for (SimulationEvent ev : state.getPendingEvents()) {
             if (ev.getTriggerMonth() == month) {
-                activeEventIds.add(ev.getEventId());
+                activeEventIds.add(ev);
                 Map<String, Double> imp = ev.getImpactMap();
                 if (imp.containsKey("revenue"))      revMultiplier += imp.get("revenue");
                 if (imp.containsKey("extraCost"))    extraCost     += Math.round(imp.get("extraCost"));
@@ -428,12 +428,12 @@ public class SimulationService {
 
         for (int month = 1; month <= 36; month++) {
 
-            List<String> monthEvents   = new ArrayList<>();
-            double       revMultiplier = 1.0;
-            long         extraCost     = 0L;
+            List<SimulationEvent> monthEvents   = new ArrayList<>();
+            double                revMultiplier = 1.0;
+            long                  extraCost     = 0L;
             for (SimulationEvent ev : events) {
                 if (ev.getTriggerMonth() == month) {
-                    monthEvents.add(ev.getEventId());
+                    monthEvents.add(ev);
                     Map<String, Double> imp = ev.getImpactMap();
                     if (imp.containsKey("reputation"))   reputation   = clamp(reputation   + imp.get("reputation"),   0, 5);
                     if (imp.containsKey("satisfaction")) satisfaction = clamp(satisfaction + imp.get("satisfaction"), 0, 5);
