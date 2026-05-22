@@ -43,6 +43,7 @@ public class SecurityConfig {
                                 "/api/simulation/mock",
                                 "/api/simulation/start",
                                 "/api/simulation/*/next",
+                                "/start/**",
                                 "/api/auth/**",
                                 "/api/region/**",
                                 "/health",
