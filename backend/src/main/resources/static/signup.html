@@ -173,5 +173,42 @@
       el.type = el.type === 'password' ? 'text' : 'password';
     }
 </script>
+<script>
+    document.querySelector('.submit-btn').addEventListener('click', async function() {
+      // 입력값 수집
+      const firstName = document.querySelectorAll('input[type=text]')[0].value.trim();
+      const lastName  = document.querySelectorAll('input[type=text]')[1].value.trim();
+      const email     = document.querySelector('input[type=email]').value.trim();
+      const password  = document.getElementById('pw-signup').value.trim();
+
+      // 간단 유효성 검사
+      if (!firstName || !email || !password) {
+        alert('이름, 이메일, 비밀번호를 입력해주세요.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: firstName + ' ' + lastName,
+            email: email,
+            password: password
+          })
+        });
+
+        if (res.ok) {
+          alert('회원가입 완료! 로그인 페이지로 이동합니다.');
+          window.location.href = '/login.html';
+        } else {
+          const err = await res.json();
+          alert('오류: ' + (err.message || '회원가입에 실패했습니다.'));
+        }
+      } catch (e) {
+        alert('서버 연결에 실패했습니다.');
+      }
+    });
+</script>
 </body>
 </html>
