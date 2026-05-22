@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>병원 운영 스타일 – MEDSIM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        :root {
+          --blue:#1A6BFF; --blue-dark:#0F4FCC; --blue-bg:#EFF5FF;
+          --navy:#0D1B2A; --gray-1:#F5F7FA; --gray-2:#E8ECF2;
+          --gray-3:#C8D0DC; --gray-5:#7A8699; --gray-7:#3D4F63; --white:#FFFFFF;
+          --font:'Pretendard',-apple-system,sans-serif;
+        }
+        body { font-family:var(--font); color:var(--navy); background:var(--gray-1); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column; }
+
+        nav { background:rgba(255,255,255,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--gray-2); height:60px; display:flex; align-items:center; padding:0 32px; position:sticky; top:0; z-index:100; }
+        .nav-inner { width:100%; max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+        .nav-left { display:flex; gap:28px; }
+        .nav-left a { font-size:13px; font-weight:500; color:var(--gray-7); text-decoration:none; }
+        .nav-logo { display:flex; align-items:center; justify-content:center; gap:7px; text-decoration:none; }
+        .logo-icon { width:28px; height:28px; background:var(--blue); border-radius:7px; display:flex; align-items:center; justify-content:center; }
+        .logo-icon svg { width:16px; height:16px; fill:white; }
+        .logo-type { font-size:17px; font-weight:800; color:var(--navy); }
+        .nav-right { display:flex; gap:8px; justify-content:flex-end; }
+        .btn-outline { padding:7px 16px; border:1.5px solid var(--gray-3); border-radius:8px; font-size:13px; font-weight:600; color:var(--navy); background:transparent; text-decoration:none; display:inline-block; }
+        .btn-solid { padding:7px 16px; border:none; border-radius:8px; font-size:13px; font-weight:600; color:white; background:var(--blue); text-decoration:none; display:inline-block; }
+
+        .step-bar { background:white; border-bottom:1px solid var(--gray-2); padding:16px 32px; display:flex; justify-content:center; gap:8px; }
+        .step { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--gray-3); }
+        .step.active { color:var(--blue); }
+        .step.done { color:var(--gray-5); }
+        .step-num { width:22px; height:22px; border-radius:50%; border:2px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:11px; }
+        .step.active .step-num { background:var(--blue); border-color:var(--blue); color:white; }
+        .step-div { width:32px; height:2px; background:var(--gray-2); border-radius:2px; margin:0 4px; align-self:center; }
+        .step-div.done { background:var(--blue); opacity:.3; }
+
+        main { flex:1; padding:48px 32px 80px; }
+        .content { max-width:680px; margin:0 auto; }
+        .page-head { text-align:center; margin-bottom:28px; }
+        .page-head .sub { font-size:13px; font-weight:700; color:var(--blue); margin-bottom:6px; }
+        .page-head h1 { font-size:26px; font-weight:800; letter-spacing:-.5px; }
+
+        .section { background:white; border:1px solid var(--gray-2); border-radius:14px; padding:24px; margin-bottom:14px; }
+        .section-title { font-size:14px; font-weight:700; color:var(--navy); margin-bottom:16px; }
+
+        /* 슬라이더 */
+        .slider-row { margin-bottom:20px; }
+        .slider-row:last-child { margin-bottom:0; }
+        .slider-row label { font-size:13px; font-weight:600; color:var(--navy); display:block; margin-bottom:8px; }
+        .slider-wrap { display:flex; align-items:center; gap:12px; }
+        .slider-wrap input[type=range] {
+          flex:1; height:4px; accent-color:var(--blue); cursor:pointer;
+          -webkit-appearance:none; background:var(--gray-2); border-radius:2px;
+        }
+        .slider-wrap input[type=range]::-webkit-slider-thumb {
+          -webkit-appearance:none; width:18px; height:18px;
+          border-radius:50%; background:var(--blue); cursor:pointer;
+          box-shadow:0 2px 6px rgba(26,107,255,.3);
+        }
+        .slider-val { font-size:13px; font-weight:700; color:var(--blue); min-width:80px; text-align:right; }
+        .slider-range { display:flex; justify-content:space-between; font-size:11px; color:var(--gray-5); margin-top:4px; }
+
+        /* 인풋 */
+        .input-row { margin-bottom:16px; }
+        .input-row label { font-size:13px; font-weight:600; color:var(--navy); display:block; margin-bottom:7px; }
+        .input-row input { width:100%; padding:11px 14px; border:1.5px solid var(--gray-2); border-radius:9px; font-size:14px; font-family:var(--font); color:var(--navy); background:var(--gray-1); outline:none; transition:border-color .18s; }
+        .input-row input:focus { border-color:var(--blue); background:white; }
+
+        /* 라디오 그룹 */
+        .radio-group { display:flex; flex-direction:column; gap:8px; }
+        .radio-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border:1.5px solid var(--gray-2); border-radius:9px; cursor:pointer; transition:border-color .18s; }
+        .radio-item:hover { border-color:var(--blue); }
+        .radio-item.checked { border-color:var(--blue); background:var(--blue-bg); }
+        .radio-item input[type=radio] { accent-color:var(--blue); width:15px; height:15px; }
+        .radio-item span { font-size:13.5px; font-weight:500; }
+
+        /* 체크박스 그리드 */
+        .check-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+        .check-item { display:flex; align-items:center; gap:8px; padding:9px 12px; border:1.5px solid var(--gray-2); border-radius:8px; cursor:pointer; transition:border-color .18s; font-size:13px; font-weight:500; }
+        .check-item:hover { border-color:var(--blue); }
+        .check-item.checked { border-color:var(--blue); background:var(--blue-bg); }
+        .check-item input { accent-color:var(--blue); }
+
+        /* 인력 구성 */
+        .staff-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+        .staff-row { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--gray-1); border-radius:8px; }
+        .staff-name { font-size:13px; font-weight:600; color:var(--navy); }
+        .staff-ctrl { display:flex; align-items:center; gap:8px; }
+        .staff-btn { width:24px; height:24px; border-radius:50%; border:1.5px solid var(--gray-3); background:white; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--gray-7); transition:border-color .18s; }
+        .staff-btn:hover { border-color:var(--blue); color:var(--blue); }
+        .staff-count { font-size:14px; font-weight:700; color:var(--navy); min-width:20px; text-align:center; }
+
+        /* 대출/요약 */
+        .loan-box { background:var(--blue-bg); border:1px solid rgba(26,107,255,.2); border-radius:10px; padding:16px; text-align:center; }
+        .loan-label { font-size:12px; font-weight:600; color:var(--blue); margin-bottom:6px; }
+        .loan-value { font-size:20px; font-weight:800; color:var(--navy); }
+
+        .summary-box { background:var(--gray-1); border:1px solid var(--gray-2); border-radius:10px; padding:14px 16px; font-size:13px; line-height:1.8; color:var(--gray-7); }
+
+        .ai-box { background:var(--blue-bg); border:1px solid rgba(26,107,255,.2); border-radius:10px; padding:16px; }
+        .ai-label { font-size:12px; font-weight:700; color:var(--blue); margin-bottom:8px; }
+        .ai-box p { font-size:13px; line-height:1.7; color:var(--gray-7); }
+
+        .bottom-nav { display:flex; justify-content:center; gap:12px; margin-top:32px; }
+        .nav-prev { padding:13px 28px; background:white; color:var(--navy); font-size:15px; font-weight:600; font-family:var(--font); border:1.5px solid var(--gray-3); border-radius:10px; cursor:pointer; text-decoration:none; display:inline-block; }
+        .nav-prev:hover { border-color:var(--blue); color:var(--blue); }
+        .nav-next { padding:13px 32px; background:var(--blue); color:white; font-size:15px; font-weight:700; font-family:var(--font); border:none; border-radius:10px; cursor:pointer; text-decoration:none; display:inline-block; }
+        .nav-next:hover { background:var(--blue-dark); }
+
+        footer { background:var(--navy); padding:20px 32px; text-align:center; }
+        footer p { font-size:12px; color:rgba(255,255,255,.4); }
+    </style>
+</head>
+<body>
+<nav>
+    <div class="nav-inner">
+        <div class="nav-left"><a href="../index.html">HOME</a><a href="#">ABOUT</a><a href="#">SERVICE</a></div>
+        <a class="nav-logo" href="../index.html">
+            <div class="logo-icon"><svg viewBox="0 0 20 20"><rect x="3" y="9" width="14" height="2" rx="1"/><rect x="9" y="3" width="2" height="14" rx="1"/></svg></div>
+            <span class="logo-type">MEDSIM</span>
+        </a>
+        <div class="nav-right"><a class="btn-outline" href="../signup.html">회원가입</a><a class="btn-solid" href="../login.html">로그인</a></div>
+    </div>
+</nav>
+
+<div class="step-bar">
+    <div class="step done"><div class="step-num">✓</div> 인트로</div>
+    <div class="step-div done"></div>
+    <div class="step done"><div class="step-num">✓</div> 페르소나</div>
+    <div class="step-div done"></div>
+    <div class="step done"><div class="step-num">✓</div> 입지</div>
+    <div class="step-div done"></div>
+    <div class="step active"><div class="step-num">4</div> 운영 스타일</div>
+    <div class="step-div"></div>
+    <div class="step"><div class="step-num">5</div> 시작</div>
+</div>
+
+<main>
+    <div class="content">
+        <div class="page-head">
+            <p class="sub">초기자본 설정과 병원 운영스타일을 결정합니다</p>
+            <h1>병원 운영 스타일</h1>
+        </div>
+
+        <!-- 자금 -->
+        <div class="section">
+            <p class="section-title">월 임대료 및 보증금</p>
+            <div class="input-row">
+                <input type="text" id="inp-rent" value="000만원/0000만원" placeholder="000만원/0000만원"/>
+            </div>
+
+            <div class="slider-row">
+                <label>평당 인테리어 금액</label>
+                <div style="font-size:12px;color:var(--gray-5);margin-bottom:8px;">선택 평수: 50평</div>
+                <div class="slider-wrap">
+                    <input type="range" id="sl-interior" min="0" max="10000" step="100" value="1000" oninput="updateSlider('sl-interior','lbl-interior','만원')"/>
+                    <span class="slider-val" id="lbl-interior">현재: 1,000 만원</span>
+                </div>
+                <div class="slider-range"><span>0 원</span><span>1,000억</span></div>
+            </div>
+
+            <div class="slider-row">
+                <label>개원 첫 달 마케팅 비용</label>
+                <div class="slider-wrap">
+                    <input type="range" id="sl-marketing" min="0" max="3000" step="50" value="1000" oninput="updateSlider('sl-marketing','lbl-marketing','만원')"/>
+                    <span class="slider-val" id="lbl-marketing">현재: 1,000 만원</span>
+                </div>
+                <div class="slider-range"><span>0 원</span><span>3,000만원</span></div>
+            </div>
+        </div>
+
+        <!-- 진료·운영·장비 -->
+        <div class="section">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
+                <div>
+                    <p class="section-title">진료 스타일</p>
+                    <div class="radio-group">
+                        <label class="radio-item" onclick="toggleRadio(this)"><input type="radio" name="clinic" value="빠른 회전형"/> <span>빠른 회전형</span></label>
+                        <label class="radio-item checked" onclick="toggleRadio(this)"><input type="radio" name="clinic" value="균형형" checked/> <span>균형형</span></label>
+                        <label class="radio-item" onclick="toggleRadio(this)"><input type="radio" name="clinic" value="상담 강화형"/> <span>상담 강화형</span></label>
+                    </div>
+                </div>
+                <div>
+                    <p class="section-title">운영 시간</p>
+                    <div class="radio-group">
+                        <label class="radio-item checked" onclick="toggleRadio(this)"><input type="radio" name="op" value="기본" checked/> <span>기본 (09:00~18:00)</span></label>
+                        <label class="radio-item" onclick="toggleRadio(this)"><input type="radio" name="op" value="야간"/> <span>야간 진료 추가</span></label>
+                        <label class="radio-item" onclick="toggleRadio(this)"><input type="radio" name="op" value="토요일"/> <span>토요일 진료 추가</span></label>
+                    </div>
+                </div>
+                <div>
+                    <p class="section-title">의료 기기/장비</p>
+                    <div style="display:flex;flex-direction:column;gap:7px;">
+                        <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="ECG"/> ECG</label>
+                        <label class="check-item checked" onclick="toggleCheck(this)"><input type="checkbox" value="상부위장관" checked/> 상부위장관 내시경</label>
+                        <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="X-Ray"/> X-Ray</label>
+                        <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="하부위장관"/> 하부위장관 내시경</label>
+                        <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="ICT"/> ICT</label>
+                        <label class="check-item checked" onclick="toggleCheck(this)"><input type="checkbox" value="초음파" checked/> 초음파</label>
+                        <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="MRI"/> MRI</label>
+                        <label class="check-item" onclick="toggleCheck(this)"><input type="checkbox" value="기타"/> 기타 (직접입력)</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 인력 -->
+        <div class="section">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div>
+                    <p class="section-title">인력 운영 스타일</p>
+                    <div class="radio-group">
+                        <label class="radio-item" onclick="toggleRadio(this)"><input type="radio" name="staff" value="최소"/> <span>최소 인력 운영</span></label>
+                        <label class="radio-item checked" onclick="toggleRadio(this)"><input type="radio" name="staff" value="균형" checked/> <span>균형 운영</span></label>
+                        <label class="radio-item" onclick="toggleRadio(this)"><input type="radio" name="staff" value="서비스"/> <span>서비스 강화형</span></label>
+                    </div>
+                </div>
+                <div>
+                    <p class="section-title">인력 구성</p>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <div class="staff-row"><span class="staff-name">간호조무사</span><div class="staff-ctrl"><button class="staff-btn" onclick="changeStaff('간호조무사',-1)">−</button><span class="staff-count" id="cnt-간호조무사">2</span><button class="staff-btn" onclick="changeStaff('간호조무사',1)">+</button></div></div>
+                        <div class="staff-row"><span class="staff-name">원무</span><div class="staff-ctrl"><button class="staff-btn" onclick="changeStaff('원무',-1)">−</button><span class="staff-count" id="cnt-원무">2</span><button class="staff-btn" onclick="changeStaff('원무',1)">+</button></div></div>
+                        <div class="staff-row"><span class="staff-name">물리치료사</span><div class="staff-ctrl"><button class="staff-btn" onclick="changeStaff('물리치료사',-1)">−</button><span class="staff-count" id="cnt-물리치료사">0</span><button class="staff-btn" onclick="changeStaff('물리치료사',1)">+</button></div></div>
+                        <div class="staff-row"><span class="staff-name">병사서비스</span><div class="staff-ctrl"><button class="staff-btn" onclick="changeStaff('병사서비스',-1)">−</button><span class="staff-count" id="cnt-병사서비스">0</span><button class="staff-btn" onclick="changeStaff('병사서비스',1)">+</button></div></div>
+                        <div class="staff-row"><span class="staff-name">기타</span><div class="staff-ctrl"><button class="staff-btn" onclick="changeStaff('기타',-1)">−</button><span class="staff-count" id="cnt-기타">0</span><button class="staff-btn" onclick="changeStaff('기타',1)">+</button></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 대출 산정 -->
+        <div class="section">
+            <p class="section-title">AI 기반 필요 대출액 산정</p>
+            <div class="loan-box">
+                <p class="loan-label">대출금액/기간/이자율</p>
+                <p class="loan-value" id="loan-val">00억/00년/0%</p>
+            </div>
+        </div>
+
+        <!-- 보유 자금 + 요약 -->
+        <div class="section">
+            <div class="input-row">
+                <label>현재 보유 자금</label>
+                <input type="text" id="inp-asset" value="1 억" placeholder="보유 자금 입력"/>
+            </div>
+            <p class="section-title" style="margin-bottom:10px;">실시간 영향</p>
+            <div class="summary-box" id="summary-box">
+                월 임대료: 00만원<br>
+                총 인테리어 비용: 00만원<br>
+                초기 개원비: 00만원<br>
+                월 이자 부담: 00만원
+            </div>
+        </div>
+
+        <!-- AI 경영 코치 -->
+        <div class="ai-box">
+            <p class="ai-label">AI 경영 코치</p>
+            <p>[SOLAR AI 분석]<br>현재 전략은 단기 수익성은 높지만, 환자 유지율 감소 위험이 있습니다.<br><br>[SOLAR의 추천]<br>· 간호 인력 1명 추가<br>· 상담 시간 유지<br>· 내시경 코드 검토</p>
+        </div>
+
+        <div class="bottom-nav">
+            <a class="nav-prev" href="start3.html">이전</a>
+            <a class="nav-next" href="start5.html">다음</a>
+        </div>
+    </div>
+</main>
+
+<footer><p>CompanyName © 202X. All rights reserved.</p></footer>
+
+<script>
+    function updateSlider(id, labelId, unit) {
+      const val = parseInt(document.getElementById(id).value);
+      document.getElementById(labelId).textContent = `현재: ${val.toLocaleString()} ${unit}`;
+      updateSummary();
+    }
+
+    function toggleRadio(el) {
+      const name = el.querySelector('input').name;
+      document.querySelectorAll(`input[name="${name}"]`).forEach(i => {
+        i.closest('.radio-item').classList.remove('checked');
+      });
+      el.classList.add('checked');
+      updateSummary();
+    }
+
+    function toggleCheck(el) {
+      el.classList.toggle('checked');
+    }
+
+    const staffCounts = { '간호조무사':2, '원무':2, '물리치료사':0, '병사서비스':0, '기타':0 };
+    function changeStaff(name, delta) {
+      staffCounts[name] = Math.max(0, staffCounts[name] + delta);
+      document.getElementById(`cnt-${name}`).textContent = staffCounts[name];
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const interior = parseInt(document.getElementById('sl-interior').value) || 0;
+      const marketing = parseInt(document.getElementById('sl-marketing').value) || 0;
+      const totalStaff = Object.values(staffCounts).reduce((a,b)=>a+b,0);
+      const staffCost = totalStaff * 250;
+      const loanNeeded = Math.max(0, (interior * 50) + marketing * 10 - 10000);
+
+      document.getElementById('summary-box').innerHTML =
+        `월 임대료: 000만원<br>총 인테리어 비용: ${(interior*50).toLocaleString()}만원<br>초기 개원비: ${marketing.toLocaleString()}만원<br>월 이자 부담: ${Math.round(loanNeeded*0.005).toLocaleString()}만원`;
+
+      document.getElementById('loan-val').textContent =
+        `${Math.round(loanNeeded/1000)}천만원 / 5년 / 4.5%`;
+    }
+
+    window.addEventListener('load', updateSummary);
+</script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>입지 선택 – MEDSIM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <!-- 카카오맵 SDK: YOUR_KAKAO_APP_KEY 자리에 실제 앱키 넣으면 활성화됨 -->
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=f26eb17ba8fd4ab4399206b4665037ca"></script>
+    <style>
+        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        :root {
+          --blue:#1A6BFF; --blue-dark:#0F4FCC; --blue-bg:#EFF5FF;
+          --navy:#0D1B2A; --gray-1:#F5F7FA; --gray-2:#E8ECF2;
+          --gray-3:#C8D0DC; --gray-5:#7A8699; --gray-7:#3D4F63; --white:#FFFFFF;
+          --font:'Pretendard',-apple-system,sans-serif;
+        }
+        body { font-family:var(--font); color:var(--navy); background:var(--gray-1); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column; }
+
+        nav { background:rgba(255,255,255,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--gray-2); height:60px; display:flex; align-items:center; padding:0 32px; position:sticky; top:0; z-index:100; }
+        .nav-inner { width:100%; max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+        .nav-left { display:flex; gap:28px; }
+        .nav-left a { font-size:13px; font-weight:500; color:var(--gray-7); text-decoration:none; }
+        .nav-logo { display:flex; align-items:center; justify-content:center; gap:7px; text-decoration:none; }
+        .logo-icon { width:28px; height:28px; background:var(--blue); border-radius:7px; display:flex; align-items:center; justify-content:center; }
+        .logo-icon svg { width:16px; height:16px; fill:white; }
+        .logo-type { font-size:17px; font-weight:800; color:var(--navy); }
+        .nav-right { display:flex; gap:8px; justify-content:flex-end; }
+        .btn-outline { padding:7px 16px; border:1.5px solid var(--gray-3); border-radius:8px; font-size:13px; font-weight:600; color:var(--navy); background:transparent; text-decoration:none; display:inline-block; }
+        .btn-outline:hover { border-color:var(--blue); color:var(--blue); }
+        .btn-solid { padding:7px 16px; border:none; border-radius:8px; font-size:13px; font-weight:600; color:white; background:var(--blue); text-decoration:none; display:inline-block; }
+        .btn-solid:hover { background:var(--blue-dark); }
+
+        .step-bar { background:white; border-bottom:1px solid var(--gray-2); padding:16px 32px; display:flex; justify-content:center; gap:8px; }
+        .step { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--gray-3); }
+        .step.active { color:var(--blue); }
+        .step.done { color:var(--gray-5); }
+        .step-num { width:22px; height:22px; border-radius:50%; border:2px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:11px; }
+        .step.active .step-num { background:var(--blue); border-color:var(--blue); color:white; }
+        .step-div { width:32px; height:2px; background:var(--gray-2); border-radius:2px; margin:0 4px; align-self:center; }
+        .step-div.done { background:var(--blue); opacity:.3; }
+
+        main { flex:1; padding:48px 32px 80px; }
+        .content { max-width:620px; margin:0 auto; }
+        .page-head { text-align:center; margin-bottom:32px; }
+        .page-head .sub { font-size:13px; font-weight:700; color:var(--blue); margin-bottom:8px; }
+        .page-head h1 { font-size:28px; font-weight:800; letter-spacing:-.5px; }
+
+        .form-card { background:white; border:1px solid var(--gray-2); border-radius:14px; padding:28px; margin-bottom:16px; }
+        .form-row { margin-bottom:18px; }
+        .form-row:last-child { margin-bottom:0; }
+        .form-row label { display:block; font-size:13px; font-weight:600; color:var(--navy); margin-bottom:7px; }
+        .form-row input, .form-row select {
+          width:100%; padding:11px 14px; border:1.5px solid var(--gray-2); border-radius:9px;
+          font-size:14px; font-family:var(--font); color:var(--navy); background:var(--gray-1);
+          outline:none; transition:border-color .18s; appearance:none;
+        }
+        .form-row input:focus, .form-row select:focus { border-color:var(--blue); background:white; }
+        .select-wrap { position:relative; }
+        .select-wrap::after { content:''; position:absolute; right:14px; top:50%; transform:translateY(-50%); width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid var(--gray-5); pointer-events:none; }
+
+        /* MAP */
+        .map-container {
+          width:100%; height:300px; background:var(--gray-2); border-radius:12px;
+          overflow:hidden; position:relative; margin-bottom:16px;
+          border:1px solid var(--gray-2);
+        }
+        #kakao-map { width:100%; height:100%; }
+
+        /* 카카오맵 없을 때 fallback */
+        .map-placeholder {
+          width:100%; height:100%; display:flex; flex-direction:column;
+          align-items:center; justify-content:center; gap:12px;
+          background: linear-gradient(135deg, #e8ecf2 0%, #d0d9e3 100%);
+        }
+        .map-placeholder svg { width:40px; height:40px; opacity:.4; }
+        .map-placeholder p { font-size:13px; color:var(--gray-5); font-weight:500; }
+        .map-pin {
+          position:absolute; top:50%; left:50%; transform:translate(-50%,-60%);
+          display:flex; flex-direction:column; align-items:center; pointer-events:none;
+        }
+        .map-pin-dot { width:18px; height:18px; background:var(--blue); border-radius:50%; border:3px solid white; box-shadow:0 2px 8px rgba(26,107,255,.4); }
+        .map-pin-tail { width:2px; height:10px; background:var(--blue); }
+
+        /* ANALYSIS CARDS */
+        .analysis-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+        .analysis-card { background:white; border:1px solid var(--gray-2); border-radius:10px; padding:14px 12px; text-align:center; transition:border-color .2s; }
+        .analysis-card:hover { border-color:var(--blue); }
+        .analysis-label { font-size:11px; color:var(--gray-5); font-weight:500; margin-bottom:6px; }
+        .analysis-value { font-size:16px; font-weight:800; color:var(--navy); }
+        .analysis-unit { font-size:11px; color:var(--gray-5); font-weight:500; margin-top:2px; }
+
+        /* AI 분석 */
+        .ai-box { background:var(--blue-bg); border:1px solid rgba(26,107,255,.2); border-radius:10px; padding:16px; }
+        .ai-box-label { font-size:12px; font-weight:700; color:var(--blue); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+        .ai-box-label svg { width:14px; height:14px; fill:var(--blue); }
+        .ai-box p { font-size:13px; line-height:1.7; color:var(--gray-7); }
+
+        .bottom-nav { display:flex; justify-content:center; gap:12px; margin-top:32px; }
+        .nav-prev { padding:13px 28px; background:white; color:var(--navy); font-size:15px; font-weight:600; font-family:var(--font); border:1.5px solid var(--gray-3); border-radius:10px; cursor:pointer; text-decoration:none; display:inline-block; }
+        .nav-prev:hover { border-color:var(--blue); color:var(--blue); }
+        .nav-next { padding:13px 32px; background:var(--blue); color:white; font-size:15px; font-weight:700; font-family:var(--font); border:none; border-radius:10px; cursor:pointer; text-decoration:none; display:inline-block; }
+        .nav-next:hover { background:var(--blue-dark); }
+
+        footer { background:var(--navy); padding:20px 32px; text-align:center; }
+        footer p { font-size:12px; color:rgba(255,255,255,.4); }
+    </style>
+</head>
+<body>
+<nav>
+    <div class="nav-inner">
+        <div class="nav-left"><a href="../index.html">HOME</a><a href="#">ABOUT</a><a href="#">SERVICE</a></div>
+        <a class="nav-logo" href="../index.html">
+            <div class="logo-icon"><svg viewBox="0 0 20 20"><rect x="3" y="9" width="14" height="2" rx="1"/><rect x="9" y="3" width="2" height="14" rx="1"/></svg></div>
+            <span class="logo-type">MEDSIM</span>
+        </a>
+        <div class="nav-right"><a class="btn-outline" href="../signup.html">회원가입</a><a class="btn-solid" href="../login.html">로그인</a></div>
+    </div>
+</nav>
+
+<div class="step-bar">
+    <div class="step done"><div class="step-num">✓</div> 인트로</div>
+    <div class="step-div done"></div>
+    <div class="step done"><div class="step-num">✓</div> 페르소나</div>
+    <div class="step-div done"></div>
+    <div class="step active"><div class="step-num">3</div> 입지</div>
+    <div class="step-div"></div>
+    <div class="step"><div class="step-num">4</div> 운영 스타일</div>
+    <div class="step-div"></div>
+    <div class="step"><div class="step-num">5</div> 시작</div>
+</div>
+
+<main>
+    <div class="content">
+        <div class="page-head">
+            <p class="sub">지도 기반</p>
+            <h1>입지 선택</h1>
+        </div>
+
+        <div class="form-card">
+            <div class="form-row">
+                <label>특별시/광역시/도</label>
+                <div class="select-wrap">
+                    <select id="sel-sido" onchange="updateSiGun()">
+                        <option value="서울특별시">서울특별시</option>
+                        <option value="경기도">경기도</option>
+                        <option value="부산광역시">부산광역시</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <label>시/군/구</label>
+                <div class="select-wrap">
+                    <select id="sel-sigun" onchange="updateDong()">
+                        <option value="강남구">강남구</option>
+                        <option value="서초구">서초구</option>
+                        <option value="송파구">송파구</option>
+                        <option value="마포구">마포구</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <label>동</label>
+                <div class="select-wrap">
+                    <select id="sel-dong" onchange="updateAnalysis()">
+                        <option value="역삼 1동">역삼 1동</option>
+                        <option value="역삼 2동">역삼 2동</option>
+                        <option value="삼성 1동">삼성 1동</option>
+                        <option value="논현 1동">논현 1동</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <label>평수</label>
+                <input type="number" id="inp-area" value="50" placeholder="50" min="10" max="500"/>
+            </div>
+        </div>
+
+        <!-- 지도 -->
+        <div class="map-container">
+            <div id="kakao-map">
+                <!-- 카카오맵 API 키 없을 때 fallback -->
+                <div class="map-placeholder">
+                    <svg viewBox="0 0 48 48" fill="none" stroke="#888" stroke-width="2">
+                        <rect x="4" y="4" width="40" height="40" rx="4"/>
+                        <line x1="4" y1="4" x2="44" y2="44"/>
+                        <line x1="44" y1="4" x2="4" y2="44"/>
+                    </svg>
+                    <p>카카오 API 키를 입력하면 지도가 활성화됩니다</p>
+                </div>
+            </div>
+            <div class="map-pin">
+                <div class="map-pin-dot"></div>
+                <div class="map-pin-tail"></div>
+            </div>
+        </div>
+
+        <!-- 입지 분석 카드 (하드코딩 데이터) -->
+        <p style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">입지 분석</p>
+        <div class="analysis-grid">
+            <div class="analysis-card">
+                <div class="analysis-label">임대료</div>
+                <div class="analysis-value" id="val-rent">월 8/00</div>
+                <div class="analysis-unit">만원 / 평</div>
+            </div>
+            <div class="analysis-card">
+                <div class="analysis-label">유동인구</div>
+                <div class="analysis-value" id="val-pop">42,300</div>
+                <div class="analysis-unit">명 / 일</div>
+            </div>
+            <div class="analysis-card">
+                <div class="analysis-label">어림대</div>
+                <div class="analysis-value" id="val-age">2030</div>
+                <div class="analysis-unit">위주</div>
+            </div>
+            <div class="analysis-card">
+                <div class="analysis-label">경쟁병원 수</div>
+                <div class="analysis-value" id="val-comp">200+</div>
+                <div class="analysis-unit">개</div>
+            </div>
+        </div>
+
+        <!-- AI 입지 분석 -->
+        <div class="ai-box">
+            <div class="ai-box-label">
+                <svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a5 5 0 110 10A5 5 0 018 3zm0 3a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0-2a1 1 0 100 2 1 1 0 000-2z"/></svg>
+                AI 입지 분석
+            </div>
+            <p id="ai-analysis">[분석 중]<br>예상 초진 환자 많음<br>경쟁 강도: 매우 높음<br>임대료: 매우 높음</p>
+        </div>
+
+        <div class="bottom-nav">
+            <a class="nav-prev" href="start2.html">이전</a>
+            <a class="nav-next" href="start4.html">다음</a>
+        </div>
+    </div>
+</main>
+
+<footer><p>CompanyName © 202X. All rights reserved.</p></footer>
+
+<script>
+    // ── 하드코딩 지역 데이터 (MVP용, 나중에 백엔드 API로 교체) ──────────────────
+    const REGION_DATA = {
+      "강남구": {
+        "역삼 1동": { rent: "8.0", pop: "42,300", age: "2030", comp: "200+",
+          ai: "[분석 결과]\n예상 초진 환자 많음\n경쟁 강도: 매우 높음\n임대료: 매우 높음\n\n[AI 추천]\n- 차별화된 전문 진료 강화\n- 저녁 시간대 운영 고려\n- 온라인 마케팅 필수" },
+        "역삼 2동": { rent: "7.5", pop: "38,100", age: "2030", comp: "180+",
+          ai: "[분석 결과]\n유동인구 준수\n경쟁 강도: 높음\n임대료: 높음" },
+        "삼성 1동": { rent: "9.2", pop: "51,000", age: "3040", comp: "230+",
+          ai: "[분석 결과]\n직장인 밀집 지역\n경쟁 강도: 매우 높음\n임대료: 매우 높음" },
+        "논현 1동": { rent: "6.8", pop: "29,500", age: "2030", comp: "120+",
+          ai: "[분석 결과]\n주거·상업 혼재 지역\n경쟁 강도: 중간\n임대료: 높음" },
+      },
+      "서초구": {
+        "서초 1동": { rent: "7.0", pop: "33,000", age: "3040", comp: "150+",
+          ai: "[분석 결과]\n고소득 주거 밀집\n경쟁 강도: 높음\n임대료: 높음" },
+      },
+      "송파구": {
+        "잠실 1동": { rent: "5.5", pop: "45,000", age: "3040", comp: "160+",
+          ai: "[분석 결과]\n대단지 아파트 밀집\n경쟁 강도: 중간\n임대료: 중간" },
+      },
+      "마포구": {
+        "합정동": { rent: "4.2", pop: "28,000", age: "2030", comp: "80+",
+          ai: "[분석 결과]\n젊은 유동인구 풍부\n경쟁 강도: 낮음\n임대료: 중간" },
+      }
+    };
+
+    function updateAnalysis() {
+      const sigun = document.getElementById('sel-sigun').value;
+      const dong  = document.getElementById('sel-dong').value;
+      const data  = REGION_DATA[sigun]?.[dong];
+      if (!data) return;
+      document.getElementById('val-rent').textContent = data.rent;
+      document.getElementById('val-pop').textContent  = data.pop;
+      document.getElementById('val-age').textContent  = data.age;
+      document.getElementById('val-comp').textContent = data.comp;
+      document.getElementById('ai-analysis').textContent = data.ai;
+    }
+
+    function updateDong() {
+      const sigun = document.getElementById('sel-sigun').value;
+      const dongSel = document.getElementById('sel-dong');
+      const dongs = Object.keys(REGION_DATA[sigun] || {});
+      dongSel.innerHTML = dongs.map(d => `<option value="${d}">${d}</option>`).join('');
+      updateAnalysis();
+    }
+
+    function updateSiGun() {
+      updateDong();
+    }
+
+    // 카카오맵 초기화 (API 키 있을 때만 실행)
+    function initKakaoMap() {
+      if (typeof kakao === 'undefined') return;
+      const container = document.getElementById('kakao-map');
+      container.innerHTML = ''; // placeholder 제거
+      const options = { center: new kakao.maps.LatLng(37.4979, 127.0276), level: 4 };
+      const map = new kakao.maps.Map(container, options);
+      const marker = new kakao.maps.Marker({ position: options.center });
+      marker.setMap(map);
+
+      kakao.maps.event.addListener(map, 'click', function(e) {
+        marker.setPosition(e.latLng);
+      });
+    }
+
+    window.addEventListener('load', () => {
+      initKakaoMap();
+      updateAnalysis();
+    });
+</script>
+</body>
+</html>

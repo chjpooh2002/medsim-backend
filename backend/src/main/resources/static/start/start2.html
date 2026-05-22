@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>페르소나 선택 – MEDSIM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+          --blue:#1A6BFF; --blue-dark:#0F4FCC; --blue-bg:#EFF5FF;
+          --navy:#0D1B2A; --gray-1:#F5F7FA; --gray-2:#E8ECF2;
+          --gray-3:#C8D0DC; --gray-5:#7A8699; --gray-7:#3D4F63; --white:#FFFFFF;
+          --font:'Pretendard',-apple-system,sans-serif;
+        }
+        body { font-family:var(--font); color:var(--navy); background:var(--gray-1); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column; }
+
+        nav { background:rgba(255,255,255,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--gray-2); height:60px; display:flex; align-items:center; padding:0 32px; position:sticky; top:0; z-index:10; }
+        .nav-inner { width:100%; max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+        .nav-left { display:flex; gap:28px; }
+        .nav-left a { font-size:13px; font-weight:500; color:var(--gray-7); text-decoration:none; }
+        .nav-left a:hover { color:var(--blue); }
+        .nav-logo { display:flex; align-items:center; justify-content:center; gap:7px; text-decoration:none; }
+        .logo-icon { width:28px; height:28px; background:var(--blue); border-radius:7px; display:flex; align-items:center; justify-content:center; }
+        .logo-icon svg { width:16px; height:16px; fill:white; }
+        .logo-type { font-size:17px; font-weight:800; color:var(--navy); }
+        .nav-right { display:flex; gap:8px; justify-content:flex-end; }
+        .btn-outline { padding:7px 16px; border:1.5px solid var(--gray-3); border-radius:8px; font-size:13px; font-weight:600; color:var(--navy); background:transparent; text-decoration:none; display:inline-block; }
+        .btn-outline:hover { border-color:var(--blue); color:var(--blue); }
+        .btn-solid { padding:7px 16px; border:none; border-radius:8px; font-size:13px; font-weight:600; color:white; background:var(--blue); text-decoration:none; display:inline-block; }
+        .btn-solid:hover { background:var(--blue-dark); }
+
+        /* STEP INDICATOR */
+        .step-bar { background:white; border-bottom:1px solid var(--gray-2); padding:16px 32px; display:flex; justify-content:center; gap:8px; }
+        .step { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--gray-3); }
+        .step.active { color:var(--blue); }
+        .step.done { color:var(--gray-5); }
+        .step-num { width:22px; height:22px; border-radius:50%; border:2px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:11px; }
+        .step.active .step-num { background:var(--blue); border-color:var(--blue); color:white; }
+        .step.done .step-num { background:var(--gray-2); border-color:var(--gray-3); }
+        .step-div { width:32px; height:2px; background:var(--gray-2); border-radius:2px; margin: 0 4px; align-self:center; }
+        .step-div.done { background:var(--blue); opacity:.3; }
+
+        main { flex:1; padding:48px 32px 80px; }
+        .content { max-width:760px; margin:0 auto; }
+        .page-head { text-align:center; margin-bottom:36px; }
+        .page-head .sub { font-size:13px; font-weight:700; color:var(--blue); margin-bottom:8px; letter-spacing:.5px; }
+        .page-head h1 { font-size:28px; font-weight:800; letter-spacing:-.5px; }
+
+        /* PERSONA CARDS */
+        .persona-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:36px; }
+        .persona-card {
+          background:white; border:2px solid var(--gray-2); border-radius:14px;
+          padding:0 0 20px; cursor:pointer; transition:border-color .2s, box-shadow .2s, transform .15s;
+          overflow:hidden;
+        }
+        .persona-card:hover { border-color:var(--blue); transform:translateY(-2px); box-shadow:0 8px 24px rgba(26,107,255,.1); }
+        .persona-card.selected { border-color:var(--blue); box-shadow:0 0 0 4px rgba(26,107,255,.12); }
+        .card-img { width:100%; aspect-ratio:4/3; background:var(--gray-2); display:flex; align-items:center; justify-content:center; position:relative; margin-bottom:16px; }
+        .card-img svg { width:48px; height:48px; opacity:.3; }
+        .card-body { padding:0 18px; }
+        .card-tag { font-size:11px; font-weight:600; color:var(--gray-5); margin-bottom:4px; }
+        .card-name { font-size:17px; font-weight:800; margin-bottom:8px; }
+        .card-desc { font-size:12.5px; line-height:1.6; color:var(--gray-5); margin-bottom:12px; }
+        .card-for { display:flex; align-items:flex-start; gap:8px; padding:10px 12px; background:var(--gray-1); border-radius:8px; }
+        .card-for svg { width:14px; height:14px; color:var(--gray-5); flex-shrink:0; margin-top:1px; }
+        .card-for-text { font-size:11.5px; color:var(--gray-5); line-height:1.5; }
+        .card-for-label { font-size:11px; font-weight:700; color:var(--gray-7); display:block; margin-bottom:2px; }
+
+        /* FORM */
+        .form-section { background:white; border:1px solid var(--gray-2); border-radius:14px; padding:28px; }
+        .form-row { margin-bottom:20px; }
+        .form-row:last-child { margin-bottom:0; }
+        .form-row label { display:block; font-size:13px; font-weight:600; color:var(--navy); margin-bottom:7px; }
+        .form-row input, .form-row select {
+          width:100%; padding:11px 14px; border:1.5px solid var(--gray-2); border-radius:9px;
+          font-size:14px; font-family:var(--font); color:var(--navy); background:var(--gray-1);
+          outline:none; transition:border-color .18s; appearance:none;
+        }
+        .form-row input:focus, .form-row select:focus { border-color:var(--blue); background:white; }
+        .select-wrap { position:relative; }
+        .select-wrap::after { content:''; position:absolute; right:14px; top:50%; transform:translateY(-50%); width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid var(--gray-5); pointer-events:none; }
+
+        /* BOTTOM NAV */
+        .bottom-nav { display:flex; justify-content:center; gap:12px; margin-top:36px; }
+        .nav-prev { padding:13px 28px; background:white; color:var(--navy); font-size:15px; font-weight:600; font-family:var(--font); border:1.5px solid var(--gray-3); border-radius:10px; cursor:pointer; text-decoration:none; display:inline-block; transition:border-color .18s; }
+        .nav-prev:hover { border-color:var(--blue); color:var(--blue); }
+        .nav-next { padding:13px 32px; background:var(--blue); color:white; font-size:15px; font-weight:700; font-family:var(--font); border:none; border-radius:10px; cursor:pointer; text-decoration:none; display:inline-block; transition:background .18s, transform .15s; }
+        .nav-next:hover { background:var(--blue-dark); transform:translateY(-1px); }
+
+        footer { background:var(--navy); padding:20px 32px; text-align:center; }
+        footer p { font-size:12px; color:rgba(255,255,255,.4); }
+    </style>
+</head>
+<body>
+<nav>
+    <div class="nav-inner">
+        <div class="nav-left"><a href="../index.html">HOME</a><a href="#">ABOUT</a><a href="#">SERVICE</a></div>
+        <a class="nav-logo" href="../index.html">
+            <div class="logo-icon"><svg viewBox="0 0 20 20"><rect x="3" y="9" width="14" height="2" rx="1"/><rect x="9" y="3" width="2" height="14" rx="1"/></svg></div>
+            <span class="logo-type">MEDSIM</span>
+        </a>
+        <div class="nav-right"><a class="btn-outline" href="../signup.html">회원가입</a><a class="btn-solid" href="../login.html">로그인</a></div>
+    </div>
+</nav>
+
+<div class="step-bar">
+    <div class="step done"><div class="step-num">✓</div> 인트로</div>
+    <div class="step-div done"></div>
+    <div class="step active"><div class="step-num">2</div> 페르소나</div>
+    <div class="step-div"></div>
+    <div class="step"><div class="step-num">3</div> 입지</div>
+    <div class="step-div"></div>
+    <div class="step"><div class="step-num">4</div> 운영 스타일</div>
+    <div class="step-div"></div>
+    <div class="step"><div class="step-num">5</div> 시작</div>
+</div>
+
+<main>
+    <div class="content">
+        <div class="page-head">
+            <p class="sub">경력 사항 입력하기</p>
+            <h1>당신은 어떤 의사인가요?</h1>
+        </div>
+
+        <div class="persona-grid">
+            <!-- 안정형 -->
+            <div class="persona-card" onclick="selectPersona(this,'안정형')">
+                <div class="card-img">
+                    <svg viewBox="0 0 48 48" fill="none" stroke="#888" stroke-width="2"><rect x="8" y="8" width="32" height="32" rx="4"/><line x1="8" y1="8" x2="40" y2="40"/><line x1="40" y1="8" x2="8" y2="40"/></svg>
+                </div>
+                <div class="card-body">
+                    <p class="card-tag">안정적인 것을 원하시나요?</p>
+                    <p class="card-name">안정형</p>
+                    <p class="card-desc">수익이 줄더라도 리스크를 낮추고 싶은 타입</p>
+                    <div class="card-for">
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+                        <div class="card-for-text"><span class="card-for-label">이런 사람에게 추천해요</span>안정적인 운영을 선호하는 사람</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 균형형 -->
+            <div class="persona-card selected" onclick="selectPersona(this,'균형형')">
+                <div class="card-img" style="background:#E8F0FF;">
+                    <svg viewBox="0 0 48 48" fill="none" stroke="#1A6BFF" stroke-width="2"><rect x="8" y="8" width="32" height="32" rx="4"/><line x1="8" y1="8" x2="40" y2="40"/><line x1="40" y1="8" x2="8" y2="40"/></svg>
+                </div>
+                <div class="card-body">
+                    <p class="card-tag">균형적인 것을 원하시나요?</p>
+                    <p class="card-name">균형형</p>
+                    <p class="card-desc">수익과 리스크를 적절하게 맞추고 싶은 타입</p>
+                    <div class="card-for">
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+                        <div class="card-for-text"><span class="card-for-label">이런 사람에게 추천해요</span>리스크를 감내하고 큰 수익을 내고 싶은 사람</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 공격형 -->
+            <div class="persona-card" onclick="selectPersona(this,'공격형')">
+                <div class="card-img">
+                    <svg viewBox="0 0 48 48" fill="none" stroke="#888" stroke-width="2"><rect x="8" y="8" width="32" height="32" rx="4"/><line x1="8" y1="8" x2="40" y2="40"/><line x1="40" y1="8" x2="8" y2="40"/></svg>
+                </div>
+                <div class="card-body">
+                    <p class="card-tag">큰 수익을 원하시나요?</p>
+                    <p class="card-name">공격형</p>
+                    <p class="card-desc">리스크를 감내하고 수익을 높이고 싶은 타입</p>
+                    <div class="card-for">
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+                        <div class="card-for-text"><span class="card-for-label">이런 사람에게 추천해요</span>고객 서비스 차원을 중요시 생각하는 사람</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 경력 폼 -->
+        <div class="form-section">
+            <div class="form-row">
+                <label>졸업 대학</label>
+                <input type="text" value="가톨릭대학교 의과대학" placeholder="졸업 대학교를 입력하세요"/>
+            </div>
+            <div class="form-row">
+                <label>최종 학과(일반의/수련/세부 분과 전공)</label>
+                <div class="select-wrap">
+                    <select>
+                        <option>소화기 내과</option>
+                        <option>호흡기 내과</option>
+                        <option>심장내과</option>
+                        <option>가정의학과</option>
+                        <option>정형외과</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <label>세부 분과 과목</label>
+                <div class="select-wrap">
+                    <select>
+                        <option>소화기 내과</option>
+                        <option>간담췌</option>
+                        <option>염증성 장질환</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <label>총 경력 기간</label>
+                <div class="select-wrap">
+                    <select>
+                        <option>3년 미만</option>
+                        <option selected>5년</option>
+                        <option>10년</option>
+                        <option>15년 이상</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <a class="nav-prev" href="start1.html">이전</a>
+            <a class="nav-next" href="start3.html">다음</a>
+        </div>
+    </div>
+</main>
+
+<footer><p>CompanyName © 202X. All rights reserved.</p></footer>
+
+<script>
+    function selectPersona(el, type) {
+      document.querySelectorAll('.persona-card').forEach(c => {
+        c.classList.remove('selected');
+        c.querySelector('.card-img').style.background = '';
+        c.querySelector('.card-img svg').style.stroke = '#888';
+      });
+      el.classList.add('selected');
+      el.querySelector('.card-img').style.background = '#E8F0FF';
+      el.querySelector('.card-img svg').style.stroke = '#1A6BFF';
+    }
+</script>
+</body>
+</html>
