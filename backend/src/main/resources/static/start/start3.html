@@ -7,8 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-    <!-- 카카오맵 SDK: YOUR_KAKAO_APP_KEY 자리에 실제 앱키 넣으면 활성화됨 -->
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=f26eb17ba8fd4ab4399206b4665037ca"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=f26eb17ba8fd4ab4399206b4665037ca&libraries=services"></script>
     <style>
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
         :root {
@@ -16,6 +15,7 @@
           --navy:#0D1B2A; --gray-1:#F5F7FA; --gray-2:#E8ECF2;
           --gray-3:#C8D0DC; --gray-5:#7A8699; --gray-7:#3D4F63; --white:#FFFFFF;
           --font:'Pretendard',-apple-system,sans-serif;
+          --green:#00C48C; --orange:#FF7A00;
         }
         body { font-family:var(--font); color:var(--navy); background:var(--gray-1); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column; }
 
@@ -55,48 +55,89 @@
         .form-row input, .form-row select {
           width:100%; padding:11px 14px; border:1.5px solid var(--gray-2); border-radius:9px;
           font-size:14px; font-family:var(--font); color:var(--navy); background:var(--gray-1);
-          outline:none; transition:border-color .18s; appearance:none;
+          outline:none; transition:border-color .18s, background .18s; appearance:none;
         }
         .form-row input:focus, .form-row select:focus { border-color:var(--blue); background:white; }
+        /* 지도 클릭으로 자동 입력된 필드 강조 */
+        .form-row select.auto-filled { border-color:var(--green); background:#f0fff9; }
         .select-wrap { position:relative; }
         .select-wrap::after { content:''; position:absolute; right:14px; top:50%; transform:translateY(-50%); width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid var(--gray-5); pointer-events:none; }
 
+        /* 지도 클릭 안내 배너 */
+        .map-hint {
+          background: linear-gradient(135deg, #EFF5FF, #e0ecff);
+          border: 1px solid rgba(26,107,255,.2);
+          border-radius: 10px;
+          padding: 10px 16px;
+          font-size: 13px;
+          color: var(--blue);
+          font-weight: 600;
+          margin-bottom: 10px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .map-hint svg { width:16px; height:16px; fill:var(--blue); flex-shrink:0; }
+
+        /* 지역 미지원 토스트 */
+        .toast {
+          position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+          background: var(--navy); color: white; padding: 12px 24px;
+          border-radius: 10px; font-size: 14px; font-weight: 600;
+          z-index: 999; transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+          white-space: nowrap;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
         /* MAP */
         .map-container {
-          width:100%; height:300px; background:var(--gray-2); border-radius:12px;
+          width:100%; height:320px; border-radius:12px;
           overflow:hidden; position:relative; margin-bottom:16px;
           border:1px solid var(--gray-2);
+          cursor: crosshair;
         }
         #kakao-map { width:100%; height:100%; }
 
-        /* 카카오맵 없을 때 fallback */
-        .map-placeholder {
-          width:100%; height:100%; display:flex; flex-direction:column;
-          align-items:center; justify-content:center; gap:12px;
-          background: linear-gradient(135deg, #e8ecf2 0%, #d0d9e3 100%);
-        }
-        .map-placeholder svg { width:40px; height:40px; opacity:.4; }
-        .map-placeholder p { font-size:13px; color:var(--gray-5); font-weight:500; }
-        .map-pin {
-          position:absolute; top:50%; left:50%; transform:translate(-50%,-60%);
-          display:flex; flex-direction:column; align-items:center; pointer-events:none;
-        }
-        .map-pin-dot { width:18px; height:18px; background:var(--blue); border-radius:50%; border:3px solid white; box-shadow:0 2px 8px rgba(26,107,255,.4); }
-        .map-pin-tail { width:2px; height:10px; background:var(--blue); }
-
         /* ANALYSIS CARDS */
-        .analysis-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
-        .analysis-card { background:white; border:1px solid var(--gray-2); border-radius:10px; padding:14px 12px; text-align:center; transition:border-color .2s; }
-        .analysis-card:hover { border-color:var(--blue); }
+        .analysis-section { margin-bottom:16px; }
+        .section-title { font-size:13px; font-weight:700; color:var(--navy); margin-bottom:10px; }
+        .analysis-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+        .analysis-card {
+          background:white; border:1.5px solid var(--gray-2); border-radius:10px;
+          padding:14px 12px; text-align:center;
+          transition:border-color .2s, transform .15s, box-shadow .2s;
+        }
+        .analysis-card.highlight {
+          border-color: var(--blue);
+          box-shadow: 0 4px 16px rgba(26,107,255,.12);
+          transform: translateY(-2px);
+        }
         .analysis-label { font-size:11px; color:var(--gray-5); font-weight:500; margin-bottom:6px; }
-        .analysis-value { font-size:16px; font-weight:800; color:var(--navy); }
+        .analysis-value { font-size:16px; font-weight:800; color:var(--navy); transition: color .2s; }
         .analysis-unit { font-size:11px; color:var(--gray-5); font-weight:500; margin-top:2px; }
+
+        /* 선택된 위치 표시 */
+        .selected-location {
+          background: white;
+          border: 1.5px solid var(--green);
+          border-radius: 10px;
+          padding: 12px 16px;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--navy);
+          margin-bottom: 14px;
+          display: none;
+          align-items: center;
+          gap: 8px;
+        }
+        .selected-location.show { display: flex; }
+        .selected-location svg { width:16px; height:16px; fill:var(--green); flex-shrink:0; }
 
         /* AI 분석 */
         .ai-box { background:var(--blue-bg); border:1px solid rgba(26,107,255,.2); border-radius:10px; padding:16px; }
         .ai-box-label { font-size:12px; font-weight:700; color:var(--blue); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
         .ai-box-label svg { width:14px; height:14px; fill:var(--blue); }
-        .ai-box p { font-size:13px; line-height:1.7; color:var(--gray-7); }
+        .ai-box p { font-size:13px; line-height:1.7; color:var(--gray-7); white-space: pre-line; }
 
         .bottom-nav { display:flex; justify-content:center; gap:12px; margin-top:32px; }
         .nav-prev { padding:13px 28px; background:white; color:var(--navy); font-size:15px; font-weight:600; font-family:var(--font); border:1.5px solid var(--gray-3); border-radius:10px; cursor:pointer; text-decoration:none; display:inline-block; }
@@ -137,6 +178,18 @@
         <div class="page-head">
             <p class="sub">지도 기반</p>
             <h1>입지 선택</h1>
+        </div>
+
+        <!-- 지도 클릭 안내 -->
+        <div class="map-hint">
+            <svg viewBox="0 0 16 16"><path d="M8 1C5.24 1 3 3.24 3 6c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5zm0 6.5C7.17 7.5 6.5 6.83 6.5 6S7.17 4.5 8 4.5 9.5 5.17 9.5 6 8.83 7.5 8 7.5z"/></svg>
+            지도를 클릭하면 시/구/동이 자동으로 입력됩니다
+        </div>
+
+        <!-- 선택된 위치 표시 -->
+        <div class="selected-location" id="selected-location">
+            <svg viewBox="0 0 16 16"><path d="M8 1C5.24 1 3 3.24 3 6c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5zm0 6.5C7.17 7.5 6.5 6.83 6.5 6S7.17 4.5 8 4.5 9.5 5.17 9.5 6 8.83 7.5 8 7.5z"/></svg>
+            <span id="selected-location-text">위치를 선택해주세요</span>
         </div>
 
         <div class="form-card">
@@ -180,45 +233,33 @@
 
         <!-- 지도 -->
         <div class="map-container">
-            <div id="kakao-map">
-                <!-- 카카오맵 API 키 없을 때 fallback -->
-                <div class="map-placeholder">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="#888" stroke-width="2">
-                        <rect x="4" y="4" width="40" height="40" rx="4"/>
-                        <line x1="4" y1="4" x2="44" y2="44"/>
-                        <line x1="44" y1="4" x2="4" y2="44"/>
-                    </svg>
-                    <p>카카오 API 키를 입력하면 지도가 활성화됩니다</p>
-                </div>
-            </div>
-            <div class="map-pin">
-                <div class="map-pin-dot"></div>
-                <div class="map-pin-tail"></div>
-            </div>
+            <div id="kakao-map"></div>
         </div>
 
-        <!-- 입지 분석 카드 (하드코딩 데이터) -->
-        <p style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">입지 분석</p>
-        <div class="analysis-grid">
-            <div class="analysis-card">
-                <div class="analysis-label">임대료</div>
-                <div class="analysis-value" id="val-rent">월 8/00</div>
-                <div class="analysis-unit">만원 / 평</div>
-            </div>
-            <div class="analysis-card">
-                <div class="analysis-label">유동인구</div>
-                <div class="analysis-value" id="val-pop">42,300</div>
-                <div class="analysis-unit">명 / 일</div>
-            </div>
-            <div class="analysis-card">
-                <div class="analysis-label">어림대</div>
-                <div class="analysis-value" id="val-age">2030</div>
-                <div class="analysis-unit">위주</div>
-            </div>
-            <div class="analysis-card">
-                <div class="analysis-label">경쟁병원 수</div>
-                <div class="analysis-value" id="val-comp">200+</div>
-                <div class="analysis-unit">개</div>
+        <!-- 입지 분석 -->
+        <div class="analysis-section">
+            <p class="section-title">입지 분석</p>
+            <div class="analysis-grid">
+                <div class="analysis-card" id="card-rent">
+                    <div class="analysis-label">임대료</div>
+                    <div class="analysis-value" id="val-rent">–</div>
+                    <div class="analysis-unit">만원 / 평</div>
+                </div>
+                <div class="analysis-card" id="card-pop">
+                    <div class="analysis-label">유동인구</div>
+                    <div class="analysis-value" id="val-pop">–</div>
+                    <div class="analysis-unit">명 / 일</div>
+                </div>
+                <div class="analysis-card" id="card-age">
+                    <div class="analysis-label">주요 연령대</div>
+                    <div class="analysis-value" id="val-age">–</div>
+                    <div class="analysis-unit">위주</div>
+                </div>
+                <div class="analysis-card" id="card-comp">
+                    <div class="analysis-label">경쟁병원 수</div>
+                    <div class="analysis-value" id="val-comp">–</div>
+                    <div class="analysis-unit">개 (500m)</div>
+                </div>
             </div>
         </div>
 
@@ -228,7 +269,7 @@
                 <svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a5 5 0 110 10A5 5 0 018 3zm0 3a1 1 0 00-1 1v3a1 1 0 002 0V7a1 1 0 00-1-1zm0-2a1 1 0 100 2 1 1 0 000-2z"/></svg>
                 AI 입지 분석
             </div>
-            <p id="ai-analysis">[분석 중]<br>예상 초진 환자 많음<br>경쟁 강도: 매우 높음<br>임대료: 매우 높음</p>
+            <p id="ai-analysis">지도에서 위치를 선택하면 입지 분석 결과가 표시됩니다.</p>
         </div>
 
         <div class="bottom-nav">
@@ -240,75 +281,271 @@
 
 <footer><p>CompanyName © 202X. All rights reserved.</p></footer>
 
+<!-- 토스트 알림 -->
+<div class="toast" id="toast"></div>
+
 <script>
-    // ── 하드코딩 지역 데이터 (MVP용, 나중에 백엔드 API로 교체) ──────────────────
+    // ── 하드코딩 지역 데이터 (MVP용) ─────────────────────────────────────────────
+    // 나중에 백엔드 API로 교체 예정
+    // 동 이름 key는 카카오 역지오코딩이 반환하는 실제 이름과 일치시켜야 함
     const REGION_DATA = {
       "강남구": {
-        "역삼 1동": { rent: "8.0", pop: "42,300", age: "2030", comp: "200+",
+        "역삼1동": { rent: "8.0", pop: "42,300", age: "2030", comp: "200+",
           ai: "[분석 결과]\n예상 초진 환자 많음\n경쟁 강도: 매우 높음\n임대료: 매우 높음\n\n[AI 추천]\n- 차별화된 전문 진료 강화\n- 저녁 시간대 운영 고려\n- 온라인 마케팅 필수" },
-        "역삼 2동": { rent: "7.5", pop: "38,100", age: "2030", comp: "180+",
-          ai: "[분석 결과]\n유동인구 준수\n경쟁 강도: 높음\n임대료: 높음" },
-        "삼성 1동": { rent: "9.2", pop: "51,000", age: "3040", comp: "230+",
-          ai: "[분석 결과]\n직장인 밀집 지역\n경쟁 강도: 매우 높음\n임대료: 매우 높음" },
-        "논현 1동": { rent: "6.8", pop: "29,500", age: "2030", comp: "120+",
-          ai: "[분석 결과]\n주거·상업 혼재 지역\n경쟁 강도: 중간\n임대료: 높음" },
+        "역삼2동": { rent: "7.5", pop: "38,100", age: "2030", comp: "180+",
+          ai: "[분석 결과]\n유동인구 준수\n경쟁 강도: 높음\n임대료: 높음\n\n[AI 추천]\n- 직장인 대상 점심 시간대 집중 운영" },
+        "삼성1동": { rent: "9.2", pop: "51,000", age: "3040", comp: "230+",
+          ai: "[분석 결과]\n직장인 밀집 지역\n경쟁 강도: 매우 높음\n임대료: 매우 높음\n\n[AI 추천]\n- 기업 건강검진 패키지 고려\n- 야간 진료 필수" },
+        "논현1동": { rent: "6.8", pop: "29,500", age: "2030", comp: "120+",
+          ai: "[분석 결과]\n주거·상업 혼재 지역\n경쟁 강도: 중간\n임대료: 높음\n\n[AI 추천]\n- 생활밀착형 진료 콘셉트 유리" },
+        "대치1동": { rent: "7.8", pop: "35,000", age: "3040", comp: "140+",
+          ai: "[분석 결과]\n학원가 밀집, 소아청소년 수요 높음\n경쟁 강도: 중간\n임대료: 높음" },
+        "대치2동": { rent: "7.2", pop: "31,000", age: "3040", comp: "110+",
+          ai: "[분석 결과]\n고소득 주거 밀집\n경쟁 강도: 중간\n임대료: 높음" },
+        "개포1동": { rent: "5.5", pop: "22,000", age: "4050", comp: "80+",
+          ai: "[분석 결과]\n중장년 주거 지역\n경쟁 강도: 낮음\n임대료: 중간" },
       },
       "서초구": {
-        "서초 1동": { rent: "7.0", pop: "33,000", age: "3040", comp: "150+",
+        "서초1동": { rent: "7.0", pop: "33,000", age: "3040", comp: "150+",
           ai: "[분석 결과]\n고소득 주거 밀집\n경쟁 강도: 높음\n임대료: 높음" },
+        "서초2동": { rent: "6.5", pop: "28,000", age: "3040", comp: "120+",
+          ai: "[분석 결과]\n주거 밀집 지역\n경쟁 강도: 중간\n임대료: 높음" },
+        "반포1동": { rent: "8.5", pop: "40,000", age: "3040", comp: "170+",
+          ai: "[분석 결과]\n고급 아파트 밀집\n경쟁 강도: 높음\n임대료: 매우 높음" },
+        "잠원동": { rent: "6.0", pop: "25,000", age: "3040", comp: "90+",
+          ai: "[분석 결과]\n조용한 주거 지역\n경쟁 강도: 낮음\n임대료: 높음" },
       },
       "송파구": {
-        "잠실 1동": { rent: "5.5", pop: "45,000", age: "3040", comp: "160+",
+        "잠실1동": { rent: "5.5", pop: "45,000", age: "3040", comp: "160+",
           ai: "[분석 결과]\n대단지 아파트 밀집\n경쟁 강도: 중간\n임대료: 중간" },
+        "잠실2동": { rent: "5.2", pop: "42,000", age: "3040", comp: "150+",
+          ai: "[분석 결과]\n아파트 단지 중심\n경쟁 강도: 중간\n임대료: 중간" },
+        "석촌동": { rent: "4.8", pop: "30,000", age: "3040", comp: "100+",
+          ai: "[분석 결과]\n주거 상업 혼재\n경쟁 강도: 중간\n임대료: 중간" },
       },
       "마포구": {
         "합정동": { rent: "4.2", pop: "28,000", age: "2030", comp: "80+",
           ai: "[분석 결과]\n젊은 유동인구 풍부\n경쟁 강도: 낮음\n임대료: 중간" },
+        "서교동": { rent: "4.5", pop: "32,000", age: "2030", comp: "90+",
+          ai: "[분석 결과]\n홍대 인근 젊은 유동인구\n경쟁 강도: 낮음\n임대료: 중간" },
+        "망원1동": { rent: "3.8", pop: "20,000", age: "2030", comp: "60+",
+          ai: "[분석 결과]\n주거 밀집, 임대료 저렴\n경쟁 강도: 낮음\n임대료: 낮음" },
       }
     };
 
+    // 구 → 시도 매핑 (역지오코딩 결과로 시도 드롭다운 자동 선택용)
+    const GU_TO_SIDO = {
+      "강남구": "서울특별시", "서초구": "서울특별시",
+      "송파구": "서울특별시", "마포구": "서울특별시",
+      "강북구": "서울특별시", "종로구": "서울특별시",
+    };
+
+    let map, marker, geocoder;
+
+    // ── 카카오맵 초기화 ────────────────────────────────────────────────────────────
+    function initKakaoMap() {
+      if (typeof kakao === 'undefined') {
+        console.warn('카카오맵 SDK 로드 실패');
+        return;
+      }
+
+      const container = document.getElementById('kakao-map');
+      const options = {
+        center: new kakao.maps.LatLng(37.4979, 127.0276), // 강남구 중심
+        level: 5
+      };
+      map = new kakao.maps.Map(container, options);
+
+      // 역지오코딩용 geocoder
+      geocoder = new kakao.maps.services.Geocoder();
+
+      // 기본 마커
+      marker = new kakao.maps.Marker({ position: options.center });
+      marker.setMap(map);
+
+      // ✅ 지도 클릭 이벤트 → 역지오코딩
+      kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
+        const latlng = mouseEvent.latLng;
+        marker.setPosition(latlng);
+
+        // 좌표 → 주소 변환
+        geocoder.coord2RegionCode(latlng.getLng(), latlng.getLat(), function(result, status) {
+          if (status !== kakao.maps.services.Status.OK) {
+            showToast('주소 변환에 실패했습니다.');
+            return;
+          }
+
+          // result[0] = 법정동, result[1] = 행정동
+          // 행정동 데이터 우선 사용 (동 단위 매칭을 위해)
+          let regionInfo = null;
+          for (const r of result) {
+            if (r.region_type === 'H') { // H = 행정동
+              regionInfo = r;
+              break;
+            }
+          }
+          if (!regionInfo) regionInfo = result[0];
+
+          const sido   = regionInfo.region_1depth_name; // 서울특별시
+          const sigun  = regionInfo.region_2depth_name; // 강남구
+          const dong   = regionInfo.region_3depth_name; // 역삼1동
+
+          autoFillDropdowns(sido, sigun, dong, latlng);
+        });
+      });
+    }
+
+    // ── 드롭다운 자동 입력 ────────────────────────────────────────────────────────
+    function autoFillDropdowns(sido, sigun, dong, latlng) {
+      // 시도 선택
+      const sidoSel = document.getElementById('sel-sido');
+      setSelectValue(sidoSel, sido);
+
+      // 구 목록 업데이트
+      const sigunSel = document.getElementById('sel-sigun');
+      // 현재 옵션 중에 sigun이 있는지 확인
+      if (!setSelectValue(sigunSel, sigun)) {
+        showToast(`${sigun}은 아직 지원하지 않는 지역입니다.`);
+        clearAnalysis();
+        return;
+      }
+
+      // 동 목록 업데이트
+      updateDongOptions(sigun);
+      const dongSel = document.getElementById('sel-dong');
+
+      // 동 이름 정규화 (공백 제거해서 매칭)
+      const dongNorm = dong.replace(/\s/g, '');
+      let matched = false;
+      for (const opt of dongSel.options) {
+        if (opt.value.replace(/\s/g, '') === dongNorm) {
+          dongSel.value = opt.value;
+          matched = true;
+          break;
+        }
+      }
+
+      // auto-fill 스타일 적용
+      [sidoSel, sigunSel, dongSel].forEach(sel => {
+        sel.classList.add('auto-filled');
+        setTimeout(() => sel.classList.remove('auto-filled'), 2000);
+      });
+
+      // 선택 위치 표시
+      const locationEl = document.getElementById('selected-location');
+      const locationText = document.getElementById('selected-location-text');
+      locationEl.classList.add('show');
+      locationText.textContent = `${sido} ${sigun} ${dong}`;
+
+      if (matched) {
+        updateAnalysis();
+      } else {
+        // 데이터 없는 동 — 구 단위 첫 번째 동 데이터로 fallback
+        const firstDong = Object.keys(REGION_DATA[sigun] || {})[0];
+        if (firstDong) {
+          dongSel.value = firstDong;
+          updateAnalysis();
+          showToast(`${dong} 데이터 준비 중 → ${firstDong} 기준으로 표시합니다`);
+        } else {
+          showToast(`${sigun}은 아직 지원하지 않는 지역입니다.`);
+          clearAnalysis();
+        }
+      }
+    }
+
+    // ── select 값 설정 헬퍼 ───────────────────────────────────────────────────────
+    function setSelectValue(sel, value) {
+      for (const opt of sel.options) {
+        if (opt.value === value) {
+          sel.value = value;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // ── 동 옵션 업데이트 ──────────────────────────────────────────────────────────
+    function updateDongOptions(sigun) {
+      const dongSel = document.getElementById('sel-dong');
+      const dongs = Object.keys(REGION_DATA[sigun] || {});
+      dongSel.innerHTML = dongs.map(d => `<option value="${d}">${d}</option>`).join('');
+    }
+
+    // ── 입지 분석 카드 업데이트 ───────────────────────────────────────────────────
     function updateAnalysis() {
       const sigun = document.getElementById('sel-sigun').value;
       const dong  = document.getElementById('sel-dong').value;
       const data  = REGION_DATA[sigun]?.[dong];
-      if (!data) return;
-      document.getElementById('val-rent').textContent = data.rent;
-      document.getElementById('val-pop').textContent  = data.pop;
-      document.getElementById('val-age').textContent  = data.age;
-      document.getElementById('val-comp').textContent = data.comp;
+
+      if (!data) {
+        clearAnalysis();
+        return;
+      }
+
+      // 값 업데이트 + 하이라이트 애니메이션
+      setCardValue('val-rent', 'card-rent', data.rent);
+      setCardValue('val-pop',  'card-pop',  data.pop);
+      setCardValue('val-age',  'card-age',  data.age);
+      setCardValue('val-comp', 'card-comp', data.comp);
       document.getElementById('ai-analysis').textContent = data.ai;
     }
 
+    function setCardValue(valId, cardId, value) {
+      document.getElementById(valId).textContent = value;
+      const card = document.getElementById(cardId);
+      card.classList.add('highlight');
+      setTimeout(() => card.classList.remove('highlight'), 800);
+    }
+
+    function clearAnalysis() {
+      ['val-rent','val-pop','val-age','val-comp'].forEach(id => {
+        document.getElementById(id).textContent = '–';
+      });
+      document.getElementById('ai-analysis').textContent = '선택한 지역의 데이터가 준비되지 않았습니다.';
+    }
+
+    // ── 드롭다운 수동 변경 핸들러 ─────────────────────────────────────────────────
     function updateDong() {
       const sigun = document.getElementById('sel-sigun').value;
-      const dongSel = document.getElementById('sel-dong');
-      const dongs = Object.keys(REGION_DATA[sigun] || {});
-      dongSel.innerHTML = dongs.map(d => `<option value="${d}">${d}</option>`).join('');
+      updateDongOptions(sigun);
       updateAnalysis();
+      // 지도 중심 이동 (구 단위 좌표)
+      movMapToGuCenter(sigun);
     }
 
     function updateSiGun() {
       updateDong();
     }
 
-    // 카카오맵 초기화 (API 키 있을 때만 실행)
-    function initKakaoMap() {
-      if (typeof kakao === 'undefined') return;
-      const container = document.getElementById('kakao-map');
-      container.innerHTML = ''; // placeholder 제거
-      const options = { center: new kakao.maps.LatLng(37.4979, 127.0276), level: 4 };
-      const map = new kakao.maps.Map(container, options);
-      const marker = new kakao.maps.Marker({ position: options.center });
-      marker.setMap(map);
+    // 구 중심 좌표 (드롭다운 수동 변경 시 지도 이동용)
+    const GU_CENTER = {
+      "강남구": [37.5172, 127.0473],
+      "서초구": [37.4837, 127.0324],
+      "송파구": [37.5145, 127.1059],
+      "마포구": [37.5638, 126.9084],
+    };
 
-      kakao.maps.event.addListener(map, 'click', function(e) {
-        marker.setPosition(e.latLng);
-      });
+    function movMapToGuCenter(sigun) {
+      if (!map || !GU_CENTER[sigun]) return;
+      const [lat, lng] = GU_CENTER[sigun];
+      const newCenter = new kakao.maps.LatLng(lat, lng);
+      map.setCenter(newCenter);
+      marker.setPosition(newCenter);
     }
 
+    // ── 토스트 알림 ───────────────────────────────────────────────────────────────
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    // ── 초기화 ────────────────────────────────────────────────────────────────────
     window.addEventListener('load', () => {
       initKakaoMap();
-      updateAnalysis();
+      updateDongOptions('강남구');
+      // 초기 분석은 지도 클릭 후 표시 (빈 상태로 시작)
     });
 </script>
 </body>
