@@ -14,10 +14,11 @@
           --navy:#0D1B2A; --gray-1:#F5F7FA; --gray-2:#E8ECF2;
           --gray-3:#C8D0DC; --gray-5:#7A8699; --gray-7:#3D4F63; --white:#FFFFFF;
           --font:'Pretendard',-apple-system,sans-serif;
+          --red:#FF3B3B; --green:#00C48C;
         }
         body { font-family:var(--font); color:var(--navy); background:var(--gray-1); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column; }
 
-        nav { background:rgba(255,255,255,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--gray-2); height:60px; display:flex; align-items:center; padding:0 32px; position:sticky; top:0; z-index:10; }
+        nav { background:rgba(255,255,255,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--gray-2); height:60px; display:flex; align-items:center; padding:0 32px; position:sticky; top:0; z-index:100; }
         .nav-inner { width:100%; max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
         .nav-left { display:flex; gap:28px; }
         .nav-left a { font-size:13px; font-weight:500; color:var(--gray-7); text-decoration:none; }
@@ -32,7 +33,6 @@
         .btn-solid { padding:7px 16px; border:none; border-radius:8px; font-size:13px; font-weight:600; color:white; background:var(--blue); text-decoration:none; display:inline-block; }
         .btn-solid:hover { background:var(--blue-dark); }
 
-        /* STEP INDICATOR */
         .step-bar { background:white; border-bottom:1px solid var(--gray-2); padding:16px 32px; display:flex; justify-content:center; gap:8px; }
         .step { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--gray-3); }
         .step.active { color:var(--blue); }
@@ -40,7 +40,7 @@
         .step-num { width:22px; height:22px; border-radius:50%; border:2px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:11px; }
         .step.active .step-num { background:var(--blue); border-color:var(--blue); color:white; }
         .step.done .step-num { background:var(--gray-2); border-color:var(--gray-3); }
-        .step-div { width:32px; height:2px; background:var(--gray-2); border-radius:2px; margin: 0 4px; align-self:center; }
+        .step-div { width:32px; height:2px; background:var(--gray-2); border-radius:2px; margin:0 4px; align-self:center; }
         .step-div.done { background:var(--blue); opacity:.3; }
 
         main { flex:1; padding:48px 32px 80px; }
@@ -49,7 +49,7 @@
         .page-head .sub { font-size:13px; font-weight:700; color:var(--blue); margin-bottom:8px; letter-spacing:.5px; }
         .page-head h1 { font-size:28px; font-weight:800; letter-spacing:-.5px; }
 
-        /* PERSONA CARDS */
+        /* PERSONA CARDS — 기존 디자인 유지 */
         .persona-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:36px; }
         .persona-card {
           background:white; border:2px solid var(--gray-2); border-radius:14px;
@@ -58,7 +58,7 @@
         }
         .persona-card:hover { border-color:var(--blue); transform:translateY(-2px); box-shadow:0 8px 24px rgba(26,107,255,.1); }
         .persona-card.selected { border-color:var(--blue); box-shadow:0 0 0 4px rgba(26,107,255,.12); }
-        .card-img { width:100%; aspect-ratio:4/3; background:var(--gray-2); display:flex; align-items:center; justify-content:center; position:relative; margin-bottom:16px; }
+        .card-img { width:100%; aspect-ratio:4/3; background:var(--gray-2); display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
         .card-img svg { width:48px; height:48px; opacity:.3; }
         .card-body { padding:0 18px; }
         .card-tag { font-size:11px; font-weight:600; color:var(--gray-5); margin-bottom:4px; }
@@ -71,27 +71,116 @@
 
         /* FORM */
         .form-section { background:white; border:1px solid var(--gray-2); border-radius:14px; padding:28px; }
-        .form-row { margin-bottom:20px; }
+        .form-row { margin-bottom:20px; position:relative; }
         .form-row:last-child { margin-bottom:0; }
-        .form-row label { display:block; font-size:13px; font-weight:600; color:var(--navy); margin-bottom:7px; }
-        .form-row input, .form-row select {
-          width:100%; padding:11px 14px; border:1.5px solid var(--gray-2); border-radius:9px;
-          font-size:14px; font-family:var(--font); color:var(--navy); background:var(--gray-1);
-          outline:none; transition:border-color .18s; appearance:none;
+        .form-row label { display:flex; align-items:center; gap:5px; font-size:13px; font-weight:600; color:var(--navy); margin-bottom:7px; }
+        .required-dot { width:5px; height:5px; background:var(--blue); border-radius:50%; flex-shrink:0; }
+        .optional-tag { font-size:11px; color:var(--gray-5); font-weight:400; }
+
+        /* ── 커스텀 드롭다운 ── */
+        .custom-select-wrap { position:relative; }
+        .custom-select-btn {
+          width:100%; padding:11px 38px 11px 14px;
+          border:1.5px solid var(--gray-2); border-radius:9px;
+          font-size:14px; font-family:var(--font); color:var(--navy);
+          background:var(--gray-1); cursor:pointer; text-align:left;
+          transition:border-color .18s, background .18s;
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
         }
-        .form-row input:focus, .form-row select:focus { border-color:var(--blue); background:white; }
-        .select-wrap { position:relative; }
-        .select-wrap::after { content:''; position:absolute; right:14px; top:50%; transform:translateY(-50%); width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid var(--gray-5); pointer-events:none; }
+        .custom-select-btn.placeholder-style { color:var(--gray-5); }
+        .custom-select-btn:hover { border-color:var(--blue); background:white; }
+        .custom-select-btn.open { border-color:var(--blue); background:white; border-bottom-left-radius:0; border-bottom-right-radius:0; }
+        .select-chevron {
+          position:absolute; right:12px; top:50%; transform:translateY(-50%);
+          pointer-events:none; transition:transform .2s;
+          width:18px; height:18px; display:flex; align-items:center; justify-content:center;
+        }
+        .select-chevron svg { width:14px; height:14px; stroke:var(--gray-5); fill:none; stroke-width:2; }
+        .custom-select-btn.open ~ .select-chevron { transform:translateY(-50%) rotate(180deg); }
+
+        .dropdown-list {
+          display:none; position:absolute; top:100%; left:0; right:0; z-index:300;
+          background:white; border:1.5px solid var(--blue);
+          border-top:none; border-bottom-left-radius:9px; border-bottom-right-radius:9px;
+          box-shadow:0 8px 24px rgba(0,0,0,.1); max-height:260px; overflow-y:auto;
+        }
+        .dropdown-list.open { display:block; }
+        .dropdown-list::-webkit-scrollbar { width:4px; }
+        .dropdown-list::-webkit-scrollbar-thumb { background:var(--gray-3); border-radius:2px; }
+
+        .dropdown-search {
+          padding:8px 12px; position:sticky; top:0; background:white;
+          border-bottom:1px solid var(--gray-2); z-index:1;
+        }
+        .dropdown-search input {
+          width:100%; padding:7px 10px; border:1.5px solid var(--gray-2); border-radius:7px;
+          font-size:13px; font-family:var(--font); color:var(--navy);
+          background:var(--gray-1); outline:none;
+        }
+        .dropdown-search input:focus { border-color:var(--blue); background:white; }
+
+        .dropdown-group-label {
+          padding:7px 14px 3px; font-size:10px; font-weight:700;
+          color:var(--gray-5); text-transform:uppercase; letter-spacing:.6px;
+          background:var(--gray-1); border-top:1px solid var(--gray-2);
+        }
+        .dropdown-group-label:first-child { border-top:none; }
+        .dropdown-option {
+          padding:10px 14px; font-size:13.5px; cursor:pointer;
+          color:var(--navy); transition:background .1s;
+        }
+        .dropdown-option:hover { background:var(--blue-bg); }
+        .dropdown-option.selected { background:var(--blue-bg); color:var(--blue); font-weight:700; }
+        .dropdown-option.other-opt {
+          color:var(--gray-5); font-style:italic;
+          border-top:1px solid var(--gray-2); display:flex; align-items:center; gap:6px;
+        }
+        .dropdown-option.other-opt:hover { background:#f8f9fa; }
+        .no-result { padding:14px; text-align:center; font-size:13px; color:var(--gray-5); }
+
+        /* 기타 직접 입력 */
+        .custom-text-wrap { margin-top:8px; display:none; }
+        .custom-text-wrap.show { display:block; }
+        .custom-text-wrap input {
+          width:100%; padding:11px 14px; border:1.5px solid var(--blue);
+          border-radius:9px; font-size:14px; font-family:var(--font);
+          color:var(--navy); background:white; outline:none;
+        }
+        .custom-text-wrap input::placeholder { color:var(--gray-5); }
+
+        /* 경력 직접 입력 */
+        .career-wrap { display:flex; align-items:center; gap:10px; }
+        .career-wrap input {
+          flex:1; padding:11px 14px; border:1.5px solid var(--gray-2); border-radius:9px;
+          font-size:14px; font-family:var(--font); color:var(--navy);
+          background:var(--gray-1); outline:none; transition:border-color .18s;
+          -moz-appearance:textfield;
+        }
+        .career-wrap input::-webkit-outer-spin-button,
+        .career-wrap input::-webkit-inner-spin-button { -webkit-appearance:none; }
+        .career-wrap input:focus { border-color:var(--blue); background:white; }
+        .career-unit { font-size:14px; font-weight:600; color:var(--gray-7); }
+        .career-hint { font-size:12px; color:var(--gray-5); margin-top:5px; }
+
+        /* 에러 */
+        .field-error { font-size:12px; color:var(--red); font-weight:500; margin-top:5px; display:none; }
+        .field-error.show { display:block; }
+        .has-error .custom-select-btn,
+        .has-error .career-wrap input { border-color:var(--red) !important; }
 
         /* BOTTOM NAV */
         .bottom-nav { display:flex; justify-content:center; gap:12px; margin-top:36px; }
-        .nav-prev { padding:13px 28px; background:white; color:var(--navy); font-size:15px; font-weight:600; font-family:var(--font); border:1.5px solid var(--gray-3); border-radius:10px; cursor:pointer; text-decoration:none; display:inline-block; transition:border-color .18s; }
+        .nav-prev { padding:13px 28px; background:white; color:var(--navy); font-size:15px; font-weight:600; font-family:var(--font); border:1.5px solid var(--gray-3); border-radius:10px; cursor:pointer; text-decoration:none; display:inline-block; }
         .nav-prev:hover { border-color:var(--blue); color:var(--blue); }
-        .nav-next { padding:13px 32px; background:var(--blue); color:white; font-size:15px; font-weight:700; font-family:var(--font); border:none; border-radius:10px; cursor:pointer; text-decoration:none; display:inline-block; transition:background .18s, transform .15s; }
-        .nav-next:hover { background:var(--blue-dark); transform:translateY(-1px); }
+        .nav-next { padding:13px 32px; background:var(--blue); color:white; font-size:15px; font-weight:700; font-family:var(--font); border:none; border-radius:10px; cursor:pointer; }
+        .nav-next:hover { background:var(--blue-dark); }
 
         footer { background:var(--navy); padding:20px 32px; text-align:center; }
         footer p { font-size:12px; color:rgba(255,255,255,.4); }
+
+        /* 토스트 */
+        .toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--red); color:white; padding:12px 24px; border-radius:10px; font-size:14px; font-weight:600; z-index:999; transition:transform .3s cubic-bezier(.34,1.56,.64,1); white-space:nowrap; pointer-events:none; }
+        .toast.show { transform:translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
@@ -125,8 +214,8 @@
             <h1>당신은 어떤 의사인가요?</h1>
         </div>
 
+        <!-- 페르소나 카드 (기존 디자인 유지) -->
         <div class="persona-grid">
-            <!-- 안정형 -->
             <div class="persona-card" onclick="selectPersona(this,'안정형')">
                 <div class="card-img">
                     <svg viewBox="0 0 48 48" fill="none" stroke="#888" stroke-width="2"><rect x="8" y="8" width="32" height="32" rx="4"/><line x1="8" y1="8" x2="40" y2="40"/><line x1="40" y1="8" x2="8" y2="40"/></svg>
@@ -141,11 +230,9 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 균형형 -->
-            <div class="persona-card selected" onclick="selectPersona(this,'균형형')">
-                <div class="card-img" style="background:#E8F0FF;">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="#1A6BFF" stroke-width="2"><rect x="8" y="8" width="32" height="32" rx="4"/><line x1="8" y1="8" x2="40" y2="40"/><line x1="40" y1="8" x2="8" y2="40"/></svg>
+            <div class="persona-card" onclick="selectPersona(this,'균형형')">
+                <div class="card-img">
+                    <svg viewBox="0 0 48 48" fill="none" stroke="#888" stroke-width="2"><rect x="8" y="8" width="32" height="32" rx="4"/><line x1="8" y1="8" x2="40" y2="40"/><line x1="40" y1="8" x2="8" y2="40"/></svg>
                 </div>
                 <div class="card-body">
                     <p class="card-tag">균형적인 것을 원하시나요?</p>
@@ -157,8 +244,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 공격형 -->
             <div class="persona-card" onclick="selectPersona(this,'공격형')">
                 <div class="card-img">
                     <svg viewBox="0 0 48 48" fill="none" stroke="#888" stroke-width="2"><rect x="8" y="8" width="32" height="32" rx="4"/><line x1="8" y1="8" x2="40" y2="40"/><line x1="40" y1="8" x2="8" y2="40"/></svg>
@@ -177,56 +262,227 @@
 
         <!-- 경력 폼 -->
         <div class="form-section">
-            <div class="form-row">
-                <label>졸업 대학</label>
-                <input type="text" value="가톨릭대학교 의과대학" placeholder="졸업 대학교를 입력하세요"/>
+
+            <!-- 졸업 대학 -->
+            <div class="form-row" id="row-univ">
+                <label><span class="required-dot"></span> 졸업 대학</label>
+                <div class="custom-select-wrap">
+                    <button type="button" class="custom-select-btn placeholder-style" id="btn-univ" onclick="toggleDrop('univ')">선택해주세요</button>
+                    <span class="select-chevron"><svg viewBox="0 0 14 14"><polyline points="2,4 7,10 12,4"/></svg></span>
+                    <div class="dropdown-list" id="drop-univ">
+                        <div class="dropdown-search"><input type="text" id="search-univ" placeholder="대학 검색..." oninput="filterDrop('univ',this.value)"/></div>
+                        <div id="opts-univ"></div>
+                    </div>
+                </div>
+                <div class="custom-text-wrap" id="custom-univ">
+                    <input type="text" id="txt-univ" placeholder="졸업 대학교 직접 입력" oninput="clearErr('univ')"/>
+                </div>
+                <div class="field-error" id="err-univ">졸업 대학을 선택하거나 입력해주세요.</div>
             </div>
-            <div class="form-row">
-                <label>최종 학과(일반의/수련/세부 분과 전공)</label>
-                <div class="select-wrap">
-                    <select>
-                        <option>소화기 내과</option>
-                        <option>호흡기 내과</option>
-                        <option>심장내과</option>
-                        <option>가정의학과</option>
-                        <option>정형외과</option>
-                    </select>
+
+            <!-- 최종 학과 -->
+            <div class="form-row" id="row-spec">
+                <label><span class="required-dot"></span> 최종 학과 <span class="optional-tag">(일반의 / 수련 / 세부 분과 전공)</span></label>
+                <div class="custom-select-wrap">
+                    <button type="button" class="custom-select-btn placeholder-style" id="btn-spec" onclick="toggleDrop('spec')">선택해주세요</button>
+                    <span class="select-chevron"><svg viewBox="0 0 14 14"><polyline points="2,4 7,10 12,4"/></svg></span>
+                    <div class="dropdown-list" id="drop-spec">
+                        <div class="dropdown-search"><input type="text" id="search-spec" placeholder="전공 검색..." oninput="filterDrop('spec',this.value)"/></div>
+                        <div id="opts-spec"></div>
+                    </div>
+                </div>
+                <div class="custom-text-wrap" id="custom-spec">
+                    <input type="text" id="txt-spec" placeholder="전공 직접 입력" oninput="clearErr('spec')"/>
+                </div>
+                <div class="field-error" id="err-spec">최종 학과를 선택하거나 입력해주세요.</div>
+            </div>
+
+            <!-- 세부 분과 -->
+            <div class="form-row" id="row-sub">
+                <label>세부 분과 과목 <span class="optional-tag">(선택)</span></label>
+                <div class="custom-select-wrap">
+                    <button type="button" class="custom-select-btn placeholder-style" id="btn-sub" onclick="toggleDrop('sub')">해당 없음 / 선택</button>
+                    <span class="select-chevron"><svg viewBox="0 0 14 14"><polyline points="2,4 7,10 12,4"/></svg></span>
+                    <div class="dropdown-list" id="drop-sub">
+                        <div class="dropdown-search"><input type="text" id="search-sub" placeholder="세부 분과 검색..." oninput="filterDrop('sub',this.value)"/></div>
+                        <div id="opts-sub"></div>
+                    </div>
+                </div>
+                <div class="custom-text-wrap" id="custom-sub">
+                    <input type="text" id="txt-sub" placeholder="세부 분과 직접 입력"/>
                 </div>
             </div>
-            <div class="form-row">
-                <label>세부 분과 과목</label>
-                <div class="select-wrap">
-                    <select>
-                        <option>소화기 내과</option>
-                        <option>간담췌</option>
-                        <option>염증성 장질환</option>
-                    </select>
+
+            <!-- 총 경력 기간 -->
+            <div class="form-row" id="row-career">
+                <label><span class="required-dot"></span> 총 경력 기간</label>
+                <div class="career-wrap">
+                    <input type="number" id="inp-career" placeholder="숫자만 입력  예) 5" min="0" max="60" oninput="validateCareer(false)"/>
+                    <span class="career-unit">년</span>
                 </div>
-            </div>
-            <div class="form-row">
-                <label>총 경력 기간</label>
-                <div class="select-wrap">
-                    <select>
-                        <option>3년 미만</option>
-                        <option selected>5년</option>
-                        <option>10년</option>
-                        <option>15년 이상</option>
-                    </select>
-                </div>
+                <div class="career-hint">인턴·레지던트 포함 전체 의료 경력 기간</div>
+                <div class="field-error" id="err-career">경력 기간을 입력해주세요. (0~60)</div>
             </div>
         </div>
 
         <div class="bottom-nav">
             <a class="nav-prev" href="start1.html">이전</a>
-            <a class="nav-next" href="start3.html">다음</a>
+            <button class="nav-next" onclick="goNext()">다음</button>
         </div>
     </div>
 </main>
 
 <footer><p>CompanyName © 202X. All rights reserved.</p></footer>
+<div class="toast" id="toast"></div>
 
 <script>
+    // ── 데이터 ─────────────────────────────────────────────────────────────────────
+
+    const DATA = {
+      univ: [
+        { g:"서울·수도권", items:[
+          "가톨릭대학교 의과대학","건국대학교 의과대학","경희대학교 의과대학",
+          "고려대학교 의과대학","단국대학교 의과대학","서울대학교 의과대학",
+          "성균관대학교 의과대학","순천향대학교 의과대학","아주대학교 의과대학",
+          "연세대학교 의과대학","이화여자대학교 의과대학","인하대학교 의과대학",
+          "중앙대학교 의과대학","차의과학대학교 의학전문대학원","한림대학교 의과대학",
+          "한양대학교 의과대학"
+        ]},
+        { g:"충청·강원", items:[
+          "강원대학교 의과대학","건양대학교 의과대학","가톨릭관동대학교 의과대학",
+          "을지대학교 의과대학","충남대학교 의과대학","충북대학교 의과대학",
+          "연세대학교 원주의과대학"
+        ]},
+        { g:"경상", items:[
+          "경북대학교 의과대학","경상국립대학교 의과대학","계명대학교 의과대학",
+          "대구가톨릭대학교 의과대학","동국대학교 의과대학(경주)","부산대학교 의과대학",
+          "영남대학교 의과대학","인제대학교 의과대학","울산대학교 의과대학"
+        ]},
+        { g:"전라·제주", items:[
+          "전남대학교 의과대학","전북대학교 의과대학","조선대학교 의과대학",
+          "원광대학교 의과대학","제주대학교 의과대학"
+        ]},
+      ],
+      spec: [
+        { g:"일반의", items:["일반의 (GP)"] },
+        { g:"내과 계열", items:[
+          "내과","소화기내과","심장내과","호흡기내과","류마티스내과",
+          "혈액종양내과","내분비내과","신장내과","감염내과"
+        ]},
+        { g:"외과 계열", items:[
+          "외과 (일반외과)","흉부외과","신경외과","정형외과","성형외과",
+          "비뇨의학과","산부인과"
+        ]},
+        { g:"지원 계열", items:[
+          "마취통증의학과","영상의학과","병리과","진단검사의학과",
+          "핵의학과","방사선종양학과","응급의학과","직업환경의학과","예방의학과"
+        ]},
+        { g:"감각·신경 계열", items:[
+          "안과","이비인후과","피부과","신경과","정신건강의학과"
+        ]},
+        { g:"소아·재활·가정", items:[
+          "소아청소년과","재활의학과","가정의학과"
+        ]},
+      ],
+      sub: [
+        { g:"내과 세부", items:[
+          "소화기내과","췌담도","간내과","염증성 장질환",
+          "심장 중재시술","부정맥","심부전",
+          "폐암","천식·COPD","간질성 폐질환",
+          "자가면역질환","류마티스",
+          "림프종","골수이식·세포치료",
+          "당뇨·대사질환","갑상선·부갑상선",
+          "신대체치료(투석)","HIV·감염관리"
+        ]},
+        { g:"외과 세부", items:[
+          "대장항문외과","유방·내분비외과","간담췌외과","위장관외과",
+          "척추외과","관절외과","수부외과","두경부외과",
+          "미세수술·재건","안면윤곽"
+        ]},
+        { g:"산부인과 세부", items:[
+          "모체태아의학","부인종양","불임·생식내분비","비뇨부인과"
+        ]},
+        { g:"소아청소년과 세부", items:[
+          "소아심장","소아신경","소아내분비","신생아의학","소아감염·면역"
+        ]},
+        { g:"기타 세부 분야", items:[
+          "통증의학","스포츠의학","비만의학","항노화의학","미용의학","수면의학"
+        ]},
+      ],
+    };
+
+    // ── 상태 ──────────────────────────────────────────────────────────────────────
+    const S = { persona:null, univ:null, univOther:false, spec:null, specOther:false, sub:null, subOther:false };
+
+    // ── 드롭다운 렌더 ─────────────────────────────────────────────────────────────
+    function renderOpts(key, q) {
+      const wrap = document.getElementById('opts-' + key);
+      const ft = (q || '').toLowerCase();
+      let html = '';
+      for (const grp of DATA[key]) {
+        const filtered = grp.items.filter(i => i.toLowerCase().includes(ft));
+        if (!filtered.length) continue;
+        html += `<div class="dropdown-group-label">${grp.g}</div>`;
+        filtered.forEach(item => {
+          const sel = S[key] === item ? ' selected' : '';
+          html += `<div class="dropdown-option${sel}" onclick="pick('${key}','${item.replace(/'/g,"\\'")}')">${item}</div>`;
+        });
+      }
+      const showOther = !ft || '기타'.includes(ft) || '직접'.includes(ft);
+      if (showOther) {
+        html += `<div class="dropdown-option other-opt" onclick="pickOther('${key}')">✏️&nbsp; 기타 (직접 입력)</div>`;
+      }
+      wrap.innerHTML = html || `<div class="no-result">검색 결과가 없어요</div>`;
+    }
+
+    function filterDrop(key, q) { renderOpts(key, q); }
+
+    // ── 드롭다운 토글 ─────────────────────────────────────────────────────────────
+    function toggleDrop(key) {
+      const list = document.getElementById('drop-' + key);
+      const btn  = document.getElementById('btn-' + key);
+      const isOpen = list.classList.contains('open');
+      closeAllDrops();
+      if (!isOpen) {
+        list.classList.add('open');
+        btn.classList.add('open');
+        renderOpts(key, '');
+        const si = document.getElementById('search-' + key);
+        if (si) { si.value = ''; setTimeout(() => si.focus(), 30); }
+      }
+    }
+    function closeAllDrops() {
+      document.querySelectorAll('.dropdown-list.open').forEach(el => el.classList.remove('open'));
+      document.querySelectorAll('.custom-select-btn.open').forEach(el => el.classList.remove('open'));
+    }
+
+    // ── 항목 선택 ─────────────────────────────────────────────────────────────────
+    function pick(key, val) {
+      S[key] = val;
+      S[key + 'Other'] = false;
+      const btn = document.getElementById('btn-' + key);
+      btn.textContent = val;
+      btn.classList.remove('placeholder-style');
+      document.getElementById('custom-' + key).classList.remove('show');
+      closeAllDrops();
+      clearErr(key);
+    }
+
+    function pickOther(key) {
+      S[key] = null;
+      S[key + 'Other'] = true;
+      const btn = document.getElementById('btn-' + key);
+      btn.textContent = '직접 입력';
+      btn.classList.remove('placeholder-style');
+      document.getElementById('custom-' + key).classList.add('show');
+      closeAllDrops();
+      clearErr(key);
+      setTimeout(() => document.getElementById('txt-' + key).focus(), 60);
+    }
+
+    // ── 페르소나 선택 ─────────────────────────────────────────────────────────────
     function selectPersona(el, type) {
+      S.persona = type;
       document.querySelectorAll('.persona-card').forEach(c => {
         c.classList.remove('selected');
         c.querySelector('.card-img').style.background = '';
@@ -236,6 +492,74 @@
       el.querySelector('.card-img').style.background = '#E8F0FF';
       el.querySelector('.card-img svg').style.stroke = '#1A6BFF';
     }
+
+    // ── 에러 핸들링 ───────────────────────────────────────────────────────────────
+    function clearErr(key) {
+      document.getElementById('row-' + key).classList.remove('has-error');
+      document.getElementById('err-' + key).classList.remove('show');
+    }
+    function showErr(key, msg) {
+      document.getElementById('row-' + key).classList.add('has-error');
+      const el = document.getElementById('err-' + key);
+      if (msg) el.textContent = msg;
+      el.classList.add('show');
+    }
+
+    function validateCareer(submit) {
+      const v = document.getElementById('inp-career').value.trim();
+      const n = Number(v);
+      if (v === '' || isNaN(n) || n < 0 || n > 60 || !Number.isInteger(n)) {
+        if (submit || v !== '') {
+          showErr('career', v === '' ? '경력 기간을 입력해주세요. (0~60)' : '0에서 60 사이의 정수를 입력해주세요.');
+        }
+        return false;
+      }
+      clearErr('career');
+      return true;
+    }
+
+    // ── 다음 버튼 ─────────────────────────────────────────────────────────────────
+    function goNext() {
+      let ok = true;
+
+      if (!S.persona) {
+        showToast('경영 성향(페르소나)을 먼저 선택해주세요.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      // 졸업 대학
+      const univVal = S.univOther ? document.getElementById('txt-univ').value.trim() : S.univ;
+      if (!univVal) { showErr('univ'); ok = false; }
+
+      // 최종 학과
+      const specVal = S.specOther ? document.getElementById('txt-spec').value.trim() : S.spec;
+      if (!specVal) { showErr('spec'); ok = false; }
+
+      // 경력
+      if (!validateCareer(true)) ok = false;
+
+      if (!ok) {
+        showToast('필수 항목을 모두 입력해주세요.');
+        document.querySelector('.has-error')?.scrollIntoView({ behavior:'smooth', block:'center' });
+        return;
+      }
+
+      window.location.href = 'start3.html';
+    }
+
+    // ── 토스트 ────────────────────────────────────────────────────────────────────
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    // 드롭다운 외부 클릭 닫기
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.custom-select-wrap')) closeAllDrops();
+    });
 </script>
 </body>
 </html>
