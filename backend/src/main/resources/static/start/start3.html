@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <!-- ✅ 역지오코딩을 위해 services 라이브러리 추가 -->
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=f26eb17ba8fd4ab4399206b4665037ca&libraries=services"></script>
     <style>
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -227,7 +228,8 @@
             </div>
             <div class="form-row">
                 <label>평수</label>
-                <input type="number" id="inp-area" value="50" placeholder="50" min="10" max="500"/>
+                <input type="number" id="inp-area" placeholder="예) 50" min="10" max="500" oninput="clearAreaErr()"/>
+                <div class="field-error" id="err-area" style="font-size:12px;color:#FF3B3B;font-weight:500;margin-top:5px;display:none;">평수를 입력해주세요. (10~500평)</div>
             </div>
         </div>
 
@@ -274,7 +276,7 @@
 
         <div class="bottom-nav">
             <a class="nav-prev" href="start2.html">이전</a>
-            <a class="nav-next" href="start4.html">다음</a>
+            <button class="nav-next" onclick="goNext()">다음</button>
         </div>
     </div>
 </main>
@@ -359,14 +361,15 @@
       // 역지오코딩용 geocoder
       geocoder = new kakao.maps.services.Geocoder();
 
-      // 기본 마커
+      // 마커 생성 (초기엔 지도에 표시 안 함 — 클릭 후에만 표시)
       marker = new kakao.maps.Marker({ position: options.center });
-      marker.setMap(map);
+      // marker.setMap(map) 미호출 → 페이지 진입 시 핀 없음
 
       // ✅ 지도 클릭 이벤트 → 역지오코딩
       kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
         const latlng = mouseEvent.latLng;
         marker.setPosition(latlng);
+        marker.setMap(map); // 첫 클릭 시 핀 표시
 
         // 좌표 → 주소 변환
         geocoder.coord2RegionCode(latlng.getLng(), latlng.getLat(), function(result, status) {
@@ -405,7 +408,7 @@
       const sigunSel = document.getElementById('sel-sigun');
       // 현재 옵션 중에 sigun이 있는지 확인
       if (!setSelectValue(sigunSel, sigun)) {
-        showToast(`${sigun}은 아직 지원하지 않는 지역입니다.`);
+        showToast(`${sigun}${josa(sigun,'은는')} 아직 지원하지 않는 지역입니다.`);
         clearAnalysis();
         return;
       }
@@ -447,7 +450,7 @@
           updateAnalysis();
           showToast(`${dong} 데이터 준비 중 → ${firstDong} 기준으로 표시합니다`);
         } else {
-          showToast(`${sigun}은 아직 지원하지 않는 지역입니다.`);
+          showToast(`${sigun}${josa(sigun,'은는')} 아직 지원하지 않는 지역입니다.`);
           clearAnalysis();
         }
       }
@@ -531,6 +534,49 @@
       const newCenter = new kakao.maps.LatLng(lat, lng);
       map.setCenter(newCenter);
       marker.setPosition(newCenter);
+    }
+
+    // ── 한국어 조사 자동 판별 (은/는, 이/가, 을/를) ──────────────────────────────
+    function josa(word, type) {
+      const code = word.charCodeAt(word.length - 1);
+      // 한글 범위 체크 & 받침 여부 (유니코드 공식: (code - 0xAC00) % 28)
+      const hasBatchim = code >= 0xAC00 && code <= 0xD7A3 && (code - 0xAC00) % 28 !== 0;
+      if (type === '은는') return hasBatchim ? '은' : '는';
+      if (type === '이가') return hasBatchim ? '이' : '가';
+      if (type === '을를') return hasBatchim ? '을' : '를';
+      return '';
+    }
+
+
+    // ── 다음 버튼 유효성 검사 ─────────────────────────────────────────────────────
+    function goNext() {
+      const area = document.getElementById('inp-area').value.trim();
+      const areaNum = Number(area);
+      const errEl = document.getElementById('err-area');
+      const inpEl = document.getElementById('inp-area');
+
+      // 평수 검증
+      if (!area || isNaN(areaNum) || areaNum < 10 || areaNum > 500) {
+        errEl.style.display = 'block';
+        inpEl.style.borderColor = '#FF3B3B';
+        inpEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showToast('평수를 올바르게 입력해주세요. (10~500평)');
+        return;
+      }
+
+      // 위치 선택 여부 검증 (마커가 지도에 올라가 있는지)
+      if (!marker || !marker.getMap()) {
+        showToast('지도에서 개원 위치를 선택해주세요.');
+        document.querySelector('.map-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      window.location.href = 'start4.html';
+    }
+
+    function clearAreaErr() {
+      document.getElementById('err-area').style.display = 'none';
+      document.getElementById('inp-area').style.borderColor = '';
     }
 
     // ── 토스트 알림 ───────────────────────────────────────────────────────────────
