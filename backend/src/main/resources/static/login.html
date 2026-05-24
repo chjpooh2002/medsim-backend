@@ -229,7 +229,8 @@
                 <label for="remember">로그인 상태 유지</label>
             </div>
 
-            <button class="btn-primary" onclick="doLogin()">로그인</button>
+            <div class="ferr" id="err-api" style="text-align:center;margin-bottom:8px;"></div>
+            <button class="btn-primary" id="btn-submit" onclick="doLogin()">로그인</button>
 
             <div class="divider"><span>또는 소셜 계정으로</span></div>
 
@@ -251,13 +252,39 @@
 <script>
     function tp(id,btn){const i=document.getElementById(id);const t=i.type==='text';i.type=t?'password':'text';btn.querySelector('svg').style.opacity=t?'1':'.4';}
     function ce(f){const e=document.getElementById('err-'+f);if(e)e.classList.remove('show');const i=document.getElementById(f);if(i)i.classList.remove('error');}
-    function doLogin(){
+    async function doLogin(){
       let ok=true;
       const email=document.getElementById('email').value.trim();
       const pw=document.getElementById('pw').value;
       if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){document.getElementById('email').classList.add('error');document.getElementById('err-email').classList.add('show');ok=false;}
       if(!pw){document.getElementById('pw').classList.add('error');document.getElementById('err-pw').classList.add('show');ok=false;}
-      if(ok)window.location.href='start/start1.html';
+      if(!ok)return;
+      const btn=document.getElementById('btn-submit');
+      btn.disabled=true;btn.textContent='로그인 중...';
+      document.getElementById('err-api').classList.remove('show');
+      try{
+        const res=await fetch('/api/auth/login',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({email,password:pw})
+        });
+        const data=await res.json();
+        if(res.ok){
+          localStorage.setItem('token',data.token);
+          localStorage.setItem('email',data.email);
+          localStorage.setItem('name',data.name);
+          window.location.href='start/start1.html';
+        }else{
+          const msg=data.message||'이메일 또는 비밀번호가 올바르지 않습니다.';
+          document.getElementById('err-api').textContent=msg;
+          document.getElementById('err-api').classList.add('show');
+        }
+      }catch(e){
+        document.getElementById('err-api').textContent='서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.';
+        document.getElementById('err-api').classList.add('show');
+      }finally{
+        btn.disabled=false;btn.textContent='로그인';
+      }
     }
 </script>
 </body>

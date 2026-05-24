@@ -311,7 +311,8 @@
             </div>
             <div class="ferr" id="err-terms">필수 약관에 동의해주세요.</div>
 
-            <button class="btn-primary" onclick="doSignup()">무료로 시작하기</button>
+            <div class="ferr" id="err-api" style="text-align:center;margin-top:4px;"></div>
+            <button class="btn-primary" id="btn-submit" onclick="doSignup()">무료로 시작하기</button>
 
             <p class="form-footer">이미 계정이 있으신가요? <a href="login.html">로그인 →</a></p>
         </div>
@@ -334,16 +335,45 @@
     }
     function ta(el){document.querySelectorAll('.tc').forEach(c=>{c.checked=el.checked;});}
     function sa(){document.getElementById('all').checked=[...document.querySelectorAll('.tc')].every(c=>c.checked);}
-    function doSignup(){
+    async function doSignup(){
       let ok=true;
-      if(!document.getElementById('fname').value.trim()){document.getElementById('fname').classList.add('error');document.getElementById('err-fname').classList.add('show');ok=false;}
-      if(!document.getElementById('lname').value.trim()){document.getElementById('lname').classList.add('error');document.getElementById('err-lname').classList.add('show');ok=false;}
+      const fname=document.getElementById('fname').value.trim();
+      const lname=document.getElementById('lname').value.trim();
       const em=document.getElementById('email').value.trim();
+      const pw=document.getElementById('pw').value;
+      if(!fname){document.getElementById('fname').classList.add('error');document.getElementById('err-fname').classList.add('show');ok=false;}
+      if(!lname){document.getElementById('lname').classList.add('error');document.getElementById('err-lname').classList.add('show');ok=false;}
       if(!em||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){document.getElementById('email').classList.add('error');document.getElementById('err-email').classList.add('show');ok=false;}
-      if(document.getElementById('pw').value.length<8){document.getElementById('pw').classList.add('error');document.getElementById('err-pw').classList.add('show');ok=false;}
+      if(pw.length<8){document.getElementById('pw').classList.add('error');document.getElementById('err-pw').classList.add('show');ok=false;}
       if(!document.getElementById('t1').checked||!document.getElementById('t2').checked){document.getElementById('err-terms').classList.add('show');ok=false;}
       else document.getElementById('err-terms').classList.remove('show');
-      if(ok)window.location.href='start/start1.html';
+      if(!ok)return;
+      const btn=document.getElementById('btn-submit');
+      btn.disabled=true;btn.textContent='처리 중...';
+      document.getElementById('err-api').classList.remove('show');
+      try{
+        const res=await fetch('/api/auth/signup',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({email:em,password:pw,name:fname+lname})
+        });
+        const data=await res.json();
+        if(res.ok){
+          localStorage.setItem('token',data.token);
+          localStorage.setItem('email',data.email);
+          localStorage.setItem('name',data.name);
+          window.location.href='start/start1.html';
+        }else{
+          const msg=data.message||'이미 사용 중인 이메일이거나 입력 정보를 확인해주세요.';
+          document.getElementById('err-api').textContent=msg;
+          document.getElementById('err-api').classList.add('show');
+        }
+      }catch(e){
+        document.getElementById('err-api').textContent='서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.';
+        document.getElementById('err-api').classList.add('show');
+      }finally{
+        btn.disabled=false;btn.textContent='무료로 시작하기';
+      }
     }
 </script>
 </body>
