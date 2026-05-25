@@ -79,7 +79,7 @@
         .equip-item:hover { border-color:var(--blue); }
         .equip-item.checked { border-color:var(--blue); background:var(--blue-bg); }
         .equip-left { display:flex; align-items:center; gap:8px; }
-        .equip-cb { width:15px; height:15px; accent-color:var(--blue); flex-shrink:0; }
+        .equip-cb { width:15px; height:15px; accent-color:var(--blue); flex-shrink:0; pointer-events:none; }
         .equip-name { font-size:13px; font-weight:500; }
         .equip-price { font-size:12px; font-weight:700; color:var(--blue); }
 
@@ -100,6 +100,18 @@
         .salary-iw { display:flex; align-items:center; border:1.5px solid var(--gray-2); border-radius:8px; background:var(--gray-1); overflow:hidden; max-width:120px; }
         .salary-iw input { flex:1; padding:7px 10px; border:none; background:transparent; font-size:13px; font-family:var(--font); color:var(--navy); outline:none; min-width:0; width:70px; }
         .salary-iw .unit { padding:0 8px 0 0; font-size:12px; color:var(--gray-5); }
+        /* ── CUSTOM EQUIP ADD ── */
+        .add-equip-wrap { display:flex; gap:8px; margin-top:12px; padding-top:12px; border-top:1px solid var(--gray-2); align-items:center; }
+        .add-equip-name { flex:1; padding:9px 12px; border:1.5px solid var(--gray-2); border-radius:9px; font-size:13px; font-family:var(--font); color:var(--navy); background:var(--gray-1); outline:none; min-width:0; transition:border-color .18s; }
+        .add-equip-name:focus { border-color:var(--blue); background:white; }
+        .add-equip-name.err { border-color:var(--red); }
+        .add-equip-price { display:flex; align-items:center; border:1.5px solid var(--gray-2); border-radius:9px; background:var(--gray-1); overflow:hidden; width:120px; flex-shrink:0; transition:border-color .18s; }
+        .add-equip-price:focus-within { border-color:var(--blue); background:white; }
+        .add-equip-price input { flex:1; padding:9px 10px; border:none; background:transparent; font-size:13px; font-family:var(--font); color:var(--navy); outline:none; min-width:0; }
+        .add-equip-price .unit { padding:0 10px 0 0; font-size:12px; font-weight:600; color:var(--gray-5); white-space:nowrap; }
+        .equip-del-btn { background:none; border:none; cursor:pointer; color:var(--gray-3); font-size:18px; line-height:1; padding:2px 4px; transition:color .15s; flex-shrink:0; }
+        .equip-del-btn:hover { color:var(--red); }
+
         .add-staff-wrap { display:flex; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--gray-2); }
         .add-staff-select { flex:1; padding:9px 12px; border:1.5px solid var(--gray-2); border-radius:9px; font-size:13px; font-family:var(--font); color:var(--navy); background:var(--gray-1); outline:none; cursor:pointer; }
         .add-staff-btn { padding:9px 18px; background:var(--blue); color:white; font-size:13px; font-weight:600; font-family:var(--font); border:none; border-radius:9px; cursor:pointer; white-space:nowrap; transition:background .18s; }
@@ -237,60 +249,70 @@
       <div class="equip-grid">
         <div class="equip-item" data-price="300" data-name="ECG(심전도)" onclick="clickEquip(this)">
           <div class="equip-left">
-            <input class="equip-cb" type="checkbox" onclick="event.stopPropagation();" tabindex="-1">
+            <input class="equip-cb" type="checkbox" tabindex="-1">
             <span class="equip-name">ECG(심전도)</span>
           </div>
           <span class="equip-price">300만원</span>
         </div>
         <div class="equip-item" data-price="3000" data-name="상부위장관 내시경" onclick="clickEquip(this)">
           <div class="equip-left">
-            <input class="equip-cb" type="checkbox" onclick="event.stopPropagation();" tabindex="-1">
+            <input class="equip-cb" type="checkbox" tabindex="-1">
             <span class="equip-name">상부위장관 내시경</span>
           </div>
           <span class="equip-price">3,000만원</span>
         </div>
         <div class="equip-item" data-price="2500" data-name="X-Ray" onclick="clickEquip(this)">
           <div class="equip-left">
-            <input class="equip-cb" type="checkbox" onclick="event.stopPropagation();" tabindex="-1">
+            <input class="equip-cb" type="checkbox" tabindex="-1">
             <span class="equip-name">X-Ray</span>
           </div>
           <span class="equip-price">2,500만원</span>
         </div>
         <div class="equip-item" data-price="4000" data-name="하부위장관 내시경" onclick="clickEquip(this)">
           <div class="equip-left">
-            <input class="equip-cb" type="checkbox" onclick="event.stopPropagation();" tabindex="-1">
+            <input class="equip-cb" type="checkbox" tabindex="-1">
             <span class="equip-name">하부위장관 내시경</span>
           </div>
           <span class="equip-price">4,000만원</span>
         </div>
         <div class="equip-item" data-price="500" data-name="ICT(체성분분석기)" onclick="clickEquip(this)">
           <div class="equip-left">
-            <input class="equip-cb" type="checkbox" onclick="event.stopPropagation();" tabindex="-1">
+            <input class="equip-cb" type="checkbox" tabindex="-1">
             <span class="equip-name">ICT(체성분분석기)</span>
           </div>
           <span class="equip-price">500만원</span>
         </div>
         <div class="equip-item" data-price="2000" data-name="초음파" onclick="clickEquip(this)">
           <div class="equip-left">
-            <input class="equip-cb" type="checkbox" onclick="event.stopPropagation();" tabindex="-1">
+            <input class="equip-cb" type="checkbox" tabindex="-1">
             <span class="equip-name">초음파</span>
           </div>
           <span class="equip-price">2,000만원</span>
         </div>
         <div class="equip-item" data-price="50" data-name="자동혈압계" onclick="clickEquip(this)">
           <div class="equip-left">
-            <input class="equip-cb" type="checkbox" onclick="event.stopPropagation();" tabindex="-1">
+            <input class="equip-cb" type="checkbox" tabindex="-1">
             <span class="equip-name">자동혈압계</span>
           </div>
           <span class="equip-price">50만원</span>
         </div>
         <div class="equip-item" data-price="200" data-name="소독기/멸균기" onclick="clickEquip(this)">
           <div class="equip-left">
-            <input class="equip-cb" type="checkbox" onclick="event.stopPropagation();" tabindex="-1">
+            <input class="equip-cb" type="checkbox" tabindex="-1">
             <span class="equip-name">소독기/멸균기</span>
           </div>
           <span class="equip-price">200만원</span>
         </div>
+      </div>
+      <div class="add-equip-wrap">
+        <input type="text" id="equip-name-input" class="add-equip-name" placeholder="장비명 직접 입력" maxlength="30"
+               onkeydown="if(event.key==='Enter')addCustomEquip()"/>
+        <div class="add-equip-price">
+          <input type="number" id="equip-price-input" placeholder="가격" min="0"
+                 onkeydown="if(event.key==='Enter')addCustomEquip()"/>
+          <span class="unit">만원</span>
+        </div>
+        <button class="add-staff-btn" onclick="addCustomEquip()">+ 추가</button>
       </div>
     </div>
 
@@ -429,6 +451,50 @@
   function clickEquip(el) {
     el.classList.toggle('checked');
     el.querySelector('.equip-cb').checked = el.classList.contains('checked');
+    recalc();
+  }
+
+  // ── 커스텀 장비 추가 ──
+  function addCustomEquip() {
+    const nameInput  = document.getElementById('equip-name-input');
+    const priceInput = document.getElementById('equip-price-input');
+    const name  = nameInput.value.trim();
+    const price = parseInt(priceInput.value) || 0;
+
+    if (!name) {
+      nameInput.classList.add('err');
+      nameInput.focus();
+      setTimeout(() => nameInput.classList.remove('err'), 1200);
+      return;
+    }
+
+    const div = document.createElement('div');
+    div.className = 'equip-item checked';
+    div.dataset.price = String(price);
+    div.dataset.name  = name;
+    div.onclick = function() { clickEquip(this); };
+
+    const safeName = name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    div.innerHTML = `
+      <div class="equip-left">
+        <input class="equip-cb" type="checkbox" checked tabindex="-1">
+        <span class="equip-name">${safeName}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span class="equip-price">${price.toLocaleString()}만원</span>
+        <button class="equip-del-btn" onclick="event.stopPropagation();removeCustomEquip(this)" title="삭제">×</button>
+      </div>`;
+
+    document.querySelector('.equip-grid').appendChild(div);
+
+    nameInput.value  = '';
+    priceInput.value = '';
+    nameInput.focus();
+    recalc();
+  }
+
+  function removeCustomEquip(btn) {
+    btn.closest('.equip-item').remove();
     recalc();
   }
 
