@@ -571,6 +571,15 @@
         return;
       }
 
+      const rentText = document.getElementById('val-rent').textContent.trim();
+      const pricePerPyeong = parseFloat(rentText) || 0;
+      const regionName = document.getElementById('selected-location-text').textContent.trim();
+      sessionStorage.setItem('start3Data', JSON.stringify({
+        pricePerPyeong: pricePerPyeong,
+        clinicSize: areaNum,
+        regionName: regionName !== '위치를 선택해주세요' ? regionName : ''
+      }));
+
       window.location.href = 'start4.html';
     }
 

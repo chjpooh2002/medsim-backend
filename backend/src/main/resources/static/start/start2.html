@@ -545,6 +545,14 @@
         return;
       }
 
+      const careerYears = parseInt(document.getElementById('inp-career').value) || 0;
+      sessionStorage.setItem('start2Data', JSON.stringify({
+        persona: S.persona,
+        university: univVal,
+        specialty: specVal,
+        careerYears: careerYears
+      }));
+
       window.location.href = 'start3.html';
     }
 

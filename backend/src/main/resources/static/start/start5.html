@@ -3,86 +3,123 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>시뮬레이션 구축 중 – MEDSIM</title>
+    <title>시뮬레이션 시작 – MEDSIM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <style>
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
         :root {
-          --blue:#1A6BFF; --blue-dark:#0F4FCC; --navy:#0D1B2A;
-          --gray-1:#F5F7FA; --gray-2:#E8ECF2; --gray-3:#C8D0DC;
-          --gray-5:#7A8699; --white:#FFFFFF;
+          --blue:#1A6BFF; --blue-dark:#0F4FCC; --blue-bg:#EFF5FF;
+          --navy:#0D1B2A; --gray-1:#F5F7FA; --gray-2:#E8ECF2;
+          --gray-3:#C8D0DC; --gray-5:#7A8699; --gray-7:#3D4F63;
+          --green:#22C97A; --orange:#FF8C42; --red:#FF3B3B;
           --font:'Pretendard',-apple-system,sans-serif;
         }
-        html, body { height:100%; }
-        body { font-family:var(--font); color:var(--navy); background:var(--white); -webkit-font-smoothing:antialiased; display:flex; flex-direction:column; }
+        body { font-family:var(--font); color:var(--navy); background:var(--gray-1); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column; }
 
-        nav { background:rgba(255,255,255,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--gray-2); height:60px; display:flex; align-items:center; padding:0 32px; }
+        /* ── NAV ── */
+        nav { background:rgba(255,255,255,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--gray-2); height:60px; display:flex; align-items:center; padding:0 32px; position:sticky; top:0; z-index:100; }
         .nav-inner { width:100%; max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
         .nav-left { display:flex; gap:28px; }
-        .nav-left a { font-size:13px; font-weight:500; color:var(--gray-5); text-decoration:none; }
+        .nav-left a { font-size:13px; font-weight:500; color:var(--gray-7); text-decoration:none; }
+        .nav-left a:hover { color:var(--blue); }
         .nav-logo { display:flex; align-items:center; justify-content:center; gap:7px; text-decoration:none; }
         .logo-icon { width:28px; height:28px; background:var(--blue); border-radius:7px; display:flex; align-items:center; justify-content:center; }
         .logo-icon svg { width:16px; height:16px; fill:white; }
         .logo-type { font-size:17px; font-weight:800; color:var(--navy); }
         .nav-right { display:flex; gap:8px; justify-content:flex-end; align-items:center; }
         .btn-outline { padding:7px 16px; border:1.5px solid var(--gray-3); border-radius:8px; font-size:13px; font-weight:600; color:var(--navy); background:transparent; text-decoration:none; display:inline-block; }
+        .btn-outline:hover { border-color:var(--blue); color:var(--blue); }
         .btn-solid { padding:7px 16px; border:none; border-radius:8px; font-size:13px; font-weight:600; color:white; background:var(--blue); text-decoration:none; display:inline-block; }
+        .btn-solid:hover { background:var(--blue-dark); }
 
-        /* LOADING AREA */
-        main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; gap:24px; }
+        /* ── STEP BAR ── */
+        .step-bar { background:white; border-bottom:1px solid var(--gray-2); padding:16px 32px; display:flex; justify-content:center; gap:8px; }
+        .step { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--gray-3); }
+        .step.active { color:var(--blue); }
+        .step.done { color:var(--gray-5); }
+        .step-num { width:22px; height:22px; border-radius:50%; border:2px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:11px; }
+        .step.active .step-num { background:var(--blue); border-color:var(--blue); color:white; }
+        .step.done .step-num { background:var(--gray-2); border-color:var(--gray-3); }
+        .step-div { width:32px; height:2px; background:var(--gray-2); border-radius:2px; margin:0 4px; align-self:center; }
+        .step-div.done { background:var(--blue); opacity:.3; }
 
-        .loading-badge { font-size:13px; font-weight:700; color:var(--blue); letter-spacing:.5px; }
+        /* ── MAIN ── */
+        main { flex:1; padding:48px 32px 80px; }
+        .content { max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
 
-        /* 스피너 */
-        .spinner {
-          width:72px; height:72px;
-          border-radius:50%;
-          border:6px solid var(--gray-2);
-          border-top-color:var(--blue);
-          animation:spin 1s linear infinite;
+        .page-head { text-align:center; margin-bottom:8px; }
+        .page-head .sub { font-size:13px; font-weight:700; color:var(--blue); margin-bottom:8px; letter-spacing:.5px; }
+        .page-head h1 { font-size:28px; font-weight:800; letter-spacing:-.5px; }
+
+        /* ── SUMMARY CARDS ── */
+        .summary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+
+        .sum-card { background:white; border:1px solid var(--gray-2); border-radius:14px; padding:20px; }
+        .sum-card-title { font-size:12px; font-weight:700; color:var(--gray-5); letter-spacing:.4px; margin-bottom:14px; display:flex; align-items:center; gap:6px; padding-bottom:12px; border-bottom:1px solid var(--gray-2); }
+        .sum-row { display:flex; justify-content:space-between; align-items:baseline; padding:7px 0; border-bottom:1px solid var(--gray-2); gap:8px; }
+        .sum-row:last-child { border-bottom:none; padding-bottom:0; }
+        .sum-label { font-size:12px; color:var(--gray-5); flex:1; line-height:1.4; }
+        .sum-value { font-size:13px; font-weight:700; color:var(--navy); text-align:right; flex-shrink:0; max-width:55%; word-break:keep-all; }
+        .sum-value.blue  { color:var(--blue); }
+        .sum-value.green { color:var(--green); }
+        .sum-value.orange{ color:var(--orange); }
+        .sum-value.red   { color:var(--red); }
+
+        /* 장비 태그 */
+        .equip-tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+        .equip-tag { font-size:11px; font-weight:600; padding:3px 8px; background:var(--blue-bg); color:var(--blue); border-radius:20px; }
+        .equip-none { font-size:12px; color:var(--gray-5); }
+
+        /* ── CTA ZONE ── */
+        .cta-zone { background:white; border:1px solid var(--gray-2); border-radius:14px; padding:32px 28px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:14px; }
+        .cta-title { font-size:18px; font-weight:800; color:var(--navy); }
+        .cta-desc { font-size:14px; color:var(--gray-5); line-height:1.7; }
+
+        .start-btn {
+          width:100%; max-width:440px;
+          padding:18px 0;
+          background:var(--blue); color:white;
+          font-size:17px; font-weight:800; font-family:var(--font);
+          border:none; border-radius:12px; cursor:pointer;
+          display:flex; align-items:center; justify-content:center; gap:10px;
+          transition:background .18s, transform .15s, box-shadow .18s;
+          box-shadow:0 4px 20px rgba(26,107,255,.3);
         }
+        .start-btn:hover:not(:disabled) { background:var(--blue-dark); transform:translateY(-2px); box-shadow:0 8px 28px rgba(26,107,255,.35); }
+        .start-btn:disabled { background:var(--gray-3); cursor:not-allowed; box-shadow:none; transform:none; }
+        .start-btn .btn-spinner {
+          width:18px; height:18px; border-radius:50%;
+          border:2.5px solid rgba(255,255,255,.4);
+          border-top-color:white;
+          animation:spin .7s linear infinite;
+          display:none;
+        }
+        .start-btn.loading .btn-spinner { display:block; }
         @keyframes spin { to { transform:rotate(360deg); } }
 
-        .loading-title { font-size:26px; font-weight:800; color:var(--navy); letter-spacing:-.5px; }
-        .loading-sub { font-size:14px; color:var(--gray-5); }
+        .cta-notice { font-size:12px; color:var(--gray-5); display:flex; align-items:center; gap:5px; }
+        .cta-notice::before { content:'⚠️'; font-size:13px; }
 
-        /* 프로그레스 */
-        .progress-wrap { width:320px; display:flex; flex-direction:column; gap:8px; }
-        .progress-bar-bg { width:100%; height:6px; background:var(--gray-2); border-radius:3px; overflow:hidden; }
-        .progress-bar-fill { height:100%; background:var(--blue); border-radius:3px; width:0%; animation:progress 3s ease forwards; }
-        @keyframes progress { 0%{width:0%} 60%{width:70%} 90%{width:88%} 100%{width:95%} }
-        .progress-label { font-size:12px; color:var(--gray-5); text-align:center; }
+        .error-msg { font-size:13px; color:var(--red); font-weight:600; display:none; padding:10px 16px; background:#fff0f0; border:1px solid rgba(255,59,59,.2); border-radius:8px; width:100%; max-width:440px; text-align:center; }
+        .error-msg.show { display:block; }
 
-        /* 단계 목록 */
-        .steps-list { display:flex; flex-direction:column; gap:8px; width:320px; }
-        .step-item { display:flex; align-items:center; gap:10px; font-size:13px; color:var(--gray-5); }
-        .step-dot { width:8px; height:8px; border-radius:50%; background:var(--gray-3); flex-shrink:0; transition:background .3s; }
-        .step-item.done .step-dot { background:var(--blue); }
-        .step-item.done { color:var(--navy); font-weight:600; }
-        .step-item.active .step-dot { background:var(--blue); animation:pulse .8s ease infinite; }
-        .step-item.active { color:var(--blue); font-weight:600; }
-        @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:.6} }
+        /* ── BACK NAV ── */
+        .bottom-nav { display:flex; justify-content:center; }
+        .nav-prev { padding:13px 28px; background:white; color:var(--navy); font-size:15px; font-weight:600; font-family:var(--font); border:1.5px solid var(--gray-3); border-radius:10px; cursor:pointer; text-decoration:none; display:inline-block; transition:border-color .18s; }
+        .nav-prev:hover { border-color:var(--blue); color:var(--blue); }
 
-        /* 하단 미리보기 플레이스홀더 */
-        .preview-bar {
-          width:100%; background:var(--gray-1); border-top:1px solid var(--gray-2);
-          height:160px; display:flex; align-items:center; justify-content:center;
-          position:relative; overflow:hidden;
-        }
-        .preview-bar::before, .preview-bar::after {
-          content:''; position:absolute; background:rgba(200,208,220,.5); height:2px;
-          width:141.4%; top:50%; left:-20.7%;
-        }
-        .preview-bar::before { transform:rotate(8deg); }
-        .preview-bar::after  { transform:rotate(-8deg); }
-
-        footer { background:var(--navy); padding:20px 32px; text-align:center; }
+        footer { background:var(--navy); padding:20px 32px; text-align:center; margin-top:auto; }
         footer p { font-size:12px; color:rgba(255,255,255,.4); }
+
+        @media (max-width:700px) {
+          .summary-grid { grid-template-columns:1fr; }
+        }
     </style>
 </head>
 <body>
+
 <nav>
     <div class="nav-inner">
         <div class="nav-left"><a href="../index.html">HOME</a><a href="#">ABOUT</a><a href="#">SERVICE</a></div>
@@ -90,59 +127,219 @@
             <div class="logo-icon"><svg viewBox="0 0 20 20"><rect x="3" y="9" width="14" height="2" rx="1"/><rect x="9" y="3" width="2" height="14" rx="1"/></svg></div>
             <span class="logo-type">MEDSIM</span>
         </a>
-        <div class="nav-right"><a class="btn-outline" href="../signup.html">회원가입</a><a class="btn-solid" href="../login.html">로그인</a></div>
+        <div class="nav-right"></div>
     </div>
 </nav>
 
+<div class="step-bar">
+    <div class="step done"><div class="step-num">✓</div> 인트로</div>
+    <div class="step-div done"></div>
+    <div class="step done"><div class="step-num">✓</div> 페르소나</div>
+    <div class="step-div done"></div>
+    <div class="step done"><div class="step-num">✓</div> 입지</div>
+    <div class="step-div done"></div>
+    <div class="step done"><div class="step-num">✓</div> 자본 &amp; 운영</div>
+    <div class="step-div done"></div>
+    <div class="step active"><div class="step-num">5</div> 시작</div>
+</div>
+
 <main>
-    <p class="loading-badge">MEDSIM</p>
-    <div class="spinner"></div>
-    <p class="loading-title">시뮬레이션 구축 중입니다.</p>
-    <p class="loading-sub">잠시만 기다려 주세요..</p>
+<div class="content">
 
-    <div class="progress-wrap">
-        <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
-        <p class="progress-label" id="progress-label">입력 데이터 처리 중...</p>
+    <div class="page-head">
+        <p class="sub">입력하신 정보를 확인하고 시뮬레이션을 시작하세요</p>
+        <h1>설정 최종 확인</h1>
     </div>
 
-    <div class="steps-list">
-        <div class="step-item done"   id="s1"><div class="step-dot"></div> 입력 데이터 검증 완료</div>
-        <div class="step-item done"   id="s2"><div class="step-dot"></div> 입지 분석 완료</div>
-        <div class="step-item active" id="s3"><div class="step-dot"></div> 36개월 시뮬레이션 구축 중</div>
-        <div class="step-item"        id="s4"><div class="step-dot"></div> 이벤트 시나리오 배치 중</div>
-        <div class="step-item"        id="s5"><div class="step-dot"></div> AI 경영 코치 준비 중</div>
+    <!-- ── 섹션1: 요약 카드 3개 ── -->
+    <div class="summary-grid">
+
+        <!-- ① 페르소나 요약 -->
+        <div class="sum-card">
+            <p class="sum-card-title">👤 페르소나</p>
+            <div class="sum-row">
+                <span class="sum-label">경영 성향</span>
+                <span class="sum-value blue" id="s-persona">–</span>
+            </div>
+            <div class="sum-row">
+                <span class="sum-label">진료과</span>
+                <span class="sum-value" id="s-specialty">–</span>
+            </div>
+            <div class="sum-row">
+                <span class="sum-label">경력</span>
+                <span class="sum-value" id="s-career">–</span>
+            </div>
+        </div>
+
+        <!-- ② 입지 요약 -->
+        <div class="sum-card">
+            <p class="sum-card-title">📍 입지</p>
+            <div class="sum-row">
+                <span class="sum-label">지역</span>
+                <span class="sum-value" id="s-region">–</span>
+            </div>
+            <div class="sum-row">
+                <span class="sum-label">규모</span>
+                <span class="sum-value" id="s-size">–</span>
+            </div>
+            <div class="sum-row">
+                <span class="sum-label">월 임대료</span>
+                <span class="sum-value" id="s-rent">–</span>
+            </div>
+        </div>
+
+        <!-- ③ 초기 자금 요약 -->
+        <div class="sum-card">
+            <p class="sum-card-title">💰 초기 자금</p>
+            <div class="sum-row">
+                <span class="sum-label">초기 투자 총액</span>
+                <span class="sum-value orange" id="s-initial">–</span>
+            </div>
+            <div class="sum-row">
+                <span class="sum-label">월 고정지출</span>
+                <span class="sum-value" id="s-monthly-fixed">–</span>
+            </div>
+            <div class="sum-row">
+                <span class="sum-label">대출 필요액</span>
+                <span class="sum-value" id="s-loan">–</span>
+            </div>
+            <div class="sum-row">
+                <span class="sum-label">버틸 수 있는 기간</span>
+                <span class="sum-value green" id="s-survival">–</span>
+            </div>
+        </div>
+
     </div>
+
+    <!-- 장비 목록 -->
+    <div class="sum-card">
+        <p class="sum-card-title">🩺 선택 장비</p>
+        <div id="s-equip-tags" class="equip-tags"></div>
+    </div>
+
+    <!-- ── 섹션2: 시뮬레이션 시작 CTA ── -->
+    <div class="cta-zone">
+        <p class="cta-title">모든 설정이 완료되었습니다.</p>
+        <p class="cta-desc">
+            입력하신 정보를 바탕으로 36개월 시뮬레이션을 생성합니다.<br>
+            시뮬레이션에는 수 초가 소요될 수 있습니다.
+        </p>
+        <button class="start-btn" id="start-btn" onclick="startSimulation()">
+            <div class="btn-spinner"></div>
+            <span id="start-btn-text">36개월 시뮬레이션 시작하기</span>
+        </button>
+        <p class="cta-notice">시작 후에는 설정을 변경할 수 없습니다.</p>
+        <div class="error-msg" id="error-msg"></div>
+    </div>
+
+    <div class="bottom-nav">
+        <a class="nav-prev" href="start4.html">이전으로 돌아가기</a>
+    </div>
+
+</div>
 </main>
-
-<div class="preview-bar"></div>
 
 <footer><p>MEDSIM © 2026. All rights reserved.</p></footer>
 
 <script>
-    // 단계 애니메이션
-    const steps = [
-      { id:'s3', label:'이벤트 시나리오 배치 중...', delay:1200 },
-      { id:'s4', label:'AI 경영 코치 준비 중...', delay:2400 },
-      { id:'s5', label:'거의 다 됐어요!', delay:3400 },
-    ];
+  // ── 요약 데이터 렌더링 ──
+  function renderSummary() {
+    const s2 = JSON.parse(sessionStorage.getItem('start2Data') || '{}');
+    const s3 = JSON.parse(sessionStorage.getItem('start3Data') || '{}');
+    const s4 = JSON.parse(sessionStorage.getItem('start4Data') || '{}');
 
-    steps.forEach(({ id, label, delay }) => {
-      setTimeout(() => {
-        const prev = document.querySelector('.step-item.active');
-        if (prev) { prev.classList.remove('active'); prev.classList.add('done'); }
-        document.getElementById(id).classList.add('active');
-        document.getElementById('progress-label').textContent = label;
-      }, delay);
-    });
+    // ① 페르소나
+    document.getElementById('s-persona').textContent   = s2.persona   || '–';
+    document.getElementById('s-specialty').textContent = s2.specialty || '–';
+    document.getElementById('s-career').textContent    = s2.careerYears != null ? s2.careerYears + '년' : '–';
 
-    // 완료 후 대시보드 이동 (정적 데모라 4초 후 알림만)
-    setTimeout(() => {
-      const last = document.querySelector('.step-item.active');
-      if (last) { last.classList.remove('active'); last.classList.add('done'); }
-      document.getElementById('progress-label').textContent = '완료! 대시보드로 이동합니다.';
-      // 실제 연동 시 아래 주석 해제
-      // window.location.href = '/dashboard';
-    }, 4800);
+    // ② 입지
+    document.getElementById('s-region').textContent = s3.regionName || '–';
+    document.getElementById('s-size').textContent   = s3.clinicSize ? s3.clinicSize + '평' : '–';
+    document.getElementById('s-rent').textContent   = s4.monthlyRent != null
+      ? s4.monthlyRent.toLocaleString() + '만원/월' : '–';
+
+    // ③ 초기 자금
+    const fmt = v => (v != null ? v.toLocaleString() + '만원' : '–');
+    document.getElementById('s-initial').textContent      = fmt(s4.initialInvestment);
+    document.getElementById('s-monthly-fixed').textContent = fmt(s4.monthlyFixed);
+    document.getElementById('s-loan').textContent         = fmt(s4.loanNeeded);
+
+    const survEl = document.getElementById('s-survival');
+    if (s4.survivalMonths != null && s4.monthlyFixed > 0) {
+      const m = s4.survivalMonths;
+      survEl.textContent = m + '개월';
+      survEl.className = 'sum-value ' + (m >= 6 ? 'green' : m >= 3 ? 'orange' : 'red');
+    } else {
+      survEl.textContent = '–';
+    }
+
+    // 장비 목록
+    const tagsEl = document.getElementById('s-equip-tags');
+    const equipment = s4.equipment || [];
+    if (equipment.length === 0) {
+      tagsEl.innerHTML = '<span class="equip-none">선택된 장비 없음</span>';
+    } else {
+      tagsEl.innerHTML = equipment.map(e =>
+        `<span class="equip-tag">${e.name}</span>`
+      ).join('');
+    }
+  }
+
+  // ── 시뮬레이션 시작 ──
+  async function startSimulation() {
+    const btn     = document.getElementById('start-btn');
+    const btnText = document.getElementById('start-btn-text');
+    const errEl   = document.getElementById('error-msg');
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login.html';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btnText.textContent = '시작 중...';
+    errEl.classList.remove('show');
+
+    const s2 = JSON.parse(sessionStorage.getItem('start2Data') || '{}');
+    const s3 = JSON.parse(sessionStorage.getItem('start3Data') || '{}');
+    const s4 = JSON.parse(sessionStorage.getItem('start4Data') || '{}');
+
+    const payload = { ...s2, ...s3, ...s4 };
+
+    try {
+      // TODO: /api/simulation/start 백엔드 구현 후 아래 주석 해제 및 mock 블록 제거
+      // const res = await fetch('/api/simulation/start', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': 'Bearer ' + token
+      //   },
+      //   body: JSON.stringify(payload)
+      // });
+      // if (!res.ok) throw new Error('서버 오류: ' + res.status);
+      // const data = await res.json();
+      // const simulationId = data.simulationId;
+
+      // ── mock 처리 (백엔드 미구현 시) ──
+      await new Promise(r => setTimeout(r, 1000));
+      const simulationId = 'demo-001';
+
+      localStorage.setItem('simulationId', simulationId);
+      window.location.href = '/dashboard.html';
+
+    } catch (e) {
+      errEl.textContent = '시뮬레이션 시작에 실패했습니다. 잠시 후 다시 시도해주세요.';
+      errEl.classList.add('show');
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btnText.textContent = '36개월 시뮬레이션 시작하기';
+    }
+  }
+
+  renderSummary();
 </script>
 <script src="../common.js"></script>
 <script>requireAuth(); updateNav();</script>
