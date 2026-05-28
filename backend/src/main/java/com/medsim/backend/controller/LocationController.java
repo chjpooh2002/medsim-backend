@@ -3,6 +3,7 @@ package com.medsim.backend.controller;
 import com.medsim.backend.domain.FloatingPopulation;
 import com.medsim.backend.domain.RentData;
 import com.medsim.backend.dto.response.LocationAnalyzeResponse;
+import com.medsim.backend.service.CompetitorService;
 import com.medsim.backend.service.FloatingPopulationService;
 import com.medsim.backend.service.RentDataService;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +20,12 @@ public class LocationController {
 
     private final RentDataService rentDataService;
     private final FloatingPopulationService floatingPopulationService;
+    private final CompetitorService competitorService;
 
     /**
-     * 동 선택 시 임대료·보증금·유동인구·입지점수를 반환한다.
-     * competitorCount가 -1(미조회)이면 수요점수 계산에 평균값 5를 대입한다.
+     * 동 선택 시 임대료·보증금·유동인구·경쟁병원 수·입지점수를 반환한다.
+     * lat/lng 제공 시 HIRA API로 경쟁병원 수를 자동 조회하고,
+     * 미제공이면 competitorCount = -1로 입지점수를 계산한다.
      */
     @GetMapping("/analyze")
     public ResponseEntity<LocationAnalyzeResponse> analyze(
@@ -32,8 +35,11 @@ public class LocationController {
             @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lng,
             @RequestParam(required = false, defaultValue = "0") int clinicSizePyeong,
-            @RequestParam(required = false) String radius,
-            @RequestParam(required = false, defaultValue = "-1") int competitorCount) {
+            @RequestParam(required = false) String radius) {
+
+        int competitorCount = (lat != null && lng != null)
+                ? competitorService.countCompetitors(lat, lng)
+                : -1;
 
         return rentDataService.resolveRentData(dong, sigungu)
                 .map(data -> buildResponse(data, sido, dong, lat, lng,

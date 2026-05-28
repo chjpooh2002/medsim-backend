@@ -37,4 +37,4 @@ springdoc:
 
 hira:
   api:
-    key: 0b7987556c41bb4b6ff6645070bf3de627eee03401b66e29959af84ee0bf8ee1
+    key: ${HIRA_API_KEY}
