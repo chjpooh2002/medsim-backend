@@ -3,7 +3,6 @@ package com.medsim.backend.service;
 import com.medsim.backend.domain.RentData;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +12,20 @@ import java.util.Optional;
 public class RentDataService {
 
     private static final Map<String, RentData> DONG_MAP = new HashMap<>();
-    private static final Map<String, List<RentData>> DISTRICT_MAP = new HashMap<>();
+
+    /**
+     * 구별 fallback 임대료 (pricePerPyeong 원/평, depositPerPyeong 원/평).
+     * 동 단위 데이터가 없을 때 사용. 강남구 기준: 120000 × 50평 = 6,000,000원/월
+     */
+    private static final Map<String, int[]> DISTRICT_FALLBACK = Map.ofEntries(
+        Map.entry("강남구", new int[]{120000, 2900000}),
+        Map.entry("서초구", new int[]{ 92500, 2250000}),
+        Map.entry("송파구", new int[]{ 87500, 2150000}),
+        Map.entry("마포구", new int[]{ 84333, 2033000}),
+        Map.entry("종로구", new int[]{ 82500, 1950000}),
+        Map.entry("용산구", new int[]{107500, 2650000}),
+        Map.entry("성동구", new int[]{ 86500, 2075000})
+    );
 
     static {
         List<RentData> data = List.of(
@@ -38,7 +50,6 @@ public class RentDataService {
 
         for (RentData rd : data) {
             DONG_MAP.put(rd.getDong(), rd);
-            DISTRICT_MAP.computeIfAbsent(rd.getDistrict(), k -> new ArrayList<>()).add(rd);
         }
     }
 
@@ -47,13 +58,11 @@ public class RentDataService {
         return Optional.ofNullable(DONG_MAP.get(dong));
     }
 
-    /** 구 이름으로 평균값 조회 */
+    /** 구 이름으로 fallback 조회 (DISTRICT_FALLBACK 하드코딩 기준) */
     public Optional<RentData> findByDistrict(String district) {
-        List<RentData> list = DISTRICT_MAP.get(district);
-        if (list == null || list.isEmpty()) return Optional.empty();
-        int avgPrice   = (int) list.stream().mapToInt(RentData::getPricePerPyeong).average().orElse(0);
-        int avgDeposit = (int) list.stream().mapToInt(RentData::getDepositPerPyeong).average().orElse(0);
-        return Optional.of(new RentData(district + " 평균", district, avgPrice, avgDeposit, true));
+        int[] prices = DISTRICT_FALLBACK.get(district);
+        if (prices == null) return Optional.empty();
+        return Optional.of(new RentData(district + " 평균", district, prices[0], prices[1], true));
     }
 
     /**

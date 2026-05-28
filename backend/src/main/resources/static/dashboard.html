@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>시뮬레이션 대시보드 – MEDSIM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        :root {
+          --blue:#1A6BFF; --blue-dark:#0F4FCC; --blue-bg:#EFF5FF;
+          --navy:#0D1B2A; --gray-1:#F5F7FA; --gray-2:#E8ECF2;
+          --gray-3:#C8D0DC; --gray-5:#7A8699; --gray-7:#3D4F63;
+          --green:#22C97A; --orange:#FF8C42; --red:#FF3B3B;
+          --font:'Pretendard',-apple-system,sans-serif;
+        }
+        body { font-family:var(--font); color:var(--navy); background:var(--gray-1); -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column; }
+
+        /* ── NAV ── */
+        nav { background:rgba(255,255,255,.95); backdrop-filter:blur(12px); border-bottom:1px solid var(--gray-2); height:60px; display:flex; align-items:center; padding:0 32px; position:sticky; top:0; z-index:50; }
+        .nav-inner { width:100%; max-width:1200px; margin:0 auto; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+        .nav-left { display:flex; gap:28px; }
+        .nav-left a { font-size:13px; font-weight:500; color:var(--gray-7); text-decoration:none; }
+        .nav-left a:hover { color:var(--blue); }
+        .nav-logo { display:flex; align-items:center; justify-content:center; gap:7px; text-decoration:none; }
+        .logo-icon { width:28px; height:28px; background:var(--blue); border-radius:7px; display:flex; align-items:center; justify-content:center; }
+        .logo-icon svg { width:16px; height:16px; fill:white; }
+        .logo-type { font-size:17px; font-weight:800; color:var(--navy); }
+        .nav-right { display:flex; gap:8px; justify-content:flex-end; align-items:center; }
+
+        /* ── MAIN ── */
+        main { flex:1; padding:28px 32px 60px; }
+        .dash-wrap { max-width:1200px; margin:0 auto; }
+
+        /* ── TABS ── */
+        .dash-tabs { display:flex; align-items:center; justify-content:space-between; background:white; border:1px solid var(--gray-2); border-radius:12px; padding:6px 8px; margin-bottom:20px; }
+        .tab-list { display:flex; gap:2px; }
+        .tab-item { position:relative; padding:8px 16px; border-radius:8px; font-size:14px; font-weight:600; color:var(--gray-5); cursor:pointer; user-select:none; transition:background .15s, color .15s; display:flex; align-items:center; gap:7px; }
+        .tab-item.active { background:var(--blue-bg); color:var(--blue); }
+        .tab-item:hover:not(.active) { background:var(--gray-1); color:var(--navy); }
+        .tab-badge { background:var(--red); color:white; font-size:10px; font-weight:700; padding:1px 6px; border-radius:10px; min-width:18px; text-align:center; line-height:1.6; }
+        .tab-badge.blue { background:var(--blue); }
+
+        .date-filter { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:500; color:var(--gray-7); cursor:pointer; padding:7px 14px; border:1px solid var(--gray-2); border-radius:8px; transition:border-color .15s, color .15s; }
+        .date-filter:hover { border-color:var(--blue); color:var(--blue); }
+        .date-filter svg { width:14px; height:14px; flex-shrink:0; }
+
+        /* ── KPI GRID ── */
+        .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+        .kpi-card { background:white; border:1px solid var(--gray-2); border-radius:12px; padding:20px 22px; }
+        .kpi-label { font-size:11px; font-weight:700; color:var(--gray-5); letter-spacing:.5px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+        .kpi-main  { font-size:22px; font-weight:800; color:var(--navy); line-height:1.2; margin-bottom:5px; }
+        .kpi-sub   { font-size:12px; color:var(--gray-5); }
+        .badge { font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
+        .badge.pos { background:var(--blue-bg); color:var(--blue); }
+        .badge.neg { background:#FFF0F0; color:var(--red); }
+
+        /* ── MIDDLE 3-COL ── */
+        .middle-grid { display:grid; grid-template-columns:1fr 230px 220px; gap:14px; margin-bottom:14px; }
+
+        /* ── BOTTOM 2-COL ── */
+        .bottom-grid { display:grid; grid-template-columns:1fr 350px; gap:14px; }
+
+        /* ── CARD BASE ── */
+        .card { background:white; border:1px solid var(--gray-2); border-radius:12px; padding:20px 22px; }
+        .card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+        .card-title { font-size:13px; font-weight:700; color:var(--navy); }
+        .card-sub { font-size:11px; color:var(--gray-5); font-weight:500; }
+
+        /* ── GROWTH CHART ── */
+        .chart-wrap { position:relative; height:220px; }
+        .chart-tip {
+          display:none; position:absolute; top:14px; right:10px;
+          background:white; border:1px solid var(--gray-2); border-radius:10px;
+          padding:12px 14px; width:230px; box-shadow:0 6px 20px rgba(0,0,0,.10); z-index:10;
+        }
+        .chart-tip::after {
+          content:''; position:absolute; bottom:-7px; left:20px;
+          border-left:7px solid transparent; border-right:7px solid transparent;
+          border-top:7px solid white; filter:drop-shadow(0 1px 0 var(--gray-2));
+        }
+        .chart-tip p { font-size:12px; color:var(--gray-7); line-height:1.65; margin-bottom:10px; }
+        .chart-tip-btns { display:flex; gap:7px; justify-content:flex-end; }
+        .tip-btn-no  { padding:5px 13px; border:1px solid var(--gray-3); border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; background:white; color:var(--gray-7); font-family:var(--font); }
+        .tip-btn-yes { padding:5px 13px; border:none; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; background:var(--blue); color:white; font-family:var(--font); }
+
+        /* ── PATIENT DONUT ── */
+        .donut-wrap { position:relative; height:140px; display:flex; align-items:center; justify-content:center; }
+        .donut-center { position:absolute; text-align:center; pointer-events:none; }
+        .donut-pct  { font-size:22px; font-weight:800; color:var(--navy); line-height:1; }
+        .donut-lbl  { font-size:11px; color:var(--gray-5); margin-top:3px; }
+        .donut-legend { display:flex; flex-direction:column; gap:7px; margin-top:12px; }
+        .legend-row { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--navy); }
+        .legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+        .legend-name { flex:1; }
+        .legend-pct { font-weight:700; }
+
+        /* ── AI ACTIONS ── */
+        .ai-list { display:flex; flex-direction:column; gap:8px; }
+        .ai-item { display:flex; align-items:center; gap:9px; padding:10px 12px; background:var(--gray-1); border-radius:9px; font-size:13px; font-weight:500; color:var(--navy); cursor:pointer; transition:background .15s, color .15s; border:1px solid transparent; }
+        .ai-item:hover { background:var(--blue-bg); color:var(--blue); border-color:rgba(26,107,255,.15); }
+        .ai-dot { width:6px; height:6px; border-radius:50%; background:var(--blue); flex-shrink:0; }
+
+        /* ── EVENT TABLE ── */
+        .event-table { width:100%; border-collapse:collapse; }
+        .event-table th { font-size:11px; font-weight:700; color:var(--gray-5); padding:0 10px 10px; text-align:left; border-bottom:1.5px solid var(--gray-2); }
+        .event-table td { font-size:13px; padding:9px 10px; border-bottom:1px solid var(--gray-2); vertical-align:middle; }
+        .event-table tr:last-child td { border-bottom:none; }
+        .event-name { font-weight:500; color:var(--navy); }
+        .event-val  { color:var(--gray-7); font-size:12px; }
+        .event-change { text-align:right; }
+
+        /* ── EXPENDITURE CARD ── */
+        .exp-donut-wrap { position:relative; height:150px; display:flex; align-items:center; justify-content:center; }
+        .exp-legend { display:flex; flex-direction:column; gap:9px; margin-top:14px; }
+        .exp-row { display:flex; align-items:center; gap:9px; }
+        .exp-dot  { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+        .exp-name { font-size:13px; color:var(--navy); flex:1; }
+        .exp-amt  { font-size:13px; font-weight:700; color:var(--navy); margin-right:6px; }
+
+        /* ── FOOTER ── */
+        footer { background:var(--navy); padding:18px 32px; text-align:center; margin-top:auto; }
+        footer p { font-size:12px; color:rgba(255,255,255,.4); }
+
+        /* ── TOAST ── */
+        .toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--navy); color:white; padding:12px 24px; border-radius:10px; font-size:14px; font-weight:600; z-index:300; transition:transform .3s cubic-bezier(.34,1.56,.64,1); white-space:nowrap; }
+        .toast.show { transform:translateX(-50%) translateY(0); }
+
+        /* ── ONBOARDING ── */
+        .onb-overlay { position:fixed; inset:0; background:rgba(13,27,42,.6); display:flex; align-items:center; justify-content:center; z-index:200; animation:fadeIn .22s ease; }
+        .onb-overlay.hidden { display:none; }
+        @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+        @keyframes slideUp { from{transform:translateY(18px);opacity:0} to{transform:translateY(0);opacity:1} }
+        .onb-modal { background:white; border-radius:20px; width:440px; max-width:calc(100vw - 40px); overflow:hidden; box-shadow:0 32px 80px rgba(0,0,0,.28); animation:slideUp .28s cubic-bezier(.34,1.56,.64,1); }
+        .onb-img { width:100%; height:200px; background:linear-gradient(160deg,#E8ECF2 0%,#C8D0DC 100%); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; }
+        .onb-img-icon { width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; }
+        .onb-img-icon svg { width:26px; height:26px; fill:none; }
+        .onb-img-step { font-size:12px; font-weight:600; color:var(--gray-5); }
+        .onb-body { padding:26px 28px 6px; }
+        .onb-step-label { font-size:11px; font-weight:700; color:var(--blue); letter-spacing:.5px; margin-bottom:8px; }
+        .onb-title { font-size:17px; font-weight:800; color:var(--navy); line-height:1.45; margin-bottom:10px; }
+        .onb-desc { font-size:14px; color:var(--gray-7); line-height:1.75; }
+        .onb-dots { display:flex; justify-content:center; gap:7px; padding:20px 0 8px; }
+        .onb-dot { width:8px; height:8px; border-radius:50%; background:var(--gray-3); transition:background .22s,transform .22s,width .22s; cursor:pointer; }
+        .onb-dot.active { background:var(--blue); transform:scale(1.15); width:20px; border-radius:4px; }
+        .onb-nav { display:flex; gap:10px; padding:8px 28px 28px; }
+        .onb-btn-prev { flex:1; padding:13px 0; background:white; color:var(--navy); border:1.5px solid var(--gray-3); border-radius:10px; font-size:15px; font-weight:600; font-family:var(--font); cursor:pointer; transition:border-color .15s,color .15s; }
+        .onb-btn-prev:hover:not(:disabled) { border-color:var(--blue); color:var(--blue); }
+        .onb-btn-prev:disabled { color:var(--gray-3); border-color:var(--gray-2); cursor:not-allowed; }
+        .onb-btn-next { flex:1.5; padding:13px 0; background:var(--blue); color:white; border:none; border-radius:10px; font-size:15px; font-weight:700; font-family:var(--font); cursor:pointer; transition:background .15s; }
+        .onb-btn-next:hover { background:var(--blue-dark); }
+
+        @media (max-width:900px) {
+          .kpi-grid   { grid-template-columns:repeat(2,1fr); }
+          .middle-grid{ grid-template-columns:1fr; }
+          .bottom-grid{ grid-template-columns:1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-inner">
+        <div class="nav-left"><a href="index.html">HOME</a><a href="#">ABOUT</a><a href="#">SERVICE</a></div>
+        <a class="nav-logo" href="index.html">
+            <div class="logo-icon"><svg viewBox="0 0 20 20"><rect x="3" y="9" width="14" height="2" rx="1"/><rect x="9" y="3" width="2" height="14" rx="1"/></svg></div>
+            <span class="logo-type">MEDSIM</span>
+        </a>
+        <div class="nav-right" id="nav-right"></div>
+    </div>
+</nav>
+
+<main>
+<div class="dash-wrap">
+
+    <!-- ── 탭 + 날짜 필터 ── -->
+    <div class="dash-tabs">
+        <div class="tab-list">
+            <div class="tab-item active" onclick="switchTab('요약', this)">요약</div>
+            <div class="tab-item" onclick="switchTab('운영전략', this)">운영 전략 <span class="tab-badge">2</span></div>
+            <div class="tab-item" onclick="switchTab('이벤트', this)">발생 이벤트 <span class="tab-badge">2</span></div>
+            <div class="tab-item" onclick="switchTab('이력', this)">운영 이력 <span class="tab-badge blue">99+</span></div>
+        </div>
+        <div class="date-filter" id="date-filter-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1.5" y="2.5" width="13" height="12" rx="2"/><line x1="1.5" y1="6" x2="14.5" y2="6"/><line x1="5" y1="1" x2="5" y2="4"/><line x1="11" y1="1" x2="11" y2="4"/></svg>
+            <span id="date-range-text">– ~ –</span>
+        </div>
+    </div>
+
+    <!-- ── KPI 카드 4개 ── -->
+    <div class="kpi-grid">
+        <!-- DATE -->
+        <div class="kpi-card">
+            <div class="kpi-label">DATE</div>
+            <div class="kpi-main" id="kpi-date">–</div>
+            <div class="kpi-sub" id="kpi-month">–</div>
+        </div>
+        <!-- 현금보유 -->
+        <div class="kpi-card">
+            <div class="kpi-label">현금보유 <span id="kpi-cash-badge"></span></div>
+            <div class="kpi-main" id="kpi-cash">–</div>
+            <div class="kpi-sub">누적 잔액</div>
+        </div>
+        <!-- 월 환자 수 -->
+        <div class="kpi-card">
+            <div class="kpi-label">월 환자 수 <span id="kpi-patients-badge"></span></div>
+            <div class="kpi-main" id="kpi-patients">–</div>
+            <div class="kpi-sub" id="kpi-daily">일 평균 –명</div>
+        </div>
+        <!-- 병원평판 -->
+        <div class="kpi-card">
+            <div class="kpi-label">병원평판 <span id="kpi-rep-badge"></span></div>
+            <div class="kpi-main" id="kpi-rep">–</div>
+            <div class="kpi-sub">/ 5.0 만족도</div>
+        </div>
+    </div>
+
+    <!-- ── 중단 3열 ── -->
+    <div class="middle-grid">
+
+        <!-- 병원 성장 그래프 -->
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title">병원 성장 그래프</span>
+                <span class="card-sub" id="chart-period-label">3개월</span>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="growthChart"></canvas>
+                <div class="chart-tip" id="chart-tip">
+                    <p>해당 지점부터 매출이 매우 감소 했어요.<br>MEDSIM AI를 통해 분석/해결 방안을 제공받아보세요.</p>
+                    <div class="chart-tip-btns">
+                        <button class="tip-btn-no"  onclick="dismissChartTip()">아니요</button>
+                        <button class="tip-btn-yes" onclick="acceptChartTip()">예</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 환자 유형 도넛 -->
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title">환자 유형</span>
+                <span class="card-sub">초진 / 재진</span>
+            </div>
+            <div class="donut-wrap">
+                <canvas id="patientChart"></canvas>
+                <div class="donut-center">
+                    <div class="donut-pct" id="donut-return-pct">–</div>
+                    <div class="donut-lbl">재진 비율</div>
+                </div>
+            </div>
+            <div class="donut-legend">
+                <div class="legend-row">
+                    <span class="legend-dot" style="background:var(--blue)"></span>
+                    <span class="legend-name">초진</span>
+                    <span class="legend-pct" id="legend-new-pct">–</span>
+                </div>
+                <div class="legend-row">
+                    <span class="legend-dot" style="background:var(--gray-2)"></span>
+                    <span class="legend-name">재진</span>
+                    <span class="legend-pct" id="legend-return-pct">–</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI 추천 액션 -->
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title">AI 추천 액션</span>
+            </div>
+            <div class="ai-list">
+                <div class="ai-item"><span class="ai-dot"></span>마케팅 비용 증가</div>
+                <div class="ai-item"><span class="ai-dot"></span>간호 조무사 채용</div>
+                <div class="ai-item"><span class="ai-dot"></span>탄력 운영 제안</div>
+                <div class="ai-item"><span class="ai-dot"></span>서비스 장비 확장</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── 하단 2열 ── -->
+    <div class="bottom-grid">
+
+        <!-- 이벤트 센터 -->
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title">이벤트 센터</span>
+                <span class="card-sub">발생 이벤트 요약</span>
+            </div>
+            <table class="event-table">
+                <thead>
+                    <tr>
+                        <th>항목</th>
+                        <th>현재값</th>
+                        <th style="text-align:right">변화</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="event-name">신규 경쟁 병원 개원</td>
+                        <td class="event-val">5.0 / 5.0</td>
+                        <td class="event-change"><span class="badge pos">↑2.5%</span></td>
+                    </tr>
+                    <tr>
+                        <td class="event-name">환자 리뷰 평점 하락</td>
+                        <td class="event-val">5.0 / 5.0</td>
+                        <td class="event-change"><span class="badge pos">↑2.5%</span></td>
+                    </tr>
+                    <tr>
+                        <td class="event-name">환자 평균 대기 시간</td>
+                        <td class="event-val">30분 → 15분</td>
+                        <td class="event-change"><span class="badge neg">↓50%</span></td>
+                    </tr>
+                    <tr>
+                        <td class="event-name">진료 회전률</td>
+                        <td class="event-val">10분/명 → 5분/명</td>
+                        <td class="event-change"><span class="badge neg">↓50%</span></td>
+                    </tr>
+                    <tr>
+                        <td class="event-name">직원 만족도 감소</td>
+                        <td class="event-val">2.5 / 5.0</td>
+                        <td class="event-change"><span class="badge neg">↓50%</span></td>
+                    </tr>
+                    <tr>
+                        <td class="event-name">재진 환자 증가</td>
+                        <td class="event-val">33% (423명)</td>
+                        <td class="event-change"><span class="badge pos">↑2.5%</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 자금 지출 순위 -->
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title">자금 지출 순위</span>
+                <span class="card-sub">월 고정비 기준</span>
+            </div>
+            <div class="exp-donut-wrap">
+                <canvas id="expChart"></canvas>
+            </div>
+            <div class="exp-legend" id="exp-legend"></div>
+        </div>
+
+    </div>
+
+</div>
+</main>
+
+<footer><p>MEDSIM © 2026. All rights reserved.</p></footer>
+
+<div class="toast" id="toast"></div>
+
+<!-- ── 온보딩 팝업 ── -->
+<div class="onb-overlay" id="onb-overlay">
+    <div class="onb-modal">
+        <div class="onb-img" id="onb-img">
+            <div class="onb-img-icon">
+                <svg id="onb-svg" viewBox="0 0 24 24" width="26" height="26" stroke="var(--gray-5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+            </div>
+            <span class="onb-img-step" id="onb-img-step"></span>
+        </div>
+        <div class="onb-body">
+            <p class="onb-step-label" id="onb-step-label"></p>
+            <h2 class="onb-title" id="onb-title"></h2>
+            <p class="onb-desc" id="onb-desc"></p>
+        </div>
+        <div class="onb-dots" id="onb-dots"></div>
+        <div class="onb-nav">
+            <button class="onb-btn-prev" id="onb-prev" onclick="onbPrev()">이전</button>
+            <button class="onb-btn-next" id="onb-next" onclick="onbNext()">다음</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  데이터 계산
+// ═══════════════════════════════════════════════════════════════
+
+const FIXED_COST  = 50_280_000;   // 월 고정비 합계 (원)
+const INIT_CASH   = 200_000_000;  // 초기 현금 (원)
+
+// 일 평균 환자 수 시그모이드 체크포인트
+const PATIENT_CURVE = [[1,25],[6,39],[12,58],[24,89],[36,100]];
+
+function dailyPatientsAt(m) {
+    for (let i = 0; i < PATIENT_CURVE.length - 1; i++) {
+        const [m1, p1] = PATIENT_CURVE[i];
+        const [m2, p2] = PATIENT_CURVE[i + 1];
+        if (m >= m1 && m <= m2) return p1 + (p2 - p1) * (m - m1) / (m2 - m1);
+    }
+    return 100;
+}
+
+function calcMonth(m) {
+    const dp  = dailyPatientsAt(m);
+    const mp  = Math.round(dp * 22);
+    const arpp = Math.round(75_000 + (108_400 - 75_000) * (m - 1) / 35);
+    const revenue  = mp * arpp;
+    const varCost  = Math.round(revenue * 0.30);
+    const netProfit = revenue - FIXED_COST - varCost;
+    const newRatio  = Math.max(0.15, 1 - 0.85 * (m - 1) / 35);
+    const reputation = +Math.min(4.5, 3.5 + (m - 1) * 0.028).toFixed(1);
+    return { m, dp, mp, arpp, revenue, varCost, netProfit, newRatio, reputation };
+}
+
+function calcCash(upToMonth) {
+    let cash = INIT_CASH;
+    for (let m = 1; m <= upToMonth; m++) cash += calcMonth(m).netProfit;
+    return cash;
+}
+
+// ── 포맷팅 ──
+function fmtWon(v) {
+    const abs = Math.abs(v), sign = v < 0 ? '-' : '';
+    if (abs >= 100_000_000) {
+        const eok = Math.floor(abs / 100_000_000);
+        const man = Math.round((abs % 100_000_000) / 10_000);
+        return sign + eok + '억' + (man > 0 ? ' ' + man.toLocaleString() + '만원' : '원');
+    }
+    if (abs >= 10_000) return sign + Math.round(abs / 10_000).toLocaleString() + '만원';
+    return sign + abs.toLocaleString() + '원';
+}
+
+function badge(pct) {
+    if (pct === null) return '';
+    const pos = pct >= 0;
+    return `<span class="badge ${pos ? 'pos' : 'neg'}">${pos ? '↑' : '↓'}${Math.abs(pct).toFixed(1)}%</span>`;
+}
+
+function pctDiff(cur, prev) {
+    if (!prev || prev === 0) return null;
+    return (cur - prev) / Math.abs(prev) * 100;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  KPI 렌더링
+// ═══════════════════════════════════════════════════════════════
+
+const currentMonth = parseInt(localStorage.getItem('currentMonth') || '1');
+
+function renderKPI() {
+    const cur  = calcMonth(currentMonth);
+    const prev = currentMonth > 1 ? calcMonth(currentMonth - 1) : null;
+    const cash     = calcCash(currentMonth);
+    const prevCash = currentMonth > 1 ? calcCash(currentMonth - 1) : null;
+
+    // DATE 카드
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+    document.getElementById('kpi-date').textContent  = dateStr;
+    document.getElementById('kpi-month').textContent = `${currentMonth}개월 진행 중`;
+
+    // 날짜 필터 범위
+    const simStart = new Date(now.getFullYear(), now.getMonth() - (currentMonth - 1), 1);
+    const simEnd   = new Date(now.getFullYear(), now.getMonth(), 0);
+    const fmt = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+    document.getElementById('date-range-text').textContent = `${fmt(simStart)} ~ ${fmt(simEnd)}`;
+
+    // 현금보유
+    document.getElementById('kpi-cash').textContent         = fmtWon(cash);
+    document.getElementById('kpi-cash-badge').innerHTML     = badge(pctDiff(cash, prevCash));
+
+    // 월 환자 수
+    document.getElementById('kpi-patients').textContent      = cur.mp.toLocaleString() + '명';
+    document.getElementById('kpi-daily').textContent         = `일 평균 ${Math.round(cur.dp)}명`;
+    document.getElementById('kpi-patients-badge').innerHTML  = badge(prev ? pctDiff(cur.mp, prev.mp) : null);
+
+    // 병원평판
+    document.getElementById('kpi-rep').textContent      = cur.reputation;
+    document.getElementById('kpi-rep-badge').innerHTML  = badge(prev ? pctDiff(cur.reputation, prev.reputation) : null);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  성장 그래프 (라인 차트)
+// ═══════════════════════════════════════════════════════════════
+
+function initGrowthChart() {
+    const displayMonths = Math.max(currentMonth, 3);
+    document.getElementById('chart-period-label').textContent = displayMonths + '개월';
+
+    const labels   = Array.from({length: displayMonths}, (_, i) => `M${i+1}`);
+    const revenues = labels.map((_, i) => Math.round(calcMonth(i+1).revenue  / 10_000));
+    const profits  = labels.map((_, i) => Math.round(calcMonth(i+1).netProfit / 10_000));
+
+    // 전월 대비 매출 감소 여부 체크 → 툴팁 표시
+    const hasDecrease = revenues.some((r, i) => i > 0 && r < revenues[i-1]);
+    if (hasDecrease) document.getElementById('chart-tip').style.display = 'block';
+
+    const ctx = document.getElementById('growthChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: '매출',
+                    data: revenues,
+                    borderColor: '#1A6BFF',
+                    backgroundColor: 'rgba(26,107,255,.07)',
+                    fill: true,
+                    tension: 0.42,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#1A6BFF',
+                    borderWidth: 2.5
+                },
+                {
+                    label: '순이익',
+                    data: profits,
+                    borderColor: '#22C97A',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.42,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: profits.map(v => v >= 0 ? '#22C97A' : '#FF3B3B'),
+                    borderWidth: 2.5,
+                    segment: {
+                        borderColor: ctx => ctx.p1.parsed.y < 0 ? '#FF3B3B' : '#22C97A'
+                    }
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { font:{family:'Pretendard',weight:'600',size:12}, padding:16, usePointStyle:true, pointStyleWidth:10 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}만원`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font:{family:'Pretendard',size:12}, color:'#7A8699' }
+                },
+                y: {
+                    grid: { color:'#E8ECF2' },
+                    ticks: {
+                        font: { family:'Pretendard', size:12 }, color:'#7A8699',
+                        callback: v => v.toLocaleString() + '만'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  환자 유형 도넛
+// ═══════════════════════════════════════════════════════════════
+
+function initPatientChart() {
+    const { newRatio } = calcMonth(currentMonth);
+    const returnRatio  = 1 - newRatio;
+    const newPct    = Math.round(newRatio * 100);
+    const returnPct = 100 - newPct;
+
+    document.getElementById('donut-return-pct').textContent  = returnPct + '%';
+    document.getElementById('legend-new-pct').textContent    = newPct + '%';
+    document.getElementById('legend-return-pct').textContent = returnPct + '%';
+
+    new Chart(document.getElementById('patientChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['초진', '재진'],
+            datasets: [{ data: [newPct, returnPct], backgroundColor: ['#1A6BFF','#E8ECF2'], borderWidth: 0, hoverOffset: 4 }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '68%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}%` } }
+            }
+        }
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  자금 지출 도넛
+// ═══════════════════════════════════════════════════════════════
+
+const EXP_DATA = [
+    { name:'인건비',     amount:2650, color:'#1A6BFF', change:+8.2 },
+    { name:'임대료',     amount:1078, color:'#FF8C42', change:+1.5 },
+    { name:'마케팅+리스', amount:1050, color:'#22C97A', change:+7.0 },
+    { name:'기타',       amount: 250, color:'#C8D0DC', change:-2.5 }
+];
+
+function initExpChart() {
+    new Chart(document.getElementById('expChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: EXP_DATA.map(d => d.name),
+            datasets: [{ data: EXP_DATA.map(d => d.amount), backgroundColor: EXP_DATA.map(d => d.color), borderWidth: 0, hoverOffset: 4 }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString()}만원` } }
+            }
+        }
+    });
+
+    document.getElementById('exp-legend').innerHTML = EXP_DATA.map(d =>
+        `<div class="exp-row">
+            <span class="exp-dot" style="background:${d.color}"></span>
+            <span class="exp-name">${d.name}</span>
+            <span class="exp-amt">${d.amount.toLocaleString()}만원</span>
+            ${badge(d.change)}
+        </div>`
+    ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  탭 전환
+// ═══════════════════════════════════════════════════════════════
+
+function switchTab(tab, el) {
+    if (tab === '요약') {
+        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+    } else {
+        showToast('준비 중입니다.');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  차트 AI 툴팁
+// ═══════════════════════════════════════════════════════════════
+
+function dismissChartTip() { document.getElementById('chart-tip').style.display = 'none'; }
+function acceptChartTip()  { dismissChartTip(); showToast('AI 분석 기능은 준비 중입니다.'); }
+
+// ═══════════════════════════════════════════════════════════════
+//  토스트
+// ═══════════════════════════════════════════════════════════════
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  온보딩 팝업
+// ═══════════════════════════════════════════════════════════════
+
+const ONB_STEPS = [
+    { label:'STEP 1', imgStep:'1 / 4', title:'Month 1: 결과를 확인 하고 전략을 설정하세요', desc:'병원이 오픈 했습니다. 첫 환자를 기다리는 중입니다.',
+      svg:'<path d="M3 9.5A6.5 6.5 0 0112 3.5M12 3.5A6.5 6.5 0 0121 9.5M3 9.5v5A6.5 6.5 0 0012 21m0 0a6.5 6.5 0 009-5.5V9.5M12 12v4m0-8v.01"/>' },
+    { label:'STEP 2', imgStep:'2 / 4', title:'변수를 입력합니다.', desc:'매달 달라지는 병원 운영 결과에 따라 변수를 조정해보세요.',
+      svg:'<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 1012 2"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="2" y1="12" x2="6" y2="12"/>' },
+    { label:'STEP 3', imgStep:'3 / 4', title:'이벤트가 발생합니다.', desc:'개원 후, 6개월이 지나면 이벤트가 발생합니다.',
+      svg:'<path d="M13 10V3L4 14h7v7l9-11h-7z"/>' },
+    { label:'STEP 4', imgStep:'4 / 4', title:'36개월의 경영을 실제 개원에 적용해보세요', desc:'의료 경영 전문가의 인사이트가 담긴 MEDSIM 만의 분석 리포트로 실제 개원에 도움을 얻으세요.',
+      svg:'<path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/>' }
+];
+
+let onbStep = 0;
+
+function renderStep(idx) {
+    const s = ONB_STEPS[idx];
+    document.getElementById('onb-step-label').textContent = s.label;
+    document.getElementById('onb-title').textContent      = s.title;
+    document.getElementById('onb-desc').textContent       = s.desc;
+    document.getElementById('onb-img-step').textContent   = s.imgStep;
+    document.getElementById('onb-svg').innerHTML          = s.svg;
+    document.getElementById('onb-dots').innerHTML = ONB_STEPS.map((_, i) =>
+        `<span class="onb-dot${i === idx ? ' active' : ''}" onclick="onbGoto(${i})"></span>`
+    ).join('');
+    document.getElementById('onb-prev').disabled            = idx === 0;
+    document.getElementById('onb-next').textContent         = idx === ONB_STEPS.length - 1 ? '시작하기' : '다음';
+}
+
+function onbNext() {
+    if (onbStep < ONB_STEPS.length - 1) { onbStep++; renderStep(onbStep); }
+    else closeOnboarding();
+}
+function onbPrev() {
+    if (onbStep > 0) { onbStep--; renderStep(onbStep); }
+}
+function onbGoto(idx) { onbStep = idx; renderStep(onbStep); }
+
+function closeOnboarding() {
+    localStorage.setItem('onboardingShown', 'true');
+    const el = document.getElementById('onb-overlay');
+    el.style.animation = 'fadeIn .18s ease reverse';
+    setTimeout(() => el.classList.add('hidden'), 160);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  초기화
+// ═══════════════════════════════════════════════════════════════
+
+window.addEventListener('load', () => {
+    renderKPI();
+    initGrowthChart();
+    initPatientChart();
+    initExpChart();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('resetOnboarding') === 'true') localStorage.removeItem('onboardingShown');
+
+    if (localStorage.getItem('onboardingShown') === 'true') {
+        document.getElementById('onb-overlay').classList.add('hidden');
+    } else {
+        onbStep = 0;
+        renderStep(0);
+    }
+});
+</script>
+<script src="common.js"></script>
+<script>requireAuth(); updateNav();</script>
+</body>
+</html>

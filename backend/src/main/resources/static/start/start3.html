@@ -393,6 +393,11 @@
           const sigun  = regionInfo.region_2depth_name; // 강남구
           const dong   = regionInfo.region_3depth_name; // 역삼1동
 
+          if (!dong || !dong.trim()) {
+            showToast('해당 위치의 동 정보를 찾을 수 없습니다.');
+            return;
+          }
+
           autoFillDropdowns(sido, sigun, dong, latlng);
         });
       });
@@ -417,16 +422,18 @@
       updateDongOptions(sigun);
       const dongSel = document.getElementById('sel-dong');
 
-      // 동 이름 정규화 (공백 제거해서 매칭)
-      const dongNorm = dong.replace(/\s/g, '');
+      // 동 이름 정규화: trim 후 공백 전체 제거
+      const dongNorm = dong.trim().replace(/\s/g, '');
       let matched = false;
       for (const opt of dongSel.options) {
-        if (opt.value.replace(/\s/g, '') === dongNorm) {
+        const optNorm = opt.value.trim().replace(/\s/g, '');
+        if (optNorm === dongNorm) {
           dongSel.value = opt.value;
           matched = true;
           break;
         }
       }
+      console.log(`[dong 매칭] geocoder="${dong}" → normalized="${dongNorm}" | 후보=[${[...dongSel.options].map(o => o.value).join(', ')}] | matched=${matched}`);
 
       // auto-fill 스타일 적용
       [sidoSel, sigunSel, dongSel].forEach(sel => {
@@ -440,43 +447,52 @@
       locationEl.classList.add('show');
       locationText.textContent = `${sido} ${sigun} ${dong}`;
 
+      const clinicSizePyeong = parseInt(document.getElementById('inp-area').value) || 0;
+
       if (matched) {
         updateAnalysis();
-        fetchCompetitorCount(dongNorm, sigun, latlng.getLat(), latlng.getLng());
+        fetchCompetitorCount(dongNorm, sigun, latlng.getLat(), latlng.getLng(), clinicSizePyeong);
       } else {
-        // 데이터 없는 동 — 구 단위 첫 번째 동 데이터로 fallback
-        const firstDong = Object.keys(REGION_DATA[sigun] || {})[0];
-        if (firstDong) {
-          dongSel.value = firstDong;
-          updateAnalysis();
-          showToast(`${dong} 데이터 준비 중 → ${firstDong} 기준으로 표시합니다`);
-          fetchCompetitorCount(dongNorm, sigun, latlng.getLat(), latlng.getLng());
-        } else {
-          showToast(`${sigun}${josa(sigun,'은는')} 아직 지원하지 않는 지역입니다.`);
-          clearAnalysis();
-        }
+        showToast('해당 위치의 동 정보를 찾을 수 없습니다.');
+        clearAnalysis();
       }
     }
 
     // ── 경쟁병원 수 API 조회 ─────────────────────────────────────────────────────
-    async function fetchCompetitorCount(dong, sigungu, lat, lng) {
-      const compEl = document.getElementById('val-comp');
-      const cardEl = document.getElementById('card-comp');
-      compEl.textContent = '조회중';
+    async function fetchCompetitorCount(dong, sigungu, lat, lng, clinicSizePyeong = 0) {
+      document.getElementById('val-comp').textContent = '조회중';
 
       try {
-        const params = new URLSearchParams({ dong, sigungu, lat, lng });
+        const params = new URLSearchParams({ dong, sigungu, lat, lng, clinicSizePyeong });
         const res = await fetch(`/api/location/analyze?${params}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+        console.log('[/api/location/analyze 응답]', data); // TODO: 확인 후 제거
+        console.log('  → monthlyRent:', data.monthlyRent, '/ deposit:', data.deposit);
 
+        // 임대료 (만원/평): monthlyRent ÷ clinicSizePyeong ÷ 10000
+        // clinicSizePyeong 미입력 시 pricePerPyeong 직접 사용
+        const rentVal = (data.monthlyRent != null && clinicSizePyeong > 0)
+            ? (data.monthlyRent / clinicSizePyeong / 10000).toFixed(1)
+            : (data.pricePerPyeong != null ? (data.pricePerPyeong / 10000).toFixed(1) : '–');
+        setCardValue('val-rent', 'card-rent', rentVal);
+
+        // 유동인구 (천 단위 콤마)
+        const popVal = data.floatingPopulation != null
+            ? data.floatingPopulation.toLocaleString() : '–';
+        setCardValue('val-pop', 'card-pop', popVal);
+
+        // 주요 연령대 (null이면 –)
+        setCardValue('val-age', 'card-age', data.mainAgeGroup ?? '–');
+
+        // 경쟁병원 수 (-1이면 –)
         const count = data.competitorCount;
-        compEl.textContent = (count === -1) ? '–' : count.toString();
-        cardEl.classList.add('highlight');
-        setTimeout(() => cardEl.classList.remove('highlight'), 800);
+        setCardValue('val-comp', 'card-comp', (count == null || count === -1) ? '–' : count.toString());
       } catch (e) {
-        console.error('경쟁병원 조회 실패:', e);
-        compEl.textContent = '–';
+        console.error('[fetchCompetitorCount] 조회 실패:', e);
+        ['val-rent', 'val-pop', 'val-age', 'val-comp'].forEach(id => {
+          document.getElementById(id).textContent = '–';
+        });
       }
     }
 
@@ -509,12 +525,10 @@
         return;
       }
 
-      // 값 업데이트 + 하이라이트 애니메이션
-      setCardValue('val-rent', 'card-rent', data.rent);
-      setCardValue('val-pop',  'card-pop',  data.pop);
-      setCardValue('val-age',  'card-age',  data.age);
-      // 경쟁병원 수는 지도 클릭 시 API로 조회 (수동 드롭다운은 좌표 없음)
-      document.getElementById('val-comp').textContent = '–';
+      // 분석 카드는 지도 클릭 후 API 응답으로 채워짐 — 여기선 초기화만
+      ['val-rent', 'val-pop', 'val-age', 'val-comp'].forEach(id => {
+        document.getElementById(id).textContent = '–';
+      });
       document.getElementById('ai-analysis').textContent = data.ai;
     }
 

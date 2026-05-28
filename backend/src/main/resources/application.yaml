@@ -38,3 +38,8 @@ springdoc:
 hira:
   api:
     key: ${HIRA_API_KEY}
+
+logging:
+  level:
+    com.medsim.backend.service.CompetitorService: DEBUG
+    com.medsim.backend.service.FloatingPopulationService: DEBUG

@@ -37,9 +37,7 @@ public class LocationController {
             @RequestParam(required = false, defaultValue = "0") int clinicSizePyeong,
             @RequestParam(required = false) String radius) {
 
-        int competitorCount = (lat != null && lng != null)
-                ? competitorService.countCompetitors(lat, lng)
-                : -1;
+        int competitorCount = competitorService.countByDong(dong);
 
         return rentDataService.resolveRentData(dong, sigungu)
                 .map(data -> buildResponse(data, sido, dong, lat, lng,
@@ -68,7 +66,7 @@ public class LocationController {
         return LocationAnalyzeResponse.builder()
                 .sido(sido)
                 .sigungu(data.getDistrict())
-                .dong(data.getDong())
+                .dong(dong)           // 프론트 전송값 그대로 반환 (data.getDong()은 fallback 시 "서초구 평균" 등 내부 문자열)
                 .lat(lat)
                 .lng(lng)
                 .clinicSizePyeong(clinicSizePyeong > 0 ? clinicSizePyeong : null)
@@ -81,7 +79,7 @@ public class LocationController {
                 .competitorCount(competitorCount)
                 .locationDemandScore(demandScore)
                 .locationRiskLevel(riskLevel)
-                .mainAgeGroup(null)
+                .mainAgeGroup(floatingPopulationService.getMainAgeGroup(dong))
                 .fallback(data.isFallback())
                 .build();
     }
