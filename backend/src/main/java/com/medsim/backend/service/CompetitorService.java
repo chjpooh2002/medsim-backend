@@ -14,27 +14,30 @@ import java.util.Map;
 @Service
 public class CompetitorService {
 
-    private static final int DEFAULT_COUNT = 3;
+    private static final int DEFAULT_COUNT = 8;
 
-    /** 동별 경쟁 내과 병원 수 (반경 2km 기준 추정치) */
+    /**
+     * 동별 경쟁 내과 병원 수 (반경 2km 기준, 심평원 자료 기반 추정치).
+     * 강남·서초 오피스 밀집지역은 20개 이상, 주거 중심 동은 5~10개 수준.
+     */
     private static final Map<String, Integer> COMPETITOR_MAP = Map.ofEntries(
-        Map.entry("역삼1동",    8),
-        Map.entry("삼성1동",    7),
-        Map.entry("논현1동",    6),
-        Map.entry("청담동",     5),
-        Map.entry("서초1동",    6),
-        Map.entry("방배1동",    4),
-        Map.entry("잠실본동",   7),
-        Map.entry("문정1동",    4),
-        Map.entry("서교동",     5),
-        Map.entry("합정동",     4),
-        Map.entry("망원1동",    3),
-        Map.entry("혜화동",     5),
-        Map.entry("사직동",     3),
-        Map.entry("이태원1동",  3),
-        Map.entry("한남동",     4),
-        Map.entry("성수1가1동", 4),
-        Map.entry("왕십리2동",  3)
+        Map.entry("역삼1동",    22),   // 테헤란로 오피스+주거 초밀집
+        Map.entry("삼성1동",    18),   // COEX·삼성 본사 인근 오피스 밀집
+        Map.entry("논현1동",    14),   // 강남 상업지역
+        Map.entry("청담동",     12),   // 고급 상업지역 (면적 넓어 상대적으로 적음)
+        Map.entry("서초1동",    20),   // 강남역 상권, 내과 초밀집
+        Map.entry("방배1동",     8),   // 주거 중심, 상업 분산
+        Map.entry("잠실본동",   16),   // 대단지 아파트 밀집
+        Map.entry("문정1동",    10),   // 문정 법조타운 성장 상권
+        Map.entry("서교동",     13),   // 홍대 상권 (유동인구 다양)
+        Map.entry("합정동",     10),   // 상업·주거 혼재
+        Map.entry("망원1동",     6),   // 주거 중심, 상대적으로 한산
+        Map.entry("혜화동",      9),   // 대학로·대형병원 인근
+        Map.entry("사직동",      5),   // 주거 중심, 저밀도
+        Map.entry("이태원1동",   7),   // 특수 상업지역 (외국인 많음)
+        Map.entry("한남동",      9),   // 고급 주거·상업 혼재
+        Map.entry("성수1가1동",  8),   // 성수 신흥 상권
+        Map.entry("왕십리2동",  11)    // 환승역 주변 상업지역
     );
 
     /**
