@@ -260,7 +260,7 @@
                 <div class="analysis-card" id="card-comp">
                     <div class="analysis-label">경쟁병원 수</div>
                     <div class="analysis-value" id="val-comp">–</div>
-                    <div class="analysis-unit">개 (500m)</div>
+                    <div class="analysis-unit">개 (2km)</div>
                 </div>
             </div>
         </div>
@@ -442,6 +442,7 @@
 
       if (matched) {
         updateAnalysis();
+        fetchCompetitorCount(dongNorm, sigun, latlng.getLat(), latlng.getLng());
       } else {
         // 데이터 없는 동 — 구 단위 첫 번째 동 데이터로 fallback
         const firstDong = Object.keys(REGION_DATA[sigun] || {})[0];
@@ -449,10 +450,33 @@
           dongSel.value = firstDong;
           updateAnalysis();
           showToast(`${dong} 데이터 준비 중 → ${firstDong} 기준으로 표시합니다`);
+          fetchCompetitorCount(dongNorm, sigun, latlng.getLat(), latlng.getLng());
         } else {
           showToast(`${sigun}${josa(sigun,'은는')} 아직 지원하지 않는 지역입니다.`);
           clearAnalysis();
         }
+      }
+    }
+
+    // ── 경쟁병원 수 API 조회 ─────────────────────────────────────────────────────
+    async function fetchCompetitorCount(dong, sigungu, lat, lng) {
+      const compEl = document.getElementById('val-comp');
+      const cardEl = document.getElementById('card-comp');
+      compEl.textContent = '조회중';
+
+      try {
+        const params = new URLSearchParams({ dong, sigungu, lat, lng });
+        const res = await fetch(`/api/location/analyze?${params}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        const count = data.competitorCount;
+        compEl.textContent = (count === -1) ? '–' : count.toString();
+        cardEl.classList.add('highlight');
+        setTimeout(() => cardEl.classList.remove('highlight'), 800);
+      } catch (e) {
+        console.error('경쟁병원 조회 실패:', e);
+        compEl.textContent = '–';
       }
     }
 
@@ -489,7 +513,8 @@
       setCardValue('val-rent', 'card-rent', data.rent);
       setCardValue('val-pop',  'card-pop',  data.pop);
       setCardValue('val-age',  'card-age',  data.age);
-      setCardValue('val-comp', 'card-comp', data.comp);
+      // 경쟁병원 수는 지도 클릭 시 API로 조회 (수동 드롭다운은 좌표 없음)
+      document.getElementById('val-comp').textContent = '–';
       document.getElementById('ai-analysis').textContent = data.ai;
     }
 

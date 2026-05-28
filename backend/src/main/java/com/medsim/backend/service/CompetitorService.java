@@ -56,6 +56,7 @@ public class CompetitorService {
                     + "&yPos=" + lat
                     + "&radius=" + RADIUS_METER;
 
+            log.info("[HIRA] 요청 URL: {}", url);
             String xml = restTemplate.getForObject(new URI(url), String.class);
             return parseCompetitorCount(xml);
 
@@ -84,11 +85,15 @@ public class CompetitorService {
         if (totalCountNodes.getLength() > 0) {
             String raw = totalCountNodes.item(0).getTextContent().trim();
             if (!raw.isEmpty()) {
-                return Integer.parseInt(raw);
+                int count = Integer.parseInt(raw);
+                log.info("[HIRA] 응답 totalCount: {}", count);
+                return count;
             }
         }
 
         // totalCount 없으면 item 개수로 대체
-        return doc.getElementsByTagName("item").getLength();
+        int itemCount = doc.getElementsByTagName("item").getLength();
+        log.info("[HIRA] totalCount 없음 — item 개수로 대체: {}", itemCount);
+        return itemCount;
     }
 }
