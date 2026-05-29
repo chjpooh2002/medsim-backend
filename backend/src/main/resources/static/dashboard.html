@@ -154,6 +154,81 @@
         .advance-btn:hover { background:var(--blue-dark); }
         .advance-btn:disabled { background:var(--gray-3); cursor:not-allowed; }
 
+        /* ── INTERACTIVE STRATEGY TAB ── */
+        .strat-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+        .strat-title  { font-size:18px; font-weight:800; color:var(--navy); margin:0 0 4px; }
+        .strat-month-tag { display:inline-block; background:var(--blue); color:white; font-size:12px; font-weight:700; padding:2px 9px; border-radius:20px; margin-left:8px; vertical-align:middle; }
+        .strat-sub    { font-size:13px; color:var(--gray-5); margin:0; }
+        .strat-header-btns { display:flex; gap:10px; flex-shrink:0; }
+        .strat-reset-btn   { padding:9px 18px; background:white; border:1px solid var(--gray-3); color:var(--gray-7); border-radius:9px; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); transition:border-color .15s; }
+        .strat-reset-btn:hover { border-color:var(--blue); color:var(--blue); }
+        .strat-advance-btn { padding:9px 22px; background:var(--blue); color:white; border:none; border-radius:9px; font-size:13px; font-weight:700; cursor:pointer; font-family:var(--font); transition:background .15s; }
+        .strat-advance-btn:hover { background:var(--blue-dark); }
+        .strat-advance-btn:disabled { background:var(--gray-3); cursor:not-allowed; }
+
+        .strat-kpi-row  { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+        .strat-kpi-card { background:white; border:1px solid var(--gray-2); border-radius:11px; padding:14px 16px; }
+        .strat-kpi-label { font-size:12px; color:var(--gray-5); font-weight:600; margin-bottom:6px; }
+        .strat-kpi-value { font-size:16px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+
+        .strat-cards-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+        .strat-card       { background:white; border:1px solid var(--gray-2); border-radius:12px; padding:18px; }
+        .strat-card-head  { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+        .strat-card-body  { display:flex; flex-direction:column; gap:8px; }
+
+        .sc-radio        { border:1.5px solid var(--gray-2); border-radius:9px; padding:10px 12px; cursor:pointer; transition:border-color .15s, background .15s; }
+        .sc-radio:hover  { border-color:var(--blue); }
+        .sc-radio.active { border-color:var(--blue); background:#EEF4FF; }
+        .sc-radio-top    { display:flex; align-items:center; gap:8px; }
+        .sc-radio-dot    { width:14px; height:14px; border-radius:50%; border:2px solid var(--gray-3); flex-shrink:0; transition:border-color .15s, background .15s; }
+        .sc-radio-dot.checked { border-color:var(--blue); background:var(--blue); }
+        .sc-radio-label  { font-size:13px; font-weight:700; color:var(--navy); flex:1; }
+        .sc-staff-list   { font-size:11px; color:var(--gray-5); margin:4px 0 0 22px; line-height:1.5; }
+        .sc-cost         { font-size:12px; font-weight:700; color:var(--blue); margin:3px 0 0 22px; }
+        .sc-sub          { font-size:11px; color:var(--gray-5); margin:3px 0 0 22px; }
+        .sc-cost-tag     { font-size:11px; background:#FFF3E0; color:#E65100; padding:2px 6px; border-radius:5px; font-weight:600; }
+        .sc-impact-tag   { font-size:11px; padding:2px 7px; border-radius:5px; font-weight:600; }
+        .sc-impact-tag.pos { background:#E8F8F1; color:#16A34A; }
+        .sc-impact-tag.neg { background:#FEF2F2; color:#DC2626; }
+        .sc-impact-tag.neu { background:var(--gray-1); color:var(--gray-7); }
+
+        .sc-slider-wrap    { display:flex; flex-direction:column; gap:8px; }
+        .sc-slider-header  { display:flex; justify-content:space-between; align-items:center; }
+        .sc-slider-preset  { font-size:12px; font-weight:700; color:var(--gray-7); }
+        .sc-slider-val     { font-size:14px; font-weight:800; color:var(--blue); }
+        .sc-slider         { width:100%; height:5px; -webkit-appearance:none; appearance:none; background:var(--gray-2); border-radius:3px; outline:none; cursor:pointer; }
+        .sc-slider::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--blue); cursor:pointer; box-shadow:0 1px 4px rgba(26,107,255,.3); }
+        .sc-slider-ticks   { display:flex; justify-content:space-between; font-size:10px; color:var(--gray-4); }
+        .sc-impact-line    { font-size:11px; background:#EEF4FF; color:var(--blue); padding:5px 9px; border-radius:6px; font-weight:600; }
+
+        .sc-check        { display:flex; align-items:flex-start; gap:10px; border:1.5px solid var(--gray-2); border-radius:9px; padding:10px 12px; cursor:pointer; transition:border-color .15s, background .15s; }
+        .sc-check:hover  { border-color:var(--blue); }
+        .sc-check.active { border-color:var(--blue); background:#EEF4FF; }
+        .sc-check-box    { width:16px; height:16px; border:2px solid var(--gray-3); border-radius:4px; flex-shrink:0; display:flex; align-items:center; justify-content:center; margin-top:1px; transition:border-color .15s, background .15s; }
+        .sc-check-box.checked { border-color:var(--blue); background:var(--blue); }
+        .sc-check-body   { display:flex; flex-direction:column; gap:2px; }
+        .sc-check-name   { font-size:13px; font-weight:700; color:var(--navy); }
+        .sc-check-detail { font-size:11px; color:var(--gray-5); }
+        .sc-program-total { font-size:12px; font-weight:700; color:var(--blue); text-align:right; border-top:1px solid var(--gray-2); padding-top:8px; margin-top:2px; }
+
+        .sc-no-loan     { text-align:center; padding:20px 0; font-size:13px; font-weight:600; color:var(--navy); line-height:1.8; }
+        .sc-no-loan-sub { font-size:12px; color:var(--gray-5); font-weight:400; }
+
+        .strat-bottom       { display:grid; grid-template-columns:1.3fr 1fr; gap:14px; margin-bottom:20px; }
+        .strat-chart-panel,
+        .strat-coach-panel  { background:white; border:1px solid var(--gray-2); border-radius:12px; padding:18px; }
+        .strat-panel-title  { font-size:13px; font-weight:700; color:var(--navy); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+        .strat-chart-note   { font-size:11px; color:var(--gray-4); font-weight:400; }
+        .strat-chart-wrap   { height:160px; position:relative; }
+
+        .coach-tip      { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border-radius:9px; font-size:12px; line-height:1.6; margin-bottom:8px; }
+        .coach-tip:last-child { margin-bottom:0; }
+        .coach-tip.danger  { background:#FEF2F2; color:#7F1D1D; }
+        .coach-tip.warn    { background:#FFFBEB; color:#78350F; }
+        .coach-tip.success { background:#F0FDF4; color:#14532D; }
+        .coach-tip.info    { background:var(--gray-1); color:var(--gray-7); }
+        .coach-icon { font-size:14px; flex-shrink:0; margin-top:1px; }
+
         /* ── PLACEHOLDER TAB ── */
         .tab-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 20px; color:var(--gray-5); text-align:center; }
         .tab-placeholder svg { margin-bottom:16px; }
@@ -400,13 +475,7 @@
             </div>
 
             <!-- ──────────────── TAB: 운영전략 ──────────────── -->
-            <div id="tab-운영전략" class="tab-panel">
-                <div class="strategy-grid" id="strategy-grid"></div>
-                <div class="advance-bar">
-                    <div class="advance-info">현재 <strong id="advance-month-label">1개월</strong> 완료 · 다음 달로 진행하면 운영 결과가 반영됩니다</div>
-                    <button class="advance-btn" id="advance-btn" onclick="advanceMonth()">진행하기 →</button>
-                </div>
-            </div>
+            <div id="tab-운영전략" class="tab-panel"></div>
 
             <!-- ──────────────── TAB: 이벤트 ──────────────── -->
             <div id="tab-이벤트" class="tab-panel">
@@ -551,6 +620,20 @@ function calcMonth(m) {
     return { m, dp, mp, arpp, revenue, varCost, netProfit, newRatio, reputation };
 }
 
+// ── 계산 검증 (개발자 디버깅) ──
+if ((_ownedCash + _loanAmt) > 0) {
+    const _m1 = calcMonth(1);
+    console.log('[MEDSIM 계산 검증]', {
+        owned_cash:  _ownedCash + '만원',
+        loan:        _loanAmt   + '만원',
+        init_cash:   INIT_CASH  + '원 (' + Math.round(INIT_CASH / 10_000).toLocaleString() + '만원)',
+        fixed_cost:  FIXED_COST + '원 (' + Math.round(FIXED_COST / 10_000).toLocaleString() + '만원)',
+        m1_patients: _m1.dp    + '명/일',
+        m1_revenue:  _m1.revenue + '원 (' + Math.round(_m1.revenue / 10_000).toLocaleString() + '만원)',
+        m1_net:      _m1.netProfit + '원 (' + Math.round(_m1.netProfit / 10_000).toLocaleString() + '만원)',
+    });
+}
+
 function calcCash(upToMonth) {
     let cash = INIT_CASH;
     for (let m = 1; m <= upToMonth; m++) cash += calcMonth(m).netProfit;
@@ -608,7 +691,8 @@ function renderKPI() {
     document.getElementById('kpi-rep').textContent         = cur.reputation;
     document.getElementById('kpi-rep-badge').innerHTML     = badge(prev ? pctDiff(cur.reputation, prev.reputation) : null);
 
-    document.getElementById('advance-month-label').textContent = `${currentMonth}개월`;
+    const advLabel = document.getElementById('advance-month-label');
+    if (advLabel) advLabel.textContent = `${currentMonth}개월`;
     const btn = document.getElementById('advance-btn');
     if (btn) btn.disabled = currentMonth >= 36;
 }
@@ -760,94 +844,318 @@ function renderEventCenter() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  운영 전략 카드
+//  운영 전략 탭 (인터랙티브)
 // ═══════════════════════════════════════════════════════════════
 
-function renderStrategyCards() {
-    const os  = LS('medsim_operation_style') || 'BALANCED';
-    const cs  = LS('medsim_clinic_style')    || 'BALANCED';
-    const oh  = LS('medsim_operation_hours') || 'STANDARD';
-    const eq  = parseInt(LS('medsim_equipment_total'))  || 0;
-    const mkt = parseInt(LS('medsim_marketing_cost'))   || 0;
-    const loan = parseInt(LS('medsim_loan_amount'))     || 0;
-    const rate = parseFloat(LS('medsim_interest_rate')) || 4.5;
-    const mi   = Math.round(parseFloat(LS('medsim_monthly_interest')) || 0);
-    const curRep  = calcMonth(currentMonth).reputation;
-    const finalRep = +Math.min(5.0, 3.5 + 35 * 0.05).toFixed(1);
+let stratState = {};
+let stratChartInst = null;
 
-    const OSL = { MIN_STAFF:'최소 인력', BALANCED:'균형 운영', SERVICE_ENHANCED:'서비스 강화' };
-    const CSL = { FAST_TURNOVER:'빠른 회전 중심', BALANCED:'균형형', CONSULTATION_HEAVY:'심층 진료 중심' };
-    const OHL = { STANDARD:'평일 주간', NIGHT:'야간 포함', WEEKEND:'주말 포함', NIGHT_AND_WEEKEND:'야간+주말' };
+const STAFF_PRESETS = {
+    MIN_STAFF:         { label:'최소 인력',   cost:860,  members:['간호사 1', '원무 1', '방사선사 1'] },
+    BALANCED:          { label:'균형 운영',   cost:1670, members:['간호사 2', '원무 2', '간호조무사 1'] },
+    SERVICE_ENHANCED:  { label:'서비스 강화', cost:3340, members:['간호사 4', '원무 3', '간호조무사 2', '방사선사 1', '내시경보조 1', '코디 1'] },
+};
+const CLINIC_STYLES = {
+    FAST_TURNOVER:      { label:'빠른 회전 중심',  impact:'환자수 ↑ · 건당수익 ↓' },
+    BALANCED:           { label:'균형형',           impact:'기본 설정' },
+    CONSULTATION_HEAVY: { label:'심층 진료 중심',   impact:'환자수 ↓ · 건당수익 ↑' },
+};
+const OP_HOURS = {
+    STANDARD:          { label:'평일 주간',   addCost:0 },
+    NIGHT:             { label:'야간 포함',   addCost:300 },
+    WEEKEND:           { label:'주말 포함',   addCost:200 },
+    NIGHT_AND_WEEKEND: { label:'야간+주말',   addCost:500 },
+};
+const REPAYMENT_STYLES = {
+    EQUAL:         { label:'원금균등 상환', desc:'매월 동일 원금, 이자 점진 감소' },
+    INTEREST_ONLY: { label:'이자만 상환',   desc:'현금흐름 유리, 원금은 만기에' },
+    EARLY:         { label:'조기 상환',     desc:'원금 최대 상환, 총 이자 절감' },
+};
+const PROGRAMS = [
+    { id:'online_booking', name:'온라인 예약 시스템', cost:30,  impact:'신환 유입 +3%' },
+    { id:'sms_remind',     name:'환자 리마인드 SMS',  cost:15,  impact:'재진율 +2%' },
+    { id:'cs_training',    name:'직원 CS 교육',       cost:50,  impact:'평판 상승 가속' },
+];
 
-    const cards = [
-        {
-            color:'#1A6BFF',
-            icon:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>',
-            title:'인력 구성',
-            rows:[['운영 스타일', OSL[os]||os]],
-            hint: os==='SERVICE_ENHANCED' ? '서비스 강화형으로 환자 만족도와 재진율이 높습니다'
-                : os==='MIN_STAFF'        ? '최소 인력으로 고정비를 절약하고 있습니다'
-                :                           '균형 잡힌 인력 구성으로 안정적으로 운영 중입니다'
-        },
-        {
-            color:'#22C97A',
-            icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
-            title:'진료 스타일 & 운영 시간',
-            rows:[['진료 스타일', CSL[cs]||cs], ['운영 시간', OHL[oh]||oh]],
-            hint: oh==='NIGHT_AND_WEEKEND' ? '야간+주말 운영으로 환자 접근성을 최대화하고 있습니다'
-                : oh!=='STANDARD'          ? '확장 운영으로 고객 유치력을 높이고 있습니다'
-                :                            '표준 운영 스케줄을 유지하고 있습니다'
-        },
-        {
-            color:'#FF8C42',
-            icon:'<circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/>',
-            title:'장비 투자 현황',
-            rows:[['장비 투자 총액', eq>0 ? `${eq.toLocaleString()}만원` : '–']],
-            hint: eq>=5000 ? '고급 장비로 진료 역량과 환자 신뢰도가 높아졌습니다'
-                : eq>=2000 ? '기본 장비 구성 완료. 추가 투자를 검토하세요'
-                :             '장비 확충으로 서비스 범위를 넓히는 것을 권장합니다'
-        },
-        {
-            color:'#9B59B6',
-            icon:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
-            title:'마케팅 투자',
-            rows:[['월 마케팅비', mkt>0 ? `${mkt.toLocaleString()}만원` : '–']],
-            hint: mkt>=3000 ? '적극적인 마케팅으로 초기 환자 유입을 극대화하고 있습니다'
-                : mkt>=1000 ? '적정 수준의 마케팅 투자를 유지 중입니다'
-                :              '마케팅 예산 확대로 신환 유입을 늘리는 것을 고려하세요'
-        },
-        {
-            color:'#E74C3C',
-            icon:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',
-            title:'재무 구조',
-            rows: loan>0
-                ? [['대출 금액', `${loan.toLocaleString()}만원`], ['연이자율', `${rate}%`], ['월 이자', `${mi.toLocaleString()}만원`]]
-                : [['대출', '없음 (자기자본 운영)']],
-            hint: loan>0 ? `월 ${mi.toLocaleString()}만원 이자 부담 중` : '무차입 경영으로 재무 리스크가 낮습니다'
-        },
-        {
-            color:'#F39C12',
-            icon:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-            title:'평판 관리',
-            rows:[['현재 평판', `${curRep} / 5.0`], ['36개월 목표', `${finalRep} / 5.0`]],
-            hint: curRep>=4.5 ? '우수한 평판을 유지하고 있습니다'
-                : curRep>=4.0 ? '꾸준한 환자 만족도 관리가 필요합니다'
-                :                '평판 향상을 위한 서비스 개선 전략이 필요합니다'
-        }
-    ];
+function initStratState() {
+    stratState = {
+        operationStyle: LS('medsim_operation_style')  || 'BALANCED',
+        clinicStyle:    LS('medsim_clinic_style')     || 'BALANCED',
+        operationHours: LS('medsim_operation_hours')  || 'STANDARD',
+        marketingCost:  parseInt(LS('medsim_marketing_cost')) || 0,
+        repaymentStyle: LS('medsim_repayment_style')  || 'EQUAL',
+        programs:       JSON.parse(LS('medsim_programs') || '[]'),
+    };
+}
 
-    document.getElementById('strategy-grid').innerHTML = cards.map(c => `
-        <div class="strategy-card">
-            <div class="strategy-card-head">
-                <div class="strategy-icon" style="background:${c.color}18">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${c.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg>
-                </div>
-                <span class="strategy-title">${c.title}</span>
+function selectOpStyle(v)     { stratState.operationStyle = v; renderStrategyTab(); }
+function selectClinicStyle(v) { stratState.clinicStyle    = v; renderStrategyTab(); }
+function selectOpHours(v)     { stratState.operationHours = v; renderStrategyTab(); }
+function selectRepayment(v)   { stratState.repaymentStyle = v; renderStrategyTab(); }
+
+function getMktPreset(v) {
+    return v >= 3000 ? '고강도 마케팅' : v >= 1000 ? '적극 마케팅' : v >= 500 ? '기본 마케팅' : '마케팅 없음';
+}
+function updateMarketing(v) {
+    stratState.marketingCost = parseInt(v) || 0;
+    const el = document.getElementById('mkt-val');
+    const ps = document.getElementById('mkt-preset');
+    if (el) el.textContent = stratState.marketingCost.toLocaleString() + '만원';
+    if (ps) ps.textContent = getMktPreset(stratState.marketingCost);
+}
+function toggleProgram(id) {
+    const idx = stratState.programs.indexOf(id);
+    if (idx >= 0) stratState.programs.splice(idx, 1);
+    else stratState.programs.push(id);
+    renderStrategyTab();
+}
+function resetStrategy() {
+    initStratState();
+    _simParams = null;
+    renderStrategyTab();
+    showToast('전략이 초기화되었습니다.');
+}
+
+function _buildCard(title, color, iconPath, bodyHtml) {
+    return `<div class="strat-card">
+        <div class="strat-card-head">
+            <div class="strategy-icon" style="background:${color}18">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
             </div>
-            <div class="strategy-rows">${c.rows.map(([l,v])=>`<div class="strategy-row"><span class="sr-label">${l}</span><span class="sr-value">${v}</span></div>`).join('')}</div>
-            <div class="strategy-hint">${c.hint}</div>
-        </div>`
-    ).join('');
+            <span class="strategy-title">${title}</span>
+        </div>
+        <div class="strat-card-body">${bodyHtml}</div>
+    </div>`;
+}
+
+function _buildCard1() {
+    const rows = Object.entries(STAFF_PRESETS).map(([k, p]) => {
+        const active = stratState.operationStyle === k;
+        const tag = k === 'MIN_STAFF' ? '<span class="sc-impact-tag neg">절약형</span>' : k === 'SERVICE_ENHANCED' ? '<span class="sc-impact-tag pos">성장형</span>' : '<span class="sc-impact-tag neu">기본형</span>';
+        return `<div class="sc-radio ${active?'active':''}" onclick="selectOpStyle('${k}')">
+            <div class="sc-radio-top">
+                <span class="sc-radio-dot ${active?'checked':''}"></span>
+                <span class="sc-radio-label">${p.label}</span>${tag}
+            </div>
+            <div class="sc-staff-list">${p.members.join(' · ')}</div>
+            <div class="sc-cost">${p.cost.toLocaleString()}만원/월</div>
+        </div>`;
+    }).join('');
+    return _buildCard('인력 구성', '#1A6BFF', '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>', rows);
+}
+
+function _buildCard2() {
+    const rows = Object.entries(CLINIC_STYLES).map(([k, p]) => {
+        const active = stratState.clinicStyle === k;
+        return `<div class="sc-radio ${active?'active':''}" onclick="selectClinicStyle('${k}')">
+            <div class="sc-radio-top">
+                <span class="sc-radio-dot ${active?'checked':''}"></span>
+                <span class="sc-radio-label">${p.label}</span>
+            </div>
+            <div class="sc-sub">${p.impact}</div>
+        </div>`;
+    }).join('');
+    return _buildCard('진료 스타일', '#22C97A', '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>', rows);
+}
+
+function _buildCard3() {
+    const rows = Object.entries(OP_HOURS).map(([k, p]) => {
+        const active = stratState.operationHours === k;
+        const costTag = p.addCost > 0 ? `<span class="sc-cost-tag">+${p.addCost}만원/월</span>` : '';
+        return `<div class="sc-radio ${active?'active':''}" onclick="selectOpHours('${k}')">
+            <div class="sc-radio-top">
+                <span class="sc-radio-dot ${active?'checked':''}"></span>
+                <span class="sc-radio-label">${p.label}</span>${costTag}
+            </div>
+        </div>`;
+    }).join('');
+    return _buildCard('운영 시간', '#FF8C42', '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>', rows);
+}
+
+function _buildCard4() {
+    const mkt    = stratState.marketingCost;
+    const preset = getMktPreset(mkt);
+    const impact = mkt >= 3000 ? 'k×1.3, 성장 가속 -4개월' : mkt >= 1000 ? 'k×1.15, 성장 가속 -2개월' : mkt >= 500 ? 'k×1.05, 성장 가속 -1개월' : '';
+    const body   = `<div class="sc-slider-wrap">
+        <div class="sc-slider-header">
+            <span class="sc-slider-preset" id="mkt-preset">${preset}</span>
+            <span class="sc-slider-val" id="mkt-val">${mkt.toLocaleString()}만원</span>
+        </div>
+        <input type="range" class="sc-slider" min="0" max="5000" step="100" value="${mkt}"
+            oninput="updateMarketing(this.value)">
+        <div class="sc-slider-ticks"><span>0</span><span>500</span><span>1,000</span><span>3,000</span><span>5,000만</span></div>
+        ${impact ? `<div class="sc-impact-line">성장 효과: ${impact}</div>` : ''}
+    </div>`;
+    return _buildCard('마케팅 투자', '#9B59B6', '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', body);
+}
+
+function _buildCard5() {
+    const items = PROGRAMS.map(p => {
+        const checked = stratState.programs.includes(p.id);
+        const checkSvg = checked ? '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : '';
+        return `<div class="sc-check ${checked?'active':''}" onclick="toggleProgram('${p.id}')">
+            <span class="sc-check-box ${checked?'checked':''}">${checkSvg}</span>
+            <div class="sc-check-body">
+                <span class="sc-check-name">${p.name}</span>
+                <span class="sc-check-detail">${p.cost}만원/월 · ${p.impact}</span>
+            </div>
+        </div>`;
+    }).join('');
+    const totalCost = PROGRAMS.filter(p => stratState.programs.includes(p.id)).reduce((s, p) => s + p.cost, 0);
+    const total = totalCost > 0 ? `<div class="sc-program-total">월 추가 비용: ${totalCost}만원</div>` : '';
+    return _buildCard('추가 서비스', '#17A2B8', '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>', items + total);
+}
+
+function _buildCard6() {
+    const loan = parseInt(LS('medsim_loan_amount')) || 0;
+    if (!loan) {
+        const body = `<div class="sc-no-loan">대출 없음 · 자기자본 운영 중<br><span class="sc-no-loan-sub">재무 리스크가 낮은 안정적 구조입니다</span></div>`;
+        return _buildCard('재무 구조', '#E74C3C', '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', body);
+    }
+    const rows = Object.entries(REPAYMENT_STYLES).map(([k, p]) => {
+        const active = stratState.repaymentStyle === k;
+        return `<div class="sc-radio ${active?'active':''}" onclick="selectRepayment('${k}')">
+            <div class="sc-radio-top">
+                <span class="sc-radio-dot ${active?'checked':''}"></span>
+                <span class="sc-radio-label">${p.label}</span>
+            </div>
+            <div class="sc-sub">${p.desc}</div>
+        </div>`;
+    }).join('');
+    return _buildCard('상환 방식', '#E74C3C', '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', rows);
+}
+
+function _buildAICoach() {
+    const os  = stratState.operationStyle;
+    const mkt = stratState.marketingCost;
+    const oh  = stratState.operationHours;
+    const cur = calcMonth(currentMonth);
+
+    const tips = [];
+    if (cur.netProfit < 0) {
+        tips.push({ type:'danger', msg:`${currentMonth}개월 기준 순이익이 ${fmtWon(cur.netProfit)}입니다. 고정비 절감이 최우선 과제입니다.` });
+    }
+    if (os === 'SERVICE_ENHANCED' && cur.netProfit < 0) {
+        tips.push({ type:'warn', msg:'서비스 강화형은 고비용 구조입니다. 흑자 전환 전까지 균형 운영을 검토하세요.' });
+    }
+    if (mkt === 0 && currentMonth <= 6) {
+        tips.push({ type:'warn', msg:'개원 초기에는 마케팅 투자가 신환 유입에 효과적입니다. 월 500만원 이상을 권장합니다.' });
+    }
+    if (oh === 'NIGHT_AND_WEEKEND' && os === 'MIN_STAFF') {
+        tips.push({ type:'warn', msg:'야간+주말 운영에 최소 인력 구성은 직원 과부하 위험이 있습니다.' });
+    }
+    if (cur.netProfit > 0 && currentMonth >= 6) {
+        tips.push({ type:'success', msg:`${currentMonth}개월 흑자 전환! 잉여 현금으로 장비 투자 또는 대출 조기 상환을 검토하세요.` });
+    }
+    if (cur.reputation >= 4.5) {
+        tips.push({ type:'success', msg:`평판 ${cur.reputation}/5.0 — 우수 수준입니다. 재진 환자 비중을 높이는 서비스에 집중하세요.` });
+    }
+    if (tips.length === 0) {
+        tips.push({ type:'info', msg:'전략을 변경하고 진행하기를 눌러 다음 달 결과를 확인하세요.' });
+    }
+
+    return tips.map(t => `<div class="coach-tip ${t.type}">
+        <span class="coach-icon">${t.type==='danger'?'⚠':t.type==='warn'?'💡':t.type==='success'?'✓':'ℹ'}</span>
+        <span>${t.msg}</span>
+    </div>`).join('');
+}
+
+function renderStratMiniChart() {
+    if (stratChartInst) { stratChartInst.destroy(); stratChartInst = null; }
+    const canvas = document.getElementById('strat-chart');
+    if (!canvas) return;
+    const endM  = Math.min(currentMonth + 3, 36);
+    const labels = [];
+    const revenues = [], profits = [];
+    for (let m = currentMonth; m <= endM; m++) {
+        labels.push(`M${m}`);
+        const d = calcMonth(m);
+        revenues.push(Math.round(d.revenue   / 10_000));
+        profits.push (Math.round(d.netProfit / 10_000));
+    }
+    stratChartInst = new Chart(canvas.getContext('2d'), {
+        type:'line',
+        data:{ labels, datasets:[
+            { label:'매출',   data:revenues, borderColor:'#1A6BFF', backgroundColor:'rgba(26,107,255,.07)', fill:true,  tension:0.4, pointRadius:4, borderWidth:2 },
+            { label:'순이익', data:profits,  borderColor:'#22C97A', backgroundColor:'transparent',           fill:false, tension:0.4, pointRadius:4, borderWidth:2,
+              segment:{borderColor:ctx=>ctx.p1.parsed.y<0?'#FF3B3B':'#22C97A'}, pointBackgroundColor:profits.map(v=>v>=0?'#22C97A':'#FF3B3B') }
+        ]},
+        options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{
+                legend:{position:'top',labels:{font:{family:'Pretendard',size:11},padding:8,usePointStyle:true}},
+                tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}만원`}}
+            },
+            scales:{
+                x:{grid:{display:false},ticks:{font:{family:'Pretendard',size:11},color:'#7A8699'}},
+                y:{grid:{color:'#E8ECF2'},ticks:{font:{family:'Pretendard',size:11},color:'#7A8699',callback:v=>v.toLocaleString()+'만'}}
+            }
+        }
+    });
+}
+
+function renderStrategyTab() {
+    const panel = document.getElementById('tab-운영전략');
+    if (!panel) return;
+
+    const cur      = calcMonth(currentMonth);
+    const prev     = currentMonth > 1 ? calcMonth(currentMonth - 1) : null;
+    const cash     = calcCash(currentMonth);
+    const prevCash = currentMonth > 1 ? calcCash(currentMonth - 1) : null;
+    const disabled = currentMonth >= 36 ? 'disabled' : '';
+
+    const kpiCard = (lbl, val, bdg) =>
+        `<div class="strat-kpi-card"><div class="strat-kpi-label">${lbl}</div><div class="strat-kpi-value">${val}${bdg}</div></div>`;
+
+    panel.innerHTML = `
+        <div class="strat-header">
+            <div>
+                <h2 class="strat-title">운영 전략 <span class="strat-month-tag">Month ${currentMonth}</span></h2>
+                <p class="strat-sub">다음 달 전략을 설정하고 진행하기를 눌러 반영하세요</p>
+            </div>
+            <div class="strat-header-btns">
+                <button class="strat-reset-btn"   onclick="resetStrategy()">초기화 하기</button>
+                <button class="strat-advance-btn" onclick="advanceMonth()" ${disabled}>진행 하기 →</button>
+            </div>
+        </div>
+
+        <div class="strat-kpi-row">
+            ${kpiCard('월 매출',   fmtWon(cur.revenue),    badge(prev ? pctDiff(cur.revenue,    prev.revenue)    : null))}
+            ${kpiCard('월 순이익', fmtWon(cur.netProfit),  badge(prev ? pctDiff(cur.netProfit,  prev.netProfit)  : null))}
+            ${kpiCard('현금 보유', fmtWon(cash),           badge(prevCash ? pctDiff(cash,       prevCash)        : null))}
+            ${kpiCard('월 환자',   cur.mp.toLocaleString()+'명', badge(prev ? pctDiff(cur.mp,  prev.mp)          : null))}
+        </div>
+
+        <div class="strat-cards-grid">
+            ${_buildCard1()}
+            ${_buildCard2()}
+            ${_buildCard3()}
+            ${_buildCard4()}
+            ${_buildCard5()}
+            ${_buildCard6()}
+        </div>
+
+        <div class="strat-bottom">
+            <div class="strat-chart-panel">
+                <div class="strat-panel-title">
+                    향후 3개월 예측
+                    <span class="strat-chart-note">현재 파라미터 기준</span>
+                </div>
+                <div class="strat-chart-wrap"><canvas id="strat-chart"></canvas></div>
+            </div>
+            <div class="strat-coach-panel">
+                <div class="strat-panel-title">AI 경영 코치</div>
+                ${_buildAICoach()}
+            </div>
+        </div>
+
+        <div class="advance-bar">
+            <div class="advance-info">현재 <strong id="advance-month-label">${currentMonth}개월</strong> 완료 · 다음 달로 진행하면 전략이 저장되고 운영 결과가 반영됩니다</div>
+            <button class="advance-btn" id="advance-btn" onclick="advanceMonth()" ${disabled}>진행하기 →</button>
+        </div>
+    `;
+
+    renderStratMiniChart();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -860,7 +1168,7 @@ function switchTab(tabName, el) {
     if (el) el.classList.add('active');
     else document.querySelector(`.tab-item[data-tab="${tabName}"]`)?.classList.add('active');
     document.getElementById('tab-' + tabName)?.classList.add('active');
-    if (tabName === '운영전략') renderStrategyCards();
+    if (tabName === '운영전략') renderStrategyTab();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -869,6 +1177,18 @@ function switchTab(tabName, el) {
 
 function advanceMonth() {
     if (currentMonth >= 36) { showToast('36개월 시뮬레이션이 완료되었습니다.'); return; }
+
+    // 전략 저장
+    localStorage.setItem('medsim_operation_style',  stratState.operationStyle);
+    localStorage.setItem('medsim_clinic_style',     stratState.clinicStyle);
+    localStorage.setItem('medsim_operation_hours',  stratState.operationHours);
+    localStorage.setItem('medsim_marketing_cost',   String(stratState.marketingCost));
+    localStorage.setItem('medsim_repayment_style',  stratState.repaymentStyle);
+    localStorage.setItem('medsim_programs',         JSON.stringify(stratState.programs));
+
+    // 시그모이드 파라미터 강제 재계산
+    _simParams = null;
+
     currentMonth++;
     localStorage.setItem('currentMonth', String(currentMonth));
     renderKPI();
@@ -940,6 +1260,7 @@ function closeOnboarding() {
 // ═══════════════════════════════════════════════════════════════
 
 window.addEventListener('load', () => {
+    initStratState();
     renderKPI();
     renderEventCenter();
     initGrowthChart();
