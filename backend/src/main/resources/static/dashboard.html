@@ -711,19 +711,17 @@ function initPatientChart() {
 // ═══════════════════════════════════════════════════════════════
 
 function getExpData() {
-    const rentMan     = parseInt(LS('medsim_monthly_rent')) || 1078;
-    const interestMan = Math.round(parseFloat(LS('medsim_monthly_interest')) || 0);
-    const interiorMan = parseInt(LS('medsim_interior_cost')) || 0;
-    const equipMan    = parseInt(LS('medsim_equipment_total')) || 0;
-    const mktMan      = parseInt(LS('medsim_marketing_cost')) || 0;
-    const deprMan     = Math.round((interiorMan + equipMan) / 60);
-    const totalMan    = Math.round(FIXED_COST / 10_000);
-    const staffMan    = Math.max(0, totalMan - rentMan - interestMan - deprMan - mktMan);
+    const STAFF_COST = { MIN_STAFF: 860, BALANCED: 1670, SERVICE_ENHANCED: 3340 };
+    const os      = LS('medsim_operation_style') || 'BALANCED';
+    const staffMan = STAFF_COST[os] ?? 1670;
+    const rentMan  = parseInt(LS('medsim_monthly_rent'))   || 0;
+    const mktMan   = parseInt(LS('medsim_marketing_cost')) || 0;
+    const otherMan = 250;
     return [
-        { name:'인건비',      amount:staffMan,              color:'#1A6BFF' },
-        { name:'임대료',      amount:rentMan,               color:'#FF8C42' },
-        { name:'마케팅+이자',  amount:mktMan + interestMan, color:'#22C97A' },
-        { name:'감가상각',    amount:deprMan,               color:'#C8D0DC' },
+        { name:'인건비',    amount: staffMan, color:'#1A6BFF' },
+        { name:'임대료',    amount: rentMan,  color:'#FF8C42' },
+        { name:'마케팅+리스', amount: mktMan, color:'#22C97A' },
+        { name:'기타',      amount: otherMan, color:'#C8D0DC' },
     ].filter(d => d.amount > 0);
 }
 
