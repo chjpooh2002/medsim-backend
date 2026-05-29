@@ -268,7 +268,7 @@
     const survEl = document.getElementById('s-survival');
     if (s4.survivalMonths != null && s4.monthlyFixed > 0) {
       const m = s4.survivalMonths;
-      survEl.textContent = m + '개월';
+      survEl.textContent = (+m).toFixed(1) + '개월';
       survEl.className = 'sum-value ' + (m >= 6 ? 'green' : m >= 3 ? 'orange' : 'red');
     } else {
       survEl.textContent = '–';

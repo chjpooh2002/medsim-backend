@@ -521,7 +521,7 @@
       </div>
       <div class="panel-sep"></div>
       <div class="impact-row">
-        <span class="impact-label">보유 자금으로<br>버틸 수 있는 기간</span>
+        <span class="impact-label">보유 자금 + 대출로<br>버틸 수 있는 기간</span>
         <span class="impact-value green" id="panel-survival">–</span>
       </div>
       <div class="impact-row">
@@ -860,7 +860,7 @@
     document.getElementById('monthly-interest-disp').value = monthlyInterest;
 
     const firstMonthExpense = monthlyFixed + marketing + monthlyInterest;
-    const survivalMonths    = monthlyFixed > 0 ? ownCapital / monthlyFixed : Infinity;
+    const survivalMonths    = monthlyFixed > 0 ? (ownCapital + loanPlanned) / monthlyFixed : Infinity;
 
     // 패널 업데이트
     setText('panel-monthly-fixed', monthlyFixed.toLocaleString() + '만원');
@@ -970,7 +970,7 @@
     const interestRate      = parseFloat(document.getElementById('interest-rate').value) || 4.5;
     const monthlyInterest   = Math.round(loanAmount * interestRate / 100 / 12);
     const firstMonthExpense = monthlyFixed + marketing + monthlyInterest;
-    const survivalMonths    = monthlyFixed > 0 ? ownCapital / monthlyFixed : 0;
+    const survivalMonths    = monthlyFixed > 0 ? (ownCapital + loanAmount) / monthlyFixed : 0;
 
     return {
       monthlyRent, deposit, interiorCost: interior, marketingCost: marketing, ownCapital,
