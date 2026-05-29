@@ -445,6 +445,45 @@
       </div>
     </div>
 
+    <!-- [6] 대출 설정 -->
+    <div class="section">
+      <p class="section-title"><span class="icon">💳</span> 대출 설정</p>
+      <div class="field-row">
+        <div class="field-label">대출 필요 예상액 <span class="badge-readonly">자동계산</span></div>
+        <div class="iw readonly">
+          <input type="number" id="loan-needed" readonly tabindex="-1"/>
+          <span class="unit">만원</span>
+        </div>
+        <p class="field-hint">초기 투자 + 3개월 운영자금 기준 자동 산정</p>
+      </div>
+      <div class="field-row">
+        <div class="field-label">실제 대출 예정액</div>
+        <div class="iw">
+          <input type="number" id="loan-planned" placeholder="0" min="0" oninput="onLoanPlannedInput()"/>
+          <span class="unit">만원</span>
+        </div>
+        <p class="field-hint">실제 받을 대출액을 조정할 수 있어요</p>
+      </div>
+      <div class="two-fields">
+        <div class="field-row" style="margin-bottom:0;">
+          <div class="field-label">연 이자율</div>
+          <div class="iw">
+            <input type="number" id="interest-rate" value="4.5" min="0.1" max="20.0" step="0.1" oninput="recalc()"/>
+            <span class="unit">%</span>
+          </div>
+          <p class="field-hint">닥터론 기준 연 4~5% 수준</p>
+        </div>
+        <div class="field-row" style="margin-bottom:0;">
+          <div class="field-label">월 이자 부담 <span class="badge-readonly">자동계산</span></div>
+          <div class="iw readonly">
+            <input type="number" id="monthly-interest-disp" readonly tabindex="-1"/>
+            <span class="unit">만원/월</span>
+          </div>
+          <p class="field-hint">대출 예정액 × 이자율 ÷ 12</p>
+        </div>
+      </div>
+    </div>
+
     <!-- [7] AI 경영 코치 -->
     <div class="ai-section">
       <p class="ai-section-title">💡 AI 경영 코치</p>
@@ -782,6 +821,10 @@
     tr.querySelector('.total-cell').textContent = (count * salary).toLocaleString() + '만원';
   }
 
+  // ── 대출 예정액 수동 입력 여부 추적 ──
+  let loanPlannedLocked = false;
+  function onLoanPlannedInput() { loanPlannedLocked = true; recalc(); }
+
   // ── 실시간 재계산 ──
   function recalc() {
     const monthlyRent = parseInt(document.getElementById('monthly-rent').value) || 0;
@@ -796,7 +839,7 @@
       equipTotal += parseInt(el.dataset.price) || 0;
     });
 
-    // 인건비: 테이블 합산 (프리셋 또는 수동 입력 모두 동일하게 처리)
+    // 인건비: 테이블 합산
     let staffTotal = 0;
     document.querySelectorAll('#staff-tbody tr[data-salary]').forEach(tr => {
       staffTotal += (parseInt(tr.querySelector('.cnt-val').textContent) || 0) * (parseInt(tr.dataset.salary) || 0);
@@ -806,7 +849,16 @@
     const monthlyFixed      = monthlyRent + staffTotal;
     const initialInvestment = deposit + interior + equipTotal;
     const loanNeeded        = Math.max(0, initialInvestment + monthlyFixed * 3 - ownCapital);
-    const monthlyInterest   = Math.round(loanNeeded * 0.045 / 12);
+
+    // 대출 설정 필드 동기화
+    document.getElementById('loan-needed').value = loanNeeded;
+    if (!loanPlannedLocked) document.getElementById('loan-planned').value = loanNeeded || '';
+
+    const loanPlanned    = parseInt(document.getElementById('loan-planned').value) || 0;
+    const interestRate   = parseFloat(document.getElementById('interest-rate').value) || 4.5;
+    const monthlyInterest = Math.round(loanPlanned * interestRate / 100 / 12);
+    document.getElementById('monthly-interest-disp').value = monthlyInterest;
+
     const firstMonthExpense = monthlyFixed + marketing + monthlyInterest;
     const survivalMonths    = monthlyFixed > 0 ? ownCapital / monthlyFixed : Infinity;
 
@@ -914,7 +966,9 @@
     const monthlyFixed      = monthlyRent + staffTotal;
     const initialInvestment = deposit + interior + equipTotal;
     const loanNeeded        = Math.max(0, initialInvestment + monthlyFixed * 3 - ownCapital);
-    const monthlyInterest   = Math.round(loanNeeded * 0.045 / 12);
+    const loanAmount        = parseInt(document.getElementById('loan-planned').value) || loanNeeded;
+    const interestRate      = parseFloat(document.getElementById('interest-rate').value) || 4.5;
+    const monthlyInterest   = Math.round(loanAmount * interestRate / 100 / 12);
     const firstMonthExpense = monthlyFixed + marketing + monthlyInterest;
     const survivalMonths    = monthlyFixed > 0 ? ownCapital / monthlyFixed : 0;
 
@@ -924,7 +978,8 @@
       equipment, equipTotal,
       staff, staffTotal,
       monthlyFixed, initialInvestment, loanNeeded,
-      monthlyInterest, firstMonthExpense, survivalMonths
+      loanAmount, interestRate, monthlyInterest,
+      firstMonthExpense, survivalMonths
     };
   }
 
@@ -941,6 +996,9 @@
     localStorage.setItem('medsim_operation_style',  data.operationStyle);
     localStorage.setItem('medsim_clinic_style',     data.clinicStyle);
     localStorage.setItem('medsim_operation_hours',  data.operationHours);
+    localStorage.setItem('medsim_loan_amount',      String(data.loanAmount));
+    localStorage.setItem('medsim_interest_rate',    String(data.interestRate));
+    localStorage.setItem('medsim_monthly_interest', String(data.monthlyInterest));
 
     window.location.href = 'start5.html';
   }
