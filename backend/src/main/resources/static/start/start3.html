@@ -478,6 +478,8 @@
         if (data.depositPerPyeong != null) localStorage.setItem('medsim_deposit_per_pyeong_raw', String(data.depositPerPyeong));
         if (data.monthlyRent != null) localStorage.setItem('medsim_monthly_rent', String(Math.round(data.monthlyRent / 10000)));
         if (data.deposit != null) localStorage.setItem('medsim_deposit', String(Math.round(data.deposit / 10000)));
+        if (data.floatingPopulation != null) localStorage.setItem('medsim_floating_population', String(data.floatingPopulation));
+        if (data.competitorCount != null && data.competitorCount !== -1) localStorage.setItem('medsim_competitor_count', String(data.competitorCount));
 
         // 임대료 (만원/평): monthlyRent ÷ clinicSizePyeong ÷ 10000
         // clinicSizePyeong 미입력 시 pricePerPyeong 직접 사용

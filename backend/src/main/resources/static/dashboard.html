@@ -384,23 +384,95 @@
 const FIXED_COST  = 50_280_000;   // 월 고정비 합계 (원)
 const INIT_CASH   = 200_000_000;  // 초기 현금 (원)
 
-// 일 평균 환자 수 시그모이드 체크포인트
-const PATIENT_CURVE = [[1,25],[6,39],[12,58],[24,89],[36,100]];
+// ── 시그모이드 파라미터 계산 (localStorage 기반) ──
+let _simParams = null;
+function calcSimParams() {
+    if (_simParams) return _simParams;
+    const LS = k => localStorage.getItem(k);
 
-function dailyPatientsAt(m) {
-    for (let i = 0; i < PATIENT_CURVE.length - 1; i++) {
-        const [m1, p1] = PATIENT_CURVE[i];
-        const [m2, p2] = PATIENT_CURVE[i + 1];
-        if (m >= m1 && m <= m2) return p1 + (p2 - p1) * (m - m1) / (m2 - m1);
+    let Lm = 1.0, km = 1.0, t0a = 0;  // 배율·조정값 누적
+
+    // 1. 지역
+    const sigungu = LS('medsim_sigungu') || '';
+    if      (sigungu === '강남구') Lm *= 1.15;
+    else if (sigungu === '서초구') Lm *= 1.05;
+    else if (sigungu === '마포구') Lm *= 1.0;
+    else if (sigungu === '노원구') Lm *= 0.9;
+    else if (sigungu)              Lm *= 0.85;
+
+    // 2. 유동인구
+    const fp = parseInt(LS('medsim_floating_population')) || 0;
+    if      (fp >= 82000) { Lm *= 1.15; km *= 1.05; t0a -= 1; }
+    else if (fp < 50000 && fp > 0) Lm *= 0.85;
+
+    // 3. 경쟁병원 수
+    const comp = LS('medsim_competitor_count');
+    if (comp !== null) {
+        const c = parseInt(comp);
+        if      (c < 3)  { Lm *= 1.2;  km *= 1.05; }
+        else if (c >= 10){ Lm *= 0.85; km *= 0.95; t0a += 1; }
     }
-    return 100;
+
+    // 4. 평수
+    const pyeong = parseInt(LS('medsim_pyeong')) || 0;
+    if      (pyeong >= 80) Lm *= 1.1;
+    else if (pyeong >= 30 && pyeong < 50) Lm *= 0.95;
+    else if (pyeong > 0 && pyeong < 30)  Lm *= 0.9;
+
+    // 5. 마케팅 비용 (만원)
+    const mkt = parseInt(LS('medsim_marketing_cost')) || 0;
+    if      (mkt >= 3000) { Lm *= 1.05; km *= 1.3;  t0a -= 4; }
+    else if (mkt >= 1000) { Lm *= 1.02; km *= 1.15; t0a -= 2; }
+    else if (mkt >= 500)  {             km *= 1.05; t0a -= 1; }
+
+    // 6. 평당 인테리어 (만원/평)
+    const interior = parseInt(LS('medsim_interior_cost')) || 0;
+    const szForInt = pyeong || 50;
+    const intPerPy = interior / szForInt;
+    if      (intPerPy >= 1000) { Lm *= 1.15; km *= 1.05; t0a -= 1; }
+    else if (intPerPy >= 600)  { Lm *= 1.07; km *= 1.02; }
+
+    // 7. 진료 스타일
+    const cs = LS('medsim_clinic_style') || 'BALANCED';
+    if      (cs === 'FAST_TURNOVER')       { Lm *= 1.2;  km *= 1.1; }
+    else if (cs === 'CONSULTATION_HEAVY')  { Lm *= 0.85; km *= 0.9; t0a += 1; }
+
+    // 8. 운영 시간
+    const oh = LS('medsim_operation_hours') || 'STANDARD';
+    if      (oh === 'NIGHT_AND_WEEKEND') { Lm *= 1.25; km *= 1.1;  t0a -= 2; }
+    else if (oh === 'NIGHT')             { Lm *= 1.15; km *= 1.05; t0a -= 1; }
+    else if (oh === 'WEEKEND')           { Lm *= 1.1;  km *= 1.03; t0a -= 1; }
+
+    // 9. 장비 비용 합계 (만원)
+    const eq = parseInt(LS('medsim_equipment_total')) || 0;
+    if      (eq >= 5000) { Lm *= 1.2;  km *= 1.05; t0a -= 1; }
+    else if (eq >= 2000) { Lm *= 1.1;  km *= 1.02; }
+
+    // 10. 인력 운영 스타일
+    const os = LS('medsim_operation_style') || 'BALANCED';
+    if      (os === 'SERVICE_ENHANCED') { Lm *= 1.15; km *= 1.05; t0a -= 1; }
+    else if (os === 'MIN_STAFF')        { Lm *= 0.92; km *= 0.9;  t0a += 1; }
+
+    _simParams = { L: 90 * Lm, k: 0.117 * km, t0: 12 + t0a };
+    return _simParams;
+}
+
+// P(t) = L / (1 + e^(-k*(t-t0)))
+function calcDailyPatients(month) {
+    const { L, k, t0 } = calcSimParams();
+    return Math.floor(L / (1 + Math.exp(-k * (month - t0))));
+}
+
+function calcMonthlyRevenue(month) {
+    const arpp = Math.round(75_000 + (108_400 - 75_000) * (month - 1) / 35);
+    return calcDailyPatients(month) * 25 * arpp;
 }
 
 function calcMonth(m) {
-    const dp  = dailyPatientsAt(m);
-    const mp  = Math.round(dp * 22);
-    const arpp = Math.round(75_000 + (108_400 - 75_000) * (m - 1) / 35);
-    const revenue  = mp * arpp;
+    const dp       = calcDailyPatients(m);
+    const mp       = dp * 25;
+    const arpp     = Math.round(75_000 + (108_400 - 75_000) * (m - 1) / 35);
+    const revenue  = calcMonthlyRevenue(m);
     const varCost  = Math.round(revenue * 0.30);
     const netProfit = revenue - FIXED_COST - varCost;
     const newRatio  = Math.max(0.15, 1 - 0.85 * (m - 1) / 35);
