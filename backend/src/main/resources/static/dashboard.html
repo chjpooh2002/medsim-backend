@@ -93,7 +93,7 @@
         .card-sub { font-size:11px; color:var(--gray-5); font-weight:500; }
 
         /* ── GROWTH CHART ── */
-        .chart-wrap { position:relative; height:220px; }
+        .chart-wrap { position:relative; height:220px; width:100%; overflow:hidden; }
         .chart-tip { display:none; position:absolute; top:14px; right:10px; background:white; border:1px solid var(--gray-2); border-radius:10px; padding:12px 14px; width:210px; box-shadow:0 6px 20px rgba(0,0,0,.10); z-index:10; }
         .chart-tip p { font-size:12px; color:var(--gray-7); line-height:1.65; margin-bottom:10px; }
         .chart-tip-btns { display:flex; gap:7px; justify-content:flex-end; }
@@ -377,8 +377,8 @@
 
         <div class="sb-bottom">
             <div class="sb-month-badge">
-                <div class="sb-month-num" id="sb-month-num">1</div>
-                <div class="sb-month-lbl">개월 진행 중</div>
+                <div class="sb-month-num" id="sb-month-num">M1</div>
+                <div class="sb-month-lbl">진행 중</div>
             </div>
         </div>
     </aside>
@@ -407,7 +407,7 @@
                 <!-- KPI 4개 -->
                 <div class="kpi-grid">
                     <div class="kpi-card">
-                        <div class="kpi-label">DATE</div>
+                        <div class="kpi-label">DATE <span id="kpi-month-badge" style="font-size:11px;font-weight:700;background:var(--blue);color:white;padding:1px 8px;border-radius:10px;"></span></div>
                         <div class="kpi-main" id="kpi-date">–</div>
                         <div class="kpi-sub"  id="kpi-month">–</div>
                     </div>
@@ -694,12 +694,14 @@ function renderKPI() {
     const cash     = calcCash(currentMonth);
     const prevCash = currentMonth > 1 ? calcCash(currentMonth - 1) : null;
 
-    document.getElementById('sb-month-num').textContent = currentMonth;
+    document.getElementById('sb-month-num').textContent = `M${currentMonth}`;
 
     const now = new Date();
     const pad = n => String(n).padStart(2,'0');
     document.getElementById('kpi-date').textContent  = `${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())}`;
     document.getElementById('kpi-month').textContent = `${currentMonth}개월 진행 중`;
+    const mbadge = document.getElementById('kpi-month-badge');
+    if (mbadge) mbadge.textContent = `Month ${currentMonth}`;
 
     const simStart = new Date(now.getFullYear(), now.getMonth() - (currentMonth-1), 1);
     const simEnd   = new Date(now.getFullYear(), now.getMonth(), 0);
@@ -902,18 +904,30 @@ function selectClinicStyle(v) { stratState.clinicStyle    = v; renderStrategyTab
 function selectOpHours(v)     { stratState.operationHours = v; renderStrategyTab(); }
 function selectRepayment(v)   { stratState.repaymentStyle = v; renderStrategyTab(); }
 
-function changeStaff(role, delta) {
-    stratState.staffCounts[role] = Math.max(0, (stratState.staffCounts[role] || 0) + delta);
-    const el = document.getElementById('sc-' + role);
-    if (el) el.textContent = stratState.staffCounts[role] + '명';
-}
-
 function updateMarketing(v) {
     stratState.marketingCost = parseInt(v) || 0;
     const cur = document.getElementById('mkt-cur-val');
     if (cur) cur.textContent = stratState.marketingCost.toLocaleString() + '만원';
+    const descEl = document.getElementById('mkt-desc');
+    if (descEl) descEl.textContent = _mktDesc(stratState.marketingCost);
+    const ptEl = document.getElementById('mkt-patient');
+    if (ptEl) ptEl.innerHTML = _mktPatientHtml(stratState.marketingCost);
     const ib = document.getElementById('mkt-impacts');
     if (ib) ib.innerHTML = _mktImpactHtml(stratState.marketingCost);
+}
+function _mktDesc(mkt) {
+    if (mkt >= 2000) return '공격적 마케팅, 초기 환자 유입 극대화';
+    if (mkt >= 1000) return '적극적 기획마케팅 + 지역 광고';
+    if (mkt >=  300) return '인라인 광고 + 블로그 마케팅';
+    if (mkt >     0) return '기본 SNS 운영 수준';
+    return '마케팅 없음';
+}
+function _mktPatientHtml(mkt) {
+    if (mkt >= 2000) return '<span class="ibadge pos">+5명/일 이상 (월 125명 추가)</span>';
+    if (mkt >= 1000) return '<span class="ibadge pos">+3명/일 이상 (월 75명 추가)</span>';
+    if (mkt >=  500) return '<span class="ibadge pos">+1명/일 이상 (월 25명 추가)</span>';
+    if (mkt >=  300) return '<span class="ibadge pos">+0.5명/일 (월 12명 추가)</span>';
+    return '<span style="font-size:12px;color:#aaa">효과 없음</span>';
 }
 function _mktImpactHtml(mkt) {
     if (mkt >= 3000) return '<span class="ibadge pos">신환 유입 +30%</span><span class="ibadge pos">성장 가속 +4개월</span><span class="ibadge neg">월비용 +3,000만원</span>';
@@ -953,9 +967,24 @@ function _irGroup(items, curVal, onClickFn) {
 function _cbSvg() { return '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>'; }
 
 // ── 카드 1: 인력 운영 스타일 ──
+const STAFF_WAGE = { nurse: 300, admin: 250, radiol: 350 };
+
+function _calcStaffCost(sc) {
+    return (sc.nurse||0)*STAFF_WAGE.nurse + (sc.admin||0)*STAFF_WAGE.admin + (sc.radiol||0)*STAFF_WAGE.radiol;
+}
+
+function changeStaff(role, delta) {
+    stratState.staffCounts[role] = Math.max(0, (stratState.staffCounts[role] || 0) + delta);
+    const el = document.getElementById('sc-' + role);
+    if (el) el.textContent = stratState.staffCounts[role] + '명';
+    const costEl = document.getElementById('sc-total-cost');
+    if (costEl) costEl.textContent = _calcStaffCost(stratState.staffCounts).toLocaleString() + '만원/월';
+}
+
 function _buildCard1() {
     const os = stratState.operationStyle;
     const sc = stratState.staffCounts;
+    const staffCost = _calcStaffCost(sc);
 
     const radioHtml = _irGroup([
         ['MIN_STAFF','최소 인력 운영'],['BALANCED','균형 운영'],['SERVICE_ENHANCED','서비스 강화형']
@@ -971,10 +1000,11 @@ function _buildCard1() {
                 <button class="step-btn" onclick="changeStaff('${k}',1)">+</button>
             </div>
         </div>`).join('')}
-    </div>`;
+    </div>
+    <div style="font-size:12px;color:#555;margin-bottom:4px">현재 인건비: <strong id="sc-total-cost">${staffCost.toLocaleString()}만원/월</strong></div>`;
 
     const impMap = {
-        MIN_STAFF:        [['인건비 -810만원',true],['대기시간 +8분',false],['환자만족도 -5%',false],['재진률 -2.3%',false]],
+        MIN_STAFF:        [['인건비 절감',true],['대기시간 +8분',false],['환자만족도 -5%',false],['재진률 -2.3%',false]],
         BALANCED:         [['인건비 기본',true],['대기시간 기본',true],['안정적 운영',true]],
         SERVICE_ENHANCED: [['인건비 +1,670만원',false],['대기시간 -12분',true],['환자만족도 +7%',true],['재진률 +2.5%',true]],
     };
@@ -1003,10 +1033,24 @@ function _buildCard2() {
         ['STANDARD','기본'],['NIGHT','야간진료 추가'],['WEEKEND','토요일 진료 추가']
     ], oh, 'selectOpHours');
 
+    const comboDesc = {
+        'FAST_TURNOVER-STANDARD':        '처리량 중심, 직장인 주간 수요 확보',
+        'FAST_TURNOVER-NIGHT':           '처리량 최대, 직장인 야간 수요 확보',
+        'FAST_TURNOVER-WEEKEND':         '주말 직장인·가족 수요 추가 확보',
+        'BALANCED-STANDARD':             '안정적 운영, 균형 잡힌 환자 구성',
+        'BALANCED-NIGHT':                '야간 접근성 확보, 재진율 향상 기대',
+        'BALANCED-WEEKEND':              '주말 가족 환자 유입, 만족도 향상',
+        'CONSULTATION_HEAVY-STANDARD':   '재진 환자 중심, 신뢰도·충성도 높음',
+        'CONSULTATION_HEAVY-NIGHT':      '상담 중심 + 야간 접근성 — 심층 케어',
+        'CONSULTATION_HEAVY-WEEKEND':    '상담형 + 주말 — 개인 맞춤 케어 강화',
+    };
+    const comboKey = `${cs}-${oh}`;
+    const combo = comboDesc[comboKey] || '';
+
     const impacts = [];
-    if (cs==='FAST_TURNOVER')      { impacts.push(['환자수 증가 +2.0%',true],['매출 증가 +5.0%',true],['만족도 감소 -1.2%',false],['재진률 감소 -1.2%',false]); }
-    else if (cs==='CONSULTATION_HEAVY') { impacts.push(['환자수 감소 -2.0%',false],['건당수익 +15.0%',true],['만족도 증가 +3.0%',true]); }
-    else { impacts.push(['균형형 기본 설정',true]); }
+    if (cs==='FAST_TURNOVER')           { impacts.push(['환자수 +2.0%',true],['매출 +5.0%',true],['만족도 -1.2%',false],['재진률 -1.2%',false]); }
+    else if (cs==='CONSULTATION_HEAVY') { impacts.push(['환자수 -2.0%',false],['건당수익 +15%',true],['만족도 +3.0%',true]); }
+    else                                { impacts.push(['균형형 기본',true]); }
     if (oh==='NIGHT')   impacts.push(['접근성 +15%',true],['추가비용 +300만원/월',false]);
     if (oh==='WEEKEND') impacts.push(['접근성 +10%',true],['추가비용 +200만원/월',false]);
 
@@ -1016,6 +1060,7 @@ function _buildCard2() {
         ${csHtml}
         <div class="card-sub-hd mt">운영 시간</div>
         ${ohHtml}
+        ${combo ? `<div style="font-size:12px;color:#1a73e8;background:#E8F0FE;border-radius:7px;padding:6px 10px;margin-top:10px">💡 ${combo}</div>` : ''}
         <div class="impact-sec">
             <div class="impact-lbl">예상 변화</div>
             <div class="impact-row">${impacts.map(([t,p])=>`<span class="ibadge ${p?'pos':'neg'}">${t}</span>`).join('')}</div>
@@ -1026,10 +1071,10 @@ function _buildCard2() {
 // ── 카드 3: 서비스 / 장비 확장 ──
 function _buildCard3() {
     const SVC = [
-        {id:'ultrasound',      lbl:'초음파'},
-        {id:'endoscope_upper', lbl:'위내시경'},
-        {id:'endoscope_lower', lbl:'대장내시경'},
-        {id:'iv_therapy',      lbl:'수액치료'},
+        {id:'ultrasound',      lbl:'초음파',    monthlyCost:15},
+        {id:'endoscope_upper', lbl:'위내시경',   monthlyCost:30},
+        {id:'endoscope_lower', lbl:'대장내시경', monthlyCost:40},
+        {id:'iv_therapy',      lbl:'수액치료',   monthlyCost:10},
     ];
     const sel = stratState.services;
     const cbHtml = `<div class="cb-grid">${SVC.map(s => {
@@ -1037,19 +1082,28 @@ function _buildCard3() {
         return `<div class="cb-item" onclick="toggleService('${s.id}')">
             <span class="cb-box${on?' on':''}">${on?_cbSvg():''}</span>
             <span class="cb-label">${s.lbl}</span>
+            <span style="font-size:11px;color:#888;margin-left:2px">+${s.monthlyCost}만/월</span>
         </div>`;
     }).join('')}</div>`;
+
+    const totalMonthlyCost = SVC.filter(s=>sel.includes(s.id)).reduce((a,s)=>a+s.monthlyCost,0);
 
     const impacts = [];
     if (sel.length > 0) {
         impacts.push([`초기투자 +${(sel.length*500).toLocaleString()}만원`,false]);
         impacts.push([`객단가 +${sel.length*5}%`,true]);
-        if (sel.includes('endoscope_upper')||sel.includes('endoscope_lower')) impacts.push(['BEP 지연 가능 -1.2%',false]);
+        if (sel.includes('endoscope_upper')||sel.includes('endoscope_lower')) impacts.push(['BEP 지연 가능',false]);
     }
+
+    const packageHint = sel.length >= 2
+        ? `<div style="font-size:12px;color:#1a73e8;background:#E8F0FE;border-radius:7px;padding:6px 10px;margin-top:8px">💡 2개 이상 선택 시 패키지 검토 영역 가능</div>`
+        : '';
 
     return `<div class="strat-card">
         <div class="strat-card-title">서비스 / 장비 확장</div>
         ${cbHtml}
+        ${sel.length > 0 ? `<div style="font-size:12px;color:#555;margin-top:10px">월 추가비용 합계: <strong style="color:#d93025">${totalMonthlyCost.toLocaleString()}만원</strong></div>` : ''}
+        ${packageHint}
         <div class="impact-sec">
             <div class="impact-lbl">예상 변화</div>
             <div class="impact-row">${impacts.length ? impacts.map(([t,p])=>`<span class="ibadge ${p?'pos':'neg'}">${t}</span>`).join('') : '<span style="font-size:12px;color:#aaa">서비스를 선택하세요</span>'}</div>
@@ -1065,9 +1119,12 @@ function _buildCard4() {
         <div class="mkt-info">마케팅 비용을 추가하면?</div>
         <div class="mkt-sub">초진 환자 증가 예상 효과를 얻을 수 있습니다</div>
         <div class="mkt-cur">현재: <strong id="mkt-cur-val">${mkt.toLocaleString()}만원</strong></div>
+        <div style="font-size:12px;color:#1a73e8;margin-bottom:8px" id="mkt-desc">${_mktDesc(mkt)}</div>
         <input type="range" class="sc-slider" min="0" max="3000" step="100" value="${mkt}"
             oninput="updateMarketing(this.value)">
         <div class="sc-ticks"><span>0</span><span>1,000</span><span>2,000</span><span>3,000만</span></div>
+        <div style="margin-top:8px;margin-bottom:4px;font-size:11px;color:#888">예상 신환 증가</div>
+        <div id="mkt-patient">${_mktPatientHtml(mkt)}</div>
         <div class="impact-sec">
             <div class="impact-lbl">예상 변화</div>
             <div class="impact-row" id="mkt-impacts">${_mktImpactHtml(mkt)}</div>
@@ -1077,9 +1134,10 @@ function _buildCard4() {
 
 // ── 카드 5: 재무 전략 ──
 function _buildCard5() {
-    const loan = parseInt(LS('medsim_loan_amount')) || 0;
-    const rate = parseFloat(LS('medsim_interest_rate')) || 4.5;
-    const rp   = stratState.repaymentStyle;
+    const loan     = parseInt(LS('medsim_loan_amount')) || 0;
+    const rate     = parseFloat(LS('medsim_interest_rate')) || 4.5;
+    const monthlyI = parseInt(LS('medsim_monthly_interest')) || Math.round(loan * 10000 * (rate/100/12) / 10000);
+    const rp       = stratState.repaymentStyle;
 
     if (!loan) {
         return `<div class="strat-card">
@@ -1091,7 +1149,16 @@ function _buildCard5() {
         </div>`;
     }
 
-    const impText = rp==='AGGRESSIVE' ? '현금 보유 ↓   이자 부담 ↓' : rp==='LIQUIDITY' ? '현금 보유 ↑   이자 부담 ↑' : '현금 보유 균형   이자 부담 균형';
+    const rpDescMap = {
+        AGGRESSIVE: '매월 원금 상환 — 이자 부담 빠르게 감소',
+        BALANCED:   '이자만 상환 — 자금 유동성 유지',
+        LIQUIDITY:  '거치 운영 — 현금 보유 극대화',
+    };
+    const rpImpMap = {
+        AGGRESSIVE: [['이자 부담 감소',true],['현금 보유 ↓',false]],
+        BALANCED:   [['현금 균형 유지',true],['이자 부담 유지',false]],
+        LIQUIDITY:  [['현금 보유 ↑',true],['이자 부담 ↑',false]],
+    };
 
     return `<div class="strat-card">
         <div class="strat-card-title">재무 전략</div>
@@ -1099,18 +1166,23 @@ function _buildCard5() {
             <span class="fin-rate-label">현재 금리</span>
             <span class="fin-rate-badge">${rate}%</span>
         </div>
+        <div style="display:flex;gap:16px;font-size:12px;color:#555;margin-bottom:12px">
+            <span>대출잔액: <strong>${loan.toLocaleString()}만원</strong></span>
+            <span>월 이자: <strong style="color:#d93025">${monthlyI.toLocaleString()}만원</strong></span>
+        </div>
         <div class="card-sub-hd">상환 전략</div>
         ${_irGroup([['AGGRESSIVE','공격 상환'],['BALANCED','균형'],['LIQUIDITY','유동성 확보']], rp, 'selectRepayment')}
-        <div class="fin-impact-row">${impText}</div>
+        <div style="font-size:12px;color:#555;margin-top:8px;margin-bottom:8px">${rpDescMap[rp]||''}</div>
+        <div class="impact-row">${(rpImpMap[rp]||[]).map(([t,p])=>`<span class="ibadge ${p?'pos':'neg'}">${t}</span>`).join('')}</div>
     </div>`;
 }
 
 // ── 카드 6: 평판 / 환자 관리 전략 ──
 function _buildCard6() {
     const PROGS = [
-        {id:'review_mgmt',        lbl:'리뷰 관리 강화'},
-        {id:'revisit_sms',        lbl:'재진 알림 문자'},
-        {id:'complaint_response', lbl:'컴플레인 적극 대응'},
+        {id:'review_mgmt',        lbl:'리뷰 관리 강화',    cost:20},
+        {id:'revisit_sms',        lbl:'재진 알림 문자',     cost:10},
+        {id:'complaint_response', lbl:'컴플레인 적극 대응', cost:30},
     ];
     const sel = stratState.reputationPrograms;
     const cbHtml = PROGS.map(p => {
@@ -1118,19 +1190,22 @@ function _buildCard6() {
         return `<div class="cb-single" onclick="toggleRepProg('${p.id}')">
             <span class="cb-box${on?' on':''}">${on?_cbSvg():''}</span>
             <span class="cb-label">${p.lbl}</span>
+            <span style="font-size:11px;color:#888;margin-left:auto">+${p.cost}만원/월</span>
         </div>`;
     }).join('');
+
+    const totalCost = PROGS.filter(p=>sel.includes(p.id)).reduce((a,p)=>a+p.cost,0);
 
     const impacts = [];
     if (sel.includes('revisit_sms'))         impacts.push(['재진률 +2.0%',true]);
     if (sel.includes('review_mgmt'))         impacts.push(['평판 +5.0%',true]);
-    if (sel.includes('complaint_response'))  impacts.push(['불만족 감소 +3.0%',true]);
-    const cost = sel.length * 30;
-    if (cost > 0) impacts.push([`운영비 +${cost}만원/월`,false]);
+    if (sel.includes('complaint_response'))  impacts.push(['불만족 감소 +3%',true]);
+    if (totalCost > 0)                       impacts.push([`운영비 +${totalCost}만원/월`,false]);
 
     return `<div class="strat-card">
         <div class="strat-card-title">평판 / 환자 관리 전략</div>
         ${cbHtml}
+        ${totalCost > 0 ? `<div style="font-size:12px;color:#555;margin-top:10px">월 관리비 합계: <strong style="color:#d93025">${totalCost.toLocaleString()}만원</strong></div>` : ''}
         <div class="impact-sec">
             <div class="impact-lbl">예상 변화</div>
             <div class="impact-row">${impacts.length ? impacts.map(([t,p])=>`<span class="ibadge ${p?'pos':'neg'}">${t}</span>`).join('') : '<span style="font-size:12px;color:#aaa">프로그램을 선택하세요</span>'}</div>
