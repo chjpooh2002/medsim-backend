@@ -301,22 +301,22 @@
     <!-- [C] 인력 운영 스타일 -->
     <div class="section">
       <p class="section-title"><span class="icon">👤</span> 인력 운영 스타일</p>
-      <p class="field-hint" style="margin-bottom:14px;">선택한 스타일의 인건비가 아래 [인력 구성] 테이블을 대체합니다.</p>
+      <p class="field-hint" style="margin-bottom:14px;">선택하면 아래 [인력 구성] 테이블이 프리셋으로 채워집니다. 인원은 자유롭게 조정 가능합니다.</p>
       <div class="radio-options">
-        <label class="radio-option" id="opst-MIN_STAFF" onclick="onRadioSelect(this,'operationStyle');recalc()">
+        <label class="radio-option" id="opst-MIN_STAFF" onclick="onRadioSelect(this,'operationStyle')">
           <input type="radio" name="operationStyle" value="MIN_STAFF"/>
           <div class="radio-option-label">최소 인력</div>
-          <div class="radio-option-desc">월 860만원<br>간호조무사 2명</div>
+          <div class="radio-option-desc">월 860만원<br>간호사·원무·방사선사 각 1명</div>
         </label>
-        <label class="radio-option selected" id="opst-BALANCED" onclick="onRadioSelect(this,'operationStyle');recalc()">
+        <label class="radio-option selected" id="opst-BALANCED" onclick="onRadioSelect(this,'operationStyle')">
           <input type="radio" name="operationStyle" value="BALANCED" checked/>
           <div class="radio-option-label">균형 인력</div>
-          <div class="radio-option-desc">월 1,670만원<br>간호사 2 + 원무 1 + 기타</div>
+          <div class="radio-option-desc">월 1,390만원<br>간호사 2 + 원무 2 + 간호조무사 1</div>
         </label>
-        <label class="radio-option" id="opst-SERVICE_ENHANCED" onclick="onRadioSelect(this,'operationStyle');recalc()">
+        <label class="radio-option" id="opst-SERVICE_ENHANCED" onclick="onRadioSelect(this,'operationStyle')">
           <input type="radio" name="operationStyle" value="SERVICE_ENHANCED"/>
           <div class="radio-option-label">서비스 강화</div>
-          <div class="radio-option-desc">월 3,340만원<br>풀 스탭 구성</div>
+          <div class="radio-option-desc">월 3,340만원<br>풀 스탭 구성 (6직종)</div>
         </label>
       </div>
     </div>
@@ -418,10 +418,12 @@
       <div class="add-staff-wrap">
         <select id="role-select" class="add-staff-select">
           <option value="">직종 선택...</option>
-          <option value="간호사" data-salary="350">간호사 (월 350만원)</option>
-          <option value="간호조무사" data-salary="250">간호조무사 (월 250만원)</option>
-          <option value="원무/접수" data-salary="230">원무/접수 (월 230만원)</option>
-          <option value="방사선사" data-salary="320">방사선사 (월 320만원)</option>
+          <option value="간호사" data-salary="320">간호사 (월 320만원)</option>
+          <option value="간호조무사" data-salary="230">간호조무사 (월 230만원)</option>
+          <option value="원무/접수" data-salary="260">원무/접수 (월 260만원)</option>
+          <option value="방사선사" data-salary="280">방사선사 (월 280만원)</option>
+          <option value="검사/내시경 보조" data-salary="300">검사/내시경 보조 (월 300만원)</option>
+          <option value="코디네이터" data-salary="240">코디네이터 (월 240만원)</option>
           <option value="임상병리사" data-salary="300">임상병리사 (월 300만원)</option>
           <option value="물리치료사" data-salary="280">물리치료사 (월 280만원)</option>
           <option value="기타" data-salary="0">기타 (직접입력)</option>
@@ -496,10 +498,26 @@
 <footer><p>MEDSIM © 2026. All rights reserved.</p></footer>
 
 <script>
-  // ── 상수 ──
-  const STAFF_SALARIES = {
-    '간호사': 350, '간호조무사': 250, '원무/접수': 230,
-    '방사선사': 320, '임상병리사': 300, '물리치료사': 280
+  // ── 인력 프리셋 정의 ──
+  const STAFF_PRESETS = {
+    MIN_STAFF: [
+      { role: '간호사',   salary: 320, count: 1 },
+      { role: '원무/접수', salary: 260, count: 1, min: 1 },
+      { role: '방사선사',  salary: 280, count: 1 },
+    ],
+    BALANCED: [
+      { role: '간호사',    salary: 320, count: 2 },
+      { role: '원무/접수', salary: 260, count: 2, min: 1 },
+      { role: '간호조무사', salary: 230, count: 1 },
+    ],
+    SERVICE_ENHANCED: [
+      { role: '간호사',         salary: 320, count: 4 },
+      { role: '원무/접수',      salary: 260, count: 3, min: 1 },
+      { role: '간호조무사',     salary: 230, count: 2 },
+      { role: '방사선사',       salary: 280, count: 1 },
+      { role: '검사/내시경 보조', salary: 300, count: 1 },
+      { role: '코디네이터',     salary: 240, count: 1 },
+    ],
   };
 
   // ── 초기화 ──
@@ -538,7 +556,10 @@
         `${(150 * clinicSize).toLocaleString()}~${(300 * clinicSize).toLocaleString()}`;
     }
 
-    recalc();
+    // 기본 선택된 인력 운영 스타일 프리셋 적용 (BALANCED)
+    const defaultStyle = document.querySelector('input[name="operationStyle"]:checked');
+    if (defaultStyle) applyStaffPreset(defaultStyle.value);
+    else recalc();
   }
 
   // ── 라디오 선택 헬퍼 ──
@@ -547,13 +568,99 @@
       r.closest('.radio-option').classList.remove('selected');
     });
     label.classList.add('selected');
-    label.querySelector('input[type=radio]').checked = true;
+    const radio = label.querySelector('input[type=radio]');
+    radio.checked = true;
+    if (name === 'operationStyle') applyStaffPreset(radio.value);
+    else recalc();
+  }
+
+  // ── 인력 프리셋 적용 ──
+  function applyStaffPreset(styleValue) {
+    document.getElementById('staff-tbody').innerHTML = '';
+    const preset = STAFF_PRESETS[styleValue];
+    if (preset) preset.forEach(({ role, salary, count, min = 0 }) => insertStaffRow(role, salary, count, min));
+    syncEquipmentStaff();
+    recalc();
+  }
+
+  // ── 인력 행 생성 헬퍼 ──
+  function insertStaffRow(role, salary, count = 1, minCount = 0) {
+    document.getElementById('staff-empty-row')?.remove();
+    const tbody = document.getElementById('staff-tbody');
+    const tr = document.createElement('tr');
+    tr.dataset.role   = role;
+    tr.dataset.salary = String(salary);
+    tr.dataset.min    = String(minCount);
+    tr.innerHTML = `
+      <td class="role-cell">${role}</td>
+      <td>
+        <div class="counter-wrap">
+          <button class="cnt-btn" onclick="changeCount(this,-1)">−</button>
+          <span class="cnt-val">${count}</span>
+          <button class="cnt-btn" onclick="changeCount(this,1)">+</button>
+        </div>
+      </td>
+      <td>${salary.toLocaleString()}만원</td>
+      <td class="total-cell">${(count * salary).toLocaleString()}만원</td>
+      <td><button class="del-btn" onclick="removeStaff(this)">×</button></td>
+    `;
+    tbody.appendChild(tr);
+    return tr;
+  }
+
+  // ── 장비 체크 상태와 인력 테이블 동기화 ──
+  function syncEquipmentStaff() {
+    if (document.querySelector('.equip-item[data-name="X-Ray"].checked'))
+      ensureStaffRole('방사선사', 280);
+    const endoscope = document.querySelector('.equip-item[data-name="상부위장관 내시경"].checked') ||
+                      document.querySelector('.equip-item[data-name="하부위장관 내시경"].checked');
+    if (endoscope) ensureStaffRole('검사/내시경 보조', 300);
+  }
+
+  // ── 해당 role이 없으면 1명 추가 ──
+  function ensureStaffRole(role, salary) {
+    if (!document.querySelector(`#staff-tbody tr[data-role="${role}"]`))
+      insertStaffRow(role, salary, 1, 0);
+  }
+
+  // ── 해당 role을 1 감소 (1명이면 행 제거) ──
+  function decrementOrRemoveStaff(role) {
+    const tr = document.querySelector(`#staff-tbody tr[data-role="${role}"]`);
+    if (!tr) return;
+    const valEl = tr.querySelector('.cnt-val');
+    const cur   = parseInt(valEl.textContent) || 0;
+    if (cur > 1) {
+      valEl.textContent = cur - 1;
+      updateRowTotal(tr);
+    } else {
+      tr.remove();
+      const tbody = document.getElementById('staff-tbody');
+      if (!tbody.querySelector('tr[data-salary]')) {
+        const empty = document.createElement('tr');
+        empty.id = 'staff-empty-row';
+        empty.innerHTML = '<td colspan="5" class="staff-empty">아래 버튼으로 인력을 추가하세요</td>';
+        tbody.appendChild(empty);
+      }
+    }
+    recalc();
   }
 
   // ── 장비 토글 ──
   function clickEquip(el) {
     el.classList.toggle('checked');
-    el.querySelector('.equip-cb').checked = el.classList.contains('checked');
+    const isChecked = el.classList.contains('checked');
+    el.querySelector('.equip-cb').checked = isChecked;
+    const name = el.dataset.name;
+
+    if (name === 'X-Ray') {
+      if (isChecked) ensureStaffRole('방사선사', 280);
+      else decrementOrRemoveStaff('방사선사');
+    } else if (name === '상부위장관 내시경' || name === '하부위장관 내시경') {
+      const anyEndoscope = document.querySelector('.equip-item[data-name="상부위장관 내시경"].checked') ||
+                           document.querySelector('.equip-item[data-name="하부위장관 내시경"].checked');
+      if (anyEndoscope) ensureStaffRole('검사/내시경 보조', 300);
+      else decrementOrRemoveStaff('검사/내시경 보조');
+    }
     recalc();
   }
 
@@ -604,38 +711,37 @@
   // ── 인력 행 추가 ──
   function addStaff() {
     const select = document.getElementById('role-select');
-    const opt = select.options[select.selectedIndex];
-    const role = opt.value;
+    const opt    = select.options[select.selectedIndex];
+    const role   = opt.value;
     if (!role) return;
-    const salary = parseInt(opt.dataset.salary) || 0;
+    const salary   = parseInt(opt.dataset.salary) || 0;
     const isCustom = role === '기타';
 
-    // 빈 안내 행 제거
-    const emptyRow = document.getElementById('staff-empty-row');
-    if (emptyRow) emptyRow.remove();
-
-    const tbody = document.getElementById('staff-tbody');
-    const tr = document.createElement('tr');
-    tr.dataset.salary = String(salary);
-
-    const salaryCell = isCustom
-      ? `<div class="salary-iw"><input type="number" class="salary-input" placeholder="급여" min="0" oninput="onCustomSalary(this)"><span class="unit">만원</span></div>`
-      : `${salary.toLocaleString()}만원`;
-
-    tr.innerHTML = `
-      <td class="role-cell">${role}</td>
-      <td>
-        <div class="counter-wrap">
-          <button class="cnt-btn" onclick="changeCount(this,-1)">−</button>
-          <span class="cnt-val">1</span>
-          <button class="cnt-btn" onclick="changeCount(this,1)">+</button>
-        </div>
-      </td>
-      <td>${salaryCell}</td>
-      <td class="total-cell">${salary.toLocaleString()}만원</td>
-      <td><button class="del-btn" onclick="removeStaff(this)">×</button></td>
-    `;
-    tbody.appendChild(tr);
+    if (isCustom) {
+      // 기타 직종: 급여 직접 입력 행 (insertStaffRow와 별도 처리)
+      document.getElementById('staff-empty-row')?.remove();
+      const tbody = document.getElementById('staff-tbody');
+      const tr    = document.createElement('tr');
+      tr.dataset.role   = '기타';
+      tr.dataset.salary = '0';
+      tr.dataset.min    = '0';
+      tr.innerHTML = `
+        <td class="role-cell">기타</td>
+        <td>
+          <div class="counter-wrap">
+            <button class="cnt-btn" onclick="changeCount(this,-1)">−</button>
+            <span class="cnt-val">1</span>
+            <button class="cnt-btn" onclick="changeCount(this,1)">+</button>
+          </div>
+        </td>
+        <td><div class="salary-iw"><input type="number" class="salary-input" placeholder="급여" min="0" oninput="onCustomSalary(this)"><span class="unit">만원</span></div></td>
+        <td class="total-cell">0만원</td>
+        <td><button class="del-btn" onclick="removeStaff(this)">×</button></td>
+      `;
+      tbody.appendChild(tr);
+    } else {
+      insertStaffRow(role, salary, 1, 0);
+    }
 
     select.value = '';
     recalc();
@@ -654,9 +760,10 @@
   }
 
   function changeCount(btn, delta) {
-    const tr = btn.closest('tr');
-    const valEl = tr.querySelector('.cnt-val');
-    const newCount = Math.max(1, parseInt(valEl.textContent) + delta);
+    const tr       = btn.closest('tr');
+    const valEl    = tr.querySelector('.cnt-val');
+    const minCount = parseInt(tr.dataset.min) || 0;
+    const newCount = Math.max(minCount, parseInt(valEl.textContent) + delta);
     valEl.textContent = newCount;
     updateRowTotal(tr);
     recalc();
@@ -676,8 +783,6 @@
   }
 
   // ── 실시간 재계산 ──
-  const STYLE_COSTS = { MIN_STAFF: 860, BALANCED: 1670, SERVICE_ENHANCED: 3340 };
-
   function recalc() {
     const monthlyRent = parseInt(document.getElementById('monthly-rent').value) || 0;
     const deposit     = parseInt(document.getElementById('deposit').value)     || 0;
@@ -691,17 +796,11 @@
       equipTotal += parseInt(el.dataset.price) || 0;
     });
 
-    // 인건비: Section C 스타일 우선, 없으면 수동 테이블 합산
-    const checkedStyle = document.querySelector('input[name="operationStyle"]:checked');
-    let staffTotal = checkedStyle
-      ? (STYLE_COSTS[checkedStyle.value] || 0)
-      : (() => {
-          let t = 0;
-          document.querySelectorAll('#staff-tbody tr[data-salary]').forEach(tr => {
-            t += (parseInt(tr.querySelector('.cnt-val').textContent) || 0) * (parseInt(tr.dataset.salary) || 0);
-          });
-          return t;
-        })();
+    // 인건비: 테이블 합산 (프리셋 또는 수동 입력 모두 동일하게 처리)
+    let staffTotal = 0;
+    document.querySelectorAll('#staff-tbody tr[data-salary]').forEach(tr => {
+      staffTotal += (parseInt(tr.querySelector('.cnt-val').textContent) || 0) * (parseInt(tr.dataset.salary) || 0);
+    });
 
     // 계산
     const monthlyFixed      = monthlyRent + staffTotal;
@@ -800,14 +899,16 @@
       equipTotal += price;
     });
 
-    // 인건비: Section C 스타일 우선, 없으면 수동 테이블
+    // 인건비: 테이블 합산
     const staff = [];
-    let staffTotal = STYLE_COSTS[operationStyle] || 0;
+    let staffTotal = 0;
     document.querySelectorAll('#staff-tbody tr[data-salary]').forEach(tr => {
       const role   = tr.querySelector('.role-cell').textContent;
       const count  = parseInt(tr.querySelector('.cnt-val').textContent) || 0;
       const salary = parseInt(tr.dataset.salary) || 0;
-      staff.push({ role, count, salary, total: count * salary });
+      const total  = count * salary;
+      staff.push({ role, count, salary, total });
+      staffTotal += total;
     });
 
     const monthlyFixed      = monthlyRent + staffTotal;
