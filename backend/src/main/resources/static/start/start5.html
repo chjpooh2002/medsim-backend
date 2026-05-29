@@ -328,6 +328,7 @@
       const simulationId = 'demo-001';
 
       localStorage.setItem('simulationId', simulationId);
+      localStorage.removeItem('onboardingShown');
       window.location.href = '/dashboard.html';
 
     } catch (e) {

@@ -999,6 +999,9 @@
     localStorage.setItem('medsim_loan_amount',      String(data.loanAmount));
     localStorage.setItem('medsim_interest_rate',    String(data.interestRate));
     localStorage.setItem('medsim_monthly_interest', String(data.monthlyInterest));
+    const staffWithIns = Math.round(data.staffTotal * 1.106);
+    const deprMan = Math.round((data.interiorCost + data.equipTotal) / 60);
+    localStorage.setItem('medsim_fixed_cost', String(data.monthlyRent + staffWithIns + deprMan + data.marketingCost));
 
     window.location.href = 'start5.html';
   }
