@@ -153,11 +153,22 @@
         footer { background:var(--navy); padding:20px 32px; text-align:center; margin-top:auto; }
         footer p { font-size:12px; color:rgba(255,255,255,.4); }
 
+        /* ── RADIO OPTIONS ── */
+        .radio-options { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+        .radio-option { border:1.5px solid var(--gray-2); border-radius:10px; padding:14px 16px; cursor:pointer; transition:border-color .18s,background .18s; }
+        .radio-option:hover { border-color:var(--blue); }
+        .radio-option.selected { border-color:var(--blue); background:var(--blue-bg); }
+        .radio-option input[type=radio] { display:none; }
+        .radio-option-label { font-size:13px; font-weight:700; color:var(--navy); margin-bottom:4px; }
+        .radio-option.selected .radio-option-label { color:var(--blue); }
+        .radio-option-desc { font-size:11.5px; color:var(--gray-5); line-height:1.5; }
+
         @media (max-width:940px) {
           .page-layout { grid-template-columns:1fr; }
           .side-col { position:static; order:-1; }
           .equip-grid { grid-template-columns:1fr; }
           .two-fields { grid-template-columns:1fr; }
+          .radio-options { grid-template-columns:1fr; }
         }
     </style>
 </head>
@@ -240,6 +251,73 @@
           </div>
           <p class="field-hint">초기 개원 시 500~2,000만원 수준</p>
         </div>
+      </div>
+    </div>
+
+    <!-- [A] 진료 스타일 -->
+    <div class="section">
+      <p class="section-title"><span class="icon">🩺</span> 진료 스타일</p>
+      <div class="radio-options">
+        <label class="radio-option" id="style-FAST_TURNOVER" onclick="onRadioSelect(this,'clinicStyle')">
+          <input type="radio" name="clinicStyle" value="FAST_TURNOVER"/>
+          <div class="radio-option-label">빠른 회전 진료</div>
+          <div class="radio-option-desc">환자 처리 최대화<br>짧은 진료 시간</div>
+        </label>
+        <label class="radio-option selected" id="style-BALANCED" onclick="onRadioSelect(this,'clinicStyle')">
+          <input type="radio" name="clinicStyle" value="BALANCED" checked/>
+          <div class="radio-option-label">균형 진료</div>
+          <div class="radio-option-desc">일반적인 일차의료<br>표준 진료 시간</div>
+        </label>
+        <label class="radio-option" id="style-CONSULTATION_HEAVY" onclick="onRadioSelect(this,'clinicStyle')">
+          <input type="radio" name="clinicStyle" value="CONSULTATION_HEAVY"/>
+          <div class="radio-option-label">상담 중심 진료</div>
+          <div class="radio-option-desc">환자 당 긴 시간<br>심층 상담 제공</div>
+        </label>
+      </div>
+    </div>
+
+    <!-- [B] 운영 시간 -->
+    <div class="section">
+      <p class="section-title"><span class="icon">🕐</span> 운영 시간</p>
+      <div class="radio-options">
+        <label class="radio-option selected" id="hours-STANDARD" onclick="onRadioSelect(this,'operationHours')">
+          <input type="radio" name="operationHours" value="STANDARD" checked/>
+          <div class="radio-option-label">주 5일 일반</div>
+          <div class="radio-option-desc">09:00 – 18:00<br>주말 휴진</div>
+        </label>
+        <label class="radio-option" id="hours-NIGHT" onclick="onRadioSelect(this,'operationHours')">
+          <input type="radio" name="operationHours" value="NIGHT"/>
+          <div class="radio-option-label">야간 진료 포함</div>
+          <div class="radio-option-desc">09:00 – 21:00<br>평일 야간 연장</div>
+        </label>
+        <label class="radio-option" id="hours-WEEKEND" onclick="onRadioSelect(this,'operationHours')">
+          <input type="radio" name="operationHours" value="WEEKEND"/>
+          <div class="radio-option-label">주말 진료 포함</div>
+          <div class="radio-option-desc">토요일 포함 운영<br>09:00 – 13:00</div>
+        </label>
+      </div>
+    </div>
+
+    <!-- [C] 인력 운영 스타일 -->
+    <div class="section">
+      <p class="section-title"><span class="icon">👤</span> 인력 운영 스타일</p>
+      <p class="field-hint" style="margin-bottom:14px;">선택한 스타일의 인건비가 아래 [인력 구성] 테이블을 대체합니다.</p>
+      <div class="radio-options">
+        <label class="radio-option" id="opst-MIN_STAFF" onclick="onRadioSelect(this,'operationStyle');recalc()">
+          <input type="radio" name="operationStyle" value="MIN_STAFF"/>
+          <div class="radio-option-label">최소 인력</div>
+          <div class="radio-option-desc">월 860만원<br>간호조무사 2명</div>
+        </label>
+        <label class="radio-option selected" id="opst-BALANCED" onclick="onRadioSelect(this,'operationStyle');recalc()">
+          <input type="radio" name="operationStyle" value="BALANCED" checked/>
+          <div class="radio-option-label">균형 인력</div>
+          <div class="radio-option-desc">월 1,670만원<br>간호사 2 + 원무 1 + 기타</div>
+        </label>
+        <label class="radio-option" id="opst-SERVICE_ENHANCED" onclick="onRadioSelect(this,'operationStyle');recalc()">
+          <input type="radio" name="operationStyle" value="SERVICE_ENHANCED"/>
+          <div class="radio-option-label">서비스 강화</div>
+          <div class="radio-option-desc">월 3,340만원<br>풀 스탭 구성</div>
+        </label>
       </div>
     </div>
 
@@ -406,7 +484,7 @@
         <span class="impact-value green" id="panel-survival">–</span>
       </div>
       <div class="impact-row">
-        <span class="impact-label">대출 필요 예상액<br><small style="font-size:11px;">(초기투자 - 보유자금)</small></span>
+        <span class="impact-label">대출 필요 예상액<br><small style="font-size:11px;">(초기투자 + 월고정×3 - 보유자금)</small></span>
         <span class="impact-value" id="panel-loan">0만원</span>
       </div>
     </div>
@@ -424,27 +502,52 @@
     '방사선사': 320, '임상병리사': 300, '물리치료사': 280
   };
 
-  // ── 초기화: start3 sessionStorage 읽기 ──
+  // ── 초기화 ──
   function init() {
+    // localStorage 우선 (start3 API 응답값), sessionStorage fallback
+    const lsRent    = parseInt(localStorage.getItem('medsim_monthly_rent')) || 0;
+    const lsDeposit = parseInt(localStorage.getItem('medsim_deposit')) || 0;
+    const lsPyeong  = parseInt(localStorage.getItem('medsim_pyeong')) || 0;
     const s3 = JSON.parse(sessionStorage.getItem('start3Data') || '{}');
-    const pricePerPyeong = parseFloat(s3.pricePerPyeong) || 0;
-    const clinicSize     = parseInt(s3.clinicSize) || 0;
-    const monthlyRent    = Math.round(pricePerPyeong * clinicSize);
+    const clinicSize = lsPyeong || (parseInt(s3.clinicSize) || 0);
+
+    let monthlyRent, hintText;
+    if (lsRent > 0) {
+      monthlyRent = lsRent;
+      const priceRaw = parseInt(localStorage.getItem('medsim_price_per_pyeong_raw')) || 0;
+      const sigungu  = localStorage.getItem('medsim_sigungu') || '';
+      hintText = (priceRaw && lsPyeong)
+        ? `평당 ${Math.round(priceRaw / 10000)}만원 × ${lsPyeong}평 = ${monthlyRent.toLocaleString()}만원`
+        : `${sigungu} 입지 기준 ${monthlyRent.toLocaleString()}만원/월`;
+    } else {
+      const pricePerPyeong = parseFloat(s3.pricePerPyeong) || 0;
+      monthlyRent = Math.round(pricePerPyeong * clinicSize);
+      hintText = (pricePerPyeong && clinicSize)
+        ? `평당 ${pricePerPyeong}만원 × ${clinicSize}평 = ${monthlyRent.toLocaleString()}만원`
+        : '입지 정보를 불러올 수 없습니다 (start3에서 입력해주세요)';
+    }
 
     document.getElementById('monthly-rent').value = monthlyRent || '';
-    document.getElementById('rent-hint').textContent = (pricePerPyeong && clinicSize)
-      ? `평당 ${pricePerPyeong}만원 × ${clinicSize}평 = ${monthlyRent.toLocaleString()}만원`
-      : '입지 정보를 불러올 수 없습니다 (start3에서 입력해주세요)';
+    document.getElementById('rent-hint').textContent = hintText;
 
-    // 인테리어 힌트 평수 업데이트
+    if (lsDeposit > 0) document.getElementById('deposit').value = lsDeposit;
+
     if (clinicSize) {
       document.getElementById('interior-hint-size').textContent = clinicSize;
-      const lo = (150 * clinicSize).toLocaleString();
-      const hi = (300 * clinicSize).toLocaleString();
-      document.getElementById('interior-hint-range').textContent = `${lo}~${hi}`;
+      document.getElementById('interior-hint-range').textContent =
+        `${(150 * clinicSize).toLocaleString()}~${(300 * clinicSize).toLocaleString()}`;
     }
 
     recalc();
+  }
+
+  // ── 라디오 선택 헬퍼 ──
+  function onRadioSelect(label, name) {
+    document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+      r.closest('.radio-option').classList.remove('selected');
+    });
+    label.classList.add('selected');
+    label.querySelector('input[type=radio]').checked = true;
   }
 
   // ── 장비 토글 ──
@@ -573,6 +676,8 @@
   }
 
   // ── 실시간 재계산 ──
+  const STYLE_COSTS = { MIN_STAFF: 860, BALANCED: 1670, SERVICE_ENHANCED: 3340 };
+
   function recalc() {
     const monthlyRent = parseInt(document.getElementById('monthly-rent').value) || 0;
     const deposit     = parseInt(document.getElementById('deposit').value)     || 0;
@@ -586,21 +691,25 @@
       equipTotal += parseInt(el.dataset.price) || 0;
     });
 
-    // 인건비 합계
-    let staffTotal = 0;
-    document.querySelectorAll('#staff-tbody tr[data-salary]').forEach(tr => {
-      const count  = parseInt(tr.querySelector('.cnt-val').textContent) || 0;
-      const salary = parseInt(tr.dataset.salary) || 0;
-      staffTotal += count * salary;
-    });
+    // 인건비: Section C 스타일 우선, 없으면 수동 테이블 합산
+    const checkedStyle = document.querySelector('input[name="operationStyle"]:checked');
+    let staffTotal = checkedStyle
+      ? (STYLE_COSTS[checkedStyle.value] || 0)
+      : (() => {
+          let t = 0;
+          document.querySelectorAll('#staff-tbody tr[data-salary]').forEach(tr => {
+            t += (parseInt(tr.querySelector('.cnt-val').textContent) || 0) * (parseInt(tr.dataset.salary) || 0);
+          });
+          return t;
+        })();
 
     // 계산
     const monthlyFixed      = monthlyRent + staffTotal;
     const initialInvestment = deposit + interior + equipTotal;
-    const loanNeeded        = Math.max(0, initialInvestment - ownCapital);
+    const loanNeeded        = Math.max(0, initialInvestment + monthlyFixed * 3 - ownCapital);
     const monthlyInterest   = Math.round(loanNeeded * 0.045 / 12);
     const firstMonthExpense = monthlyFixed + marketing + monthlyInterest;
-    const survivalMonths    = monthlyFixed > 0 ? Math.floor(ownCapital / monthlyFixed) : 0;
+    const survivalMonths    = monthlyFixed > 0 ? ownCapital / monthlyFixed : Infinity;
 
     // 패널 업데이트
     setText('panel-monthly-fixed', monthlyFixed.toLocaleString() + '만원');
@@ -609,17 +718,20 @@
     setText('panel-loan',          loanNeeded.toLocaleString() + '만원');
 
     const survivalEl = document.getElementById('panel-survival');
-    if (monthlyFixed === 0) {
+    if (!isFinite(survivalMonths)) {
       survivalEl.textContent = '–';
       survivalEl.className = 'impact-value green';
+    } else if (survivalMonths === 0) {
+      survivalEl.textContent = '0개월 🚨';
+      survivalEl.className = 'impact-value red';
     } else if (survivalMonths >= 6) {
-      survivalEl.textContent = survivalMonths + '개월';
+      survivalEl.textContent = survivalMonths.toFixed(1) + '개월';
       survivalEl.className = 'impact-value green';
     } else if (survivalMonths >= 3) {
-      survivalEl.textContent = survivalMonths + '개월';
+      survivalEl.textContent = survivalMonths.toFixed(1) + '개월';
       survivalEl.className = 'impact-value orange';
     } else {
-      survivalEl.textContent = survivalMonths + '개월 ⚠';
+      survivalEl.textContent = survivalMonths.toFixed(1) + '개월 ⚠';
       survivalEl.className = 'impact-value red';
     }
 
@@ -641,21 +753,23 @@
     loading.classList.add('show');
     result.classList.remove('show');
 
-    try {
-      // TODO: /api/ai/coach 백엔드 구현 후 실제 호출로 교체
-      // const res = await fetch('/api/ai/coach', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': 'Bearer ' + localStorage.getItem('token')
-      //   },
-      //   body: JSON.stringify(collectData())
-      // });
-      // const data = await res.json();
-      // result.textContent = data.message;
+    await new Promise(r => setTimeout(r, 800));
 
-      await new Promise(r => setTimeout(r, 1200)); // 로딩 시뮬레이션
-      result.textContent = 'AI 경영 코치 기능은 현재 준비 중입니다.\n\n입력하신 데이터를 기반으로 분석 서비스가 곧 제공될 예정입니다.';
+    try {
+      const d = collectData();
+      const survivalMonths = d.monthlyFixed > 0 ? d.ownCapital / d.monthlyFixed : 99;
+      const loanRatio = d.initialInvestment > 0 ? d.loanNeeded / d.initialInvestment : 0;
+
+      let msg;
+      if (survivalMonths < 3) {
+        msg = `⚠️ 긴급 경고: 자금 부족 위험\n\n현재 보유 자금으로는 약 ${survivalMonths.toFixed(1)}개월밖에 버티기 어렵습니다. 개원 초기 3~6개월은 수익이 안정화되기 전 가장 취약한 시기입니다.\n\n📌 권장 조치:\n• 보유 자금을 최소 6개월치 고정지출(${(d.monthlyFixed * 6).toLocaleString()}만원) 이상 확보하세요\n• 인테리어·기기 비용을 줄이거나 리스 활용을 검토하세요\n• 대출 한도를 사전에 확인하세요`;
+      } else if (loanRatio > 0.7) {
+        msg = `⚡ 주의: 대출 의존도 높음\n\n초기 투자금의 ${Math.round(loanRatio * 100)}%를 대출로 충당해야 합니다. 월 이자 부담(약 ${d.monthlyInterest.toLocaleString()}만원)이 수익 창출 전 현금흐름을 압박할 수 있습니다.\n\n📌 권장 조치:\n• 의료기기 일부를 리스·렌탈로 전환하면 초기 자금 부담을 줄일 수 있습니다\n• 정부·지자체 의원 개설 지원금(최대 5,000만원)을 확인하세요\n• 인력은 최소 인력으로 시작하고 환자 수 증가 후 확충을 권장합니다`;
+      } else {
+        msg = `✅ 건강한 재무 구조\n\n보유 자금으로 ${survivalMonths.toFixed(1)}개월을 버틸 수 있는 안정적인 구조입니다. 대출 비율도 ${Math.round(loanRatio * 100)}%로 관리 가능한 수준입니다.\n\n📌 성장 가속 팁:\n• 개원 1~3개월은 마케팅에 집중 투자하여 초기 환자 풀을 빠르게 확보하세요\n• 3개월 후 손익분기점 진입 여부를 점검하고 인력 확충 타이밍을 결정하세요\n• 잉여 현금은 부채 조기 상환보다 추가 서비스·기기 확장에 우선 투자하는 것을 권장합니다`;
+      }
+
+      result.textContent = msg;
       result.classList.add('show');
     } catch (e) {
       result.textContent = 'AI 분석에 실패했습니다. 잠시 후 다시 시도해주세요.';
@@ -674,6 +788,10 @@
     const marketing   = parseInt(document.getElementById('marketing').value)   || 0;
     const ownCapital  = parseInt(document.getElementById('own-capital').value) || 0;
 
+    const clinicStyle    = (document.querySelector('input[name="clinicStyle"]:checked')    || {}).value || 'BALANCED';
+    const operationHours = (document.querySelector('input[name="operationHours"]:checked') || {}).value || 'STANDARD';
+    const operationStyle = (document.querySelector('input[name="operationStyle"]:checked') || {}).value || 'BALANCED';
+
     const equipment = [];
     let equipTotal = 0;
     document.querySelectorAll('.equip-item.checked').forEach(el => {
@@ -682,26 +800,26 @@
       equipTotal += price;
     });
 
+    // 인건비: Section C 스타일 우선, 없으면 수동 테이블
     const staff = [];
-    let staffTotal = 0;
+    let staffTotal = STYLE_COSTS[operationStyle] || 0;
     document.querySelectorAll('#staff-tbody tr[data-salary]').forEach(tr => {
       const role   = tr.querySelector('.role-cell').textContent;
       const count  = parseInt(tr.querySelector('.cnt-val').textContent) || 0;
       const salary = parseInt(tr.dataset.salary) || 0;
-      const total  = count * salary;
-      staff.push({ role, count, salary, total });
-      staffTotal += total;
+      staff.push({ role, count, salary, total: count * salary });
     });
 
     const monthlyFixed      = monthlyRent + staffTotal;
     const initialInvestment = deposit + interior + equipTotal;
-    const loanNeeded        = Math.max(0, initialInvestment - ownCapital);
+    const loanNeeded        = Math.max(0, initialInvestment + monthlyFixed * 3 - ownCapital);
     const monthlyInterest   = Math.round(loanNeeded * 0.045 / 12);
     const firstMonthExpense = monthlyFixed + marketing + monthlyInterest;
-    const survivalMonths    = monthlyFixed > 0 ? Math.floor(ownCapital / monthlyFixed) : 0;
+    const survivalMonths    = monthlyFixed > 0 ? ownCapital / monthlyFixed : 0;
 
     return {
       monthlyRent, deposit, interiorCost: interior, marketingCost: marketing, ownCapital,
+      clinicStyle, operationHours, operationStyle,
       equipment, equipTotal,
       staff, staffTotal,
       monthlyFixed, initialInvestment, loanNeeded,
@@ -713,6 +831,16 @@
   function goNext() {
     const data = collectData();
     sessionStorage.setItem('start4Data', JSON.stringify(data));
+
+    // localStorage 저장 (start5 연동)
+    localStorage.setItem('medsim_interior_cost',    String(data.interiorCost));
+    localStorage.setItem('medsim_marketing_cost',   String(data.marketingCost));
+    localStorage.setItem('medsim_equipment_total',  String(data.equipTotal));
+    localStorage.setItem('medsim_owned_cash',       String(data.ownCapital));
+    localStorage.setItem('medsim_operation_style',  data.operationStyle);
+    localStorage.setItem('medsim_clinic_style',     data.clinicStyle);
+    localStorage.setItem('medsim_operation_hours',  data.operationHours);
+
     window.location.href = 'start5.html';
   }
 

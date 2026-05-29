@@ -470,6 +470,15 @@
         console.log('[/api/location/analyze 응답]', data); // TODO: 확인 후 제거
         console.log('  → monthlyRent:', data.monthlyRent, '/ deposit:', data.deposit);
 
+        // localStorage 저장 (start4 연동)
+        localStorage.setItem('medsim_dong', dong);
+        localStorage.setItem('medsim_sigungu', sigungu);
+        if (clinicSizePyeong > 0) localStorage.setItem('medsim_pyeong', String(clinicSizePyeong));
+        if (data.pricePerPyeong != null) localStorage.setItem('medsim_price_per_pyeong_raw', String(data.pricePerPyeong));
+        if (data.depositPerPyeong != null) localStorage.setItem('medsim_deposit_per_pyeong_raw', String(data.depositPerPyeong));
+        if (data.monthlyRent != null) localStorage.setItem('medsim_monthly_rent', String(Math.round(data.monthlyRent / 10000)));
+        if (data.deposit != null) localStorage.setItem('medsim_deposit', String(Math.round(data.deposit / 10000)));
+
         // 임대료 (만원/평): monthlyRent ÷ clinicSizePyeong ÷ 10000
         // clinicSizePyeong 미입력 시 pricePerPyeong 직접 사용
         const rentVal = (data.monthlyRent != null && clinicSizePyeong > 0)
@@ -609,6 +618,13 @@
         document.querySelector('.map-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
+
+      // localStorage 저장: pyeong 기반 임대료·보증금 재계산
+      localStorage.setItem('medsim_pyeong', String(areaNum));
+      const priceRaw   = parseInt(localStorage.getItem('medsim_price_per_pyeong_raw')) || 0;
+      const depositRaw = parseInt(localStorage.getItem('medsim_deposit_per_pyeong_raw')) || 0;
+      if (priceRaw   && areaNum) localStorage.setItem('medsim_monthly_rent', String(Math.round(priceRaw   * areaNum / 10000)));
+      if (depositRaw && areaNum) localStorage.setItem('medsim_deposit',      String(Math.round(depositRaw * areaNum / 10000)));
 
       const rentText = document.getElementById('val-rent').textContent.trim();
       const pricePerPyeong = parseFloat(rentText) || 0;
