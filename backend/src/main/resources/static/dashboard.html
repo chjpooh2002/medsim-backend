@@ -392,8 +392,8 @@
                 <div class="tab-list">
                     <div class="tab-item active" data-tab="요약"    onclick="switchTab('요약',this)">요약</div>
                     <div class="tab-item"         data-tab="운영전략" onclick="switchTab('운영전략',this)">운영 전략 <span class="tab-badge" style="background:var(--blue)">→</span></div>
-                    <div class="tab-item"         data-tab="이벤트"  onclick="switchTab('이벤트',this)">발생 이벤트 <span class="tab-badge">2</span></div>
-                    <div class="tab-item"         data-tab="이력"    onclick="switchTab('이력',this)">운영 이력 <span class="tab-badge blue">99+</span></div>
+                    <div class="tab-item"         data-tab="이벤트"  onclick="switchTab('이벤트',this)">발생 이벤트 <span class="tab-badge" id="badge-event" style="display:none"></span></div>
+                    <div class="tab-item"         data-tab="이력"    onclick="switchTab('이력',this)">운영 이력 <span class="tab-badge blue" id="badge-history" style="display:none"></span></div>
                 </div>
                 <div class="date-filter">
                     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1.5" y="2.5" width="13" height="12" rx="2"/><line x1="1.5" y1="6" x2="14.5" y2="6"/><line x1="5" y1="1" x2="5" y2="4"/><line x1="11" y1="1" x2="11" y2="4"/></svg>
@@ -511,11 +511,7 @@
 
             <!-- ──────────────── TAB: 이력 ──────────────── -->
             <div id="tab-이력" class="tab-panel">
-                <div class="tab-placeholder">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/></svg>
-                    <p>운영 이력</p>
-                    <span>진행한 달의 운영 이력이 기록됩니다</span>
-                </div>
+                <div id="history-content"></div>
             </div>
 
         </div>
@@ -1382,6 +1378,108 @@ function renderStrategyTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  탭 뱃지 업데이트
+// ═══════════════════════════════════════════════════════════════
+
+function updateTabBadges() {
+    const eventBadge   = document.getElementById('badge-event');
+    const historyBadge = document.getElementById('badge-history');
+
+    if (currentMonth < 6) {
+        if (eventBadge)   eventBadge.style.display = 'none';
+        if (historyBadge) historyBadge.style.display = 'none';
+        return;
+    }
+
+    const events = JSON.parse(localStorage.getItem('medsim_events') || '[]');
+    if (eventBadge) {
+        if (events.length === 0) {
+            eventBadge.style.display = 'none';
+        } else {
+            eventBadge.textContent = events.length > 99 ? '99+' : String(events.length);
+            eventBadge.style.display = '';
+        }
+    }
+
+    const history = JSON.parse(localStorage.getItem('medsim_history') || '[]');
+    if (historyBadge) {
+        if (history.length === 0) {
+            historyBadge.style.display = 'none';
+        } else {
+            historyBadge.textContent = history.length > 99 ? '99+' : String(history.length);
+            historyBadge.style.display = '';
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  운영 이력 저장 / 렌더링
+// ═══════════════════════════════════════════════════════════════
+
+function recordHistory(month) {
+    const data    = calcMonth(month);
+    const cash    = calcCash(month);
+    const history = JSON.parse(localStorage.getItem('medsim_history') || '[]');
+    const idx     = history.findIndex(h => h.month === month);
+    const record  = {
+        month,
+        revenue:        data.revenue,
+        netProfit:      data.netProfit,
+        patients:       data.mp,
+        cash,
+        reputation:     data.reputation,
+        operationStyle: stratState.operationStyle,
+    };
+    if (idx >= 0) history[idx] = record; else history.push(record);
+    localStorage.setItem('medsim_history', JSON.stringify(history));
+}
+
+function renderHistoryTab() {
+    const el = document.getElementById('history-content');
+    if (!el) return;
+
+    if (currentMonth < 6) {
+        el.innerHTML = `<div class="tab-placeholder">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/></svg>
+            <p>아직 운영 이력이 없습니다</p>
+            <span>첫 달을 진행해보세요. 6개월 이후부터 이력이 기록됩니다.</span>
+        </div>`;
+        return;
+    }
+
+    const history = JSON.parse(localStorage.getItem('medsim_history') || '[]');
+    if (history.length === 0) {
+        el.innerHTML = `<div class="tab-placeholder">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/></svg>
+            <p>아직 운영 이력이 없습니다</p>
+            <span>운영 전략 탭에서 진행하기를 눌러 이력을 기록해보세요.</span>
+        </div>`;
+        return;
+    }
+
+    const rows = [...history].reverse().map(h => `
+        <tr>
+            <td style="font-weight:700;color:var(--blue)">M${h.month}</td>
+            <td>${fmtWon(h.revenue)}</td>
+            <td style="font-weight:700;color:${h.netProfit >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtWon(h.netProfit)}</td>
+            <td>${h.patients.toLocaleString()}명</td>
+            <td>${fmtWon(h.cash)}</td>
+            <td>${h.reputation} / 5.0</td>
+        </tr>`).join('');
+
+    el.innerHTML = `<div class="card">
+        <div class="card-head">
+            <span class="card-title">운영 이력</span>
+            <span class="card-sub">최근 기록 순 · 총 ${history.length}건</span>
+        </div>
+        <table class="event-table">
+            <thead><tr><th>월차</th><th>매출</th><th>순이익</th><th>환자 수</th><th>현금 잔액</th><th>평판</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  탭 전환
 // ═══════════════════════════════════════════════════════════════
 
@@ -1392,6 +1490,7 @@ function switchTab(tabName, el) {
     else document.querySelector(`.tab-item[data-tab="${tabName}"]`)?.classList.add('active');
     document.getElementById('tab-' + tabName)?.classList.add('active');
     if (tabName === '운영전략') renderStrategyTab();
+    if (tabName === '이력')    renderHistoryTab();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1414,8 +1513,10 @@ function advanceMonth() {
     // 시그모이드 파라미터 강제 재계산
     _simParams = null;
 
+    recordHistory(currentMonth);
     currentMonth++;
     localStorage.setItem('currentMonth', String(currentMonth));
+    updateTabBadges();
     renderKPI();
     renderEventCenter();
     if (growthChartInst)  { growthChartInst.destroy();  growthChartInst = null; }
@@ -1488,6 +1589,8 @@ window.addEventListener('load', () => {
     initStratState();
     renderKPI();
     renderEventCenter();
+    updateTabBadges();
+    renderHistoryTab();
     initGrowthChart();
     initPatientChart();
     initExpChart();

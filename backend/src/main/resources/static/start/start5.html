@@ -329,6 +329,9 @@
 
       localStorage.setItem('simulationId', simulationId);
       localStorage.removeItem('onboardingShown');
+      localStorage.setItem('currentMonth', '1');
+      localStorage.removeItem('medsim_history');
+      localStorage.removeItem('medsim_events');
       window.location.href = '/dashboard.html';
 
     } catch (e) {
