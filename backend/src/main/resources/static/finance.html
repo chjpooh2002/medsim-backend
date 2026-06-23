@@ -6,60 +6,625 @@
     <title>재무 분석 – MEDSIM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-        :root { --blue:#1A6BFF; --blue-dark:#0F4FCC; --blue-bg:#EFF5FF; --navy:#0D1B2A; --gray-1:#F5F7FA; --gray-2:#E8ECF2; --gray-3:#C8D0DC; --gray-5:#7A8699; --gray-7:#3D4F63; --font:'Pretendard',-apple-system,sans-serif; --sb:160px; }
-        body { font-family:var(--font); color:var(--navy); background:var(--gray-1); min-height:100vh; }
-        .layout { display:flex; min-height:100vh; }
-        .sidebar { width:var(--sb); flex-shrink:0; position:fixed; top:0; left:0; height:100vh; background:white; border-right:1px solid var(--gray-2); display:flex; flex-direction:column; overflow-y:auto; z-index:40; }
-        .sb-logo { padding:17px 14px 13px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--gray-2); flex-shrink:0; }
-        .sb-logo-icon { width:22px; height:22px; background:var(--blue); border-radius:5px; display:flex; align-items:center; justify-content:center; }
-        .sb-logo-icon svg { width:12px; height:12px; fill:white; }
-        .sb-logo-type { font-size:14px; font-weight:800; color:var(--navy); }
-        .sb-icons { display:flex; gap:4px; padding:10px 12px; border-bottom:1px solid var(--gray-2); }
-        .sb-icon-btn { flex:1; height:28px; border:1px solid var(--gray-2); border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; background:white; color:#7A8699; }
-        .sb-icon-btn svg { width:12px; height:12px; }
-        .sb-search { padding:9px 12px; border-bottom:1px solid var(--gray-2); }
-        .sb-search-wrap { display:flex; align-items:center; gap:5px; background:var(--gray-1); border-radius:6px; padding:5px 9px; border:1px solid var(--gray-2); }
-        .sb-search-wrap svg { width:11px; height:11px; color:#C8D0DC; flex-shrink:0; }
-        .sb-search-wrap input { border:none; background:transparent; font-size:11px; font-family:var(--font); width:100%; outline:none; }
-        .sb-nav { flex:1; padding:6px 0; }
-        .sb-menu-item { display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:12px; font-weight:500; color:#7A8699; text-decoration:none; white-space:nowrap; }
-        .sb-menu-item:hover { background:var(--gray-1); color:var(--navy); }
-        .sb-menu-item.active { background:var(--blue-bg); color:var(--blue); font-weight:700; }
-        .sb-menu-item svg { width:14px; height:14px; flex-shrink:0; }
-        .sb-bottom { padding:12px 14px; border-top:1px solid var(--gray-2); }
-        .sb-month-badge { background:var(--blue-bg); border-radius:8px; padding:8px 10px; text-align:center; }
-        .sb-month-num { font-size:16px; font-weight:800; color:var(--blue); }
-        .sb-month-lbl { font-size:10px; color:var(--blue); opacity:.7; margin-top:1px; }
-        .content { margin-left:var(--sb); flex:1; min-width:0; display:flex; flex-direction:column; }
-        .content-inner { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; text-align:center; color:#7A8699; }
-        .placeholder-icon { margin-bottom:20px; }
-        .placeholder-title { font-size:20px; font-weight:800; color:#0D1B2A; margin-bottom:8px; }
-        .placeholder-desc { font-size:14px; line-height:1.7; margin-bottom:24px; }
-        .placeholder-back { display:inline-block; padding:11px 24px; background:var(--blue); color:white; border-radius:10px; font-size:14px; font-weight:700; text-decoration:none; }
-        footer { background:#0D1B2A; padding:14px 26px; text-align:center; }
-        footer p { font-size:12px; color:rgba(255,255,255,.4); }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --blue: #1A6BFF; --blue-dark: #0F4FCC; --blue-bg: #EFF5FF;
+            --navy: #0D1B2A;
+            --gray-1: #F5F7FA; --gray-2: #E8ECF2; --gray-3: #C8D0DC;
+            --gray-5: #7A8699; --gray-7: #3D4F63;
+            --green: #22C97A; --orange: #FF8C42; --red: #FF3B3B;
+            --purple: #8B5CF6;
+            --font: 'Pretendard', -apple-system, sans-serif;
+            --sb: 160px;
+        }
+        body { font-family: var(--font); color: var(--navy); background: var(--gray-1); min-height: 100vh; }
+        .layout { display: flex; min-height: 100vh; }
+        .content { margin-left: var(--sb); flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .page-body { flex: 1; padding: 28px 32px; }
+
+        /* Header */
+        .page-breadcrumb { font-size: 11px; color: var(--gray-5); margin-bottom: 6px; }
+        .page-breadcrumb a { color: var(--gray-5); text-decoration: none; }
+        .page-breadcrumb a:hover { color: var(--blue); }
+        .page-title-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .page-title { font-size: 20px; font-weight: 800; }
+        .filter-bar { display: flex; align-items: center; gap: 10px; }
+        .filter-label { font-size: 12px; color: var(--gray-5); font-weight: 600; }
+        .filter-select { height: 34px; padding: 0 10px; border: 1px solid var(--gray-2); border-radius: 8px; font-size: 12px; font-family: var(--font); background: white; color: var(--navy); cursor: pointer; outline: none; }
+        .filter-select:focus { border-color: var(--blue); }
+        .filter-sep { color: var(--gray-3); font-size: 14px; }
+
+        /* Tabs */
+        .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; background: white; border: 1px solid var(--gray-2); border-radius: 10px; padding: 5px; width: fit-content; }
+        .tab-btn { padding: 7px 18px; border-radius: 7px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; background: transparent; color: var(--gray-5); font-family: var(--font); transition: all .15s; }
+        .tab-btn.active { background: var(--blue); color: white; }
+        .tab-btn:hover:not(.active) { background: var(--gray-1); color: var(--navy); }
+
+        /* KPI grid */
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+        .kpi-card { background: white; border: 1px solid var(--gray-2); border-radius: 12px; padding: 18px 20px; }
+        .kpi-label { font-size: 11px; font-weight: 700; color: var(--gray-5); letter-spacing: .5px; margin-bottom: 10px; }
+        .kpi-value { font-size: 22px; font-weight: 800; line-height: 1.2; margin-bottom: 4px; }
+        .kpi-sub { font-size: 12px; color: var(--gray-5); }
+
+        /* Section cards */
+        .section-card { background: white; border: 1px solid var(--gray-2); border-radius: 14px; padding: 22px 24px; margin-bottom: 18px; }
+        .section-title { font-size: 14px; font-weight: 800; color: var(--navy); margin-bottom: 16px; display: flex; align-items: center; }
+        .section-title-sub { font-size: 11px; font-weight: 600; color: var(--gray-5); margin-left: auto; }
+
+        /* Chart */
+        .chart-wrap { position: relative; height: 260px; }
+
+        /* Two-col */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+        .two-col > .section-card { margin-bottom: 0; }
+
+        /* Cost donut */
+        .donut-wrap { position: relative; height: 190px; }
+        .cost-legend { margin-top: 14px; display: flex; flex-direction: column; gap: 7px; }
+        .cost-legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .legend-name { flex: 1; color: var(--gray-7); }
+        .legend-val { font-weight: 700; color: var(--navy); }
+        .legend-pct { font-size: 11px; color: var(--gray-5); min-width: 36px; text-align: right; }
+
+        /* Efficiency table */
+        .eff-table { width: 100%; border-collapse: collapse; }
+        .eff-table td { padding: 10px 8px; border-bottom: 1px solid var(--gray-2); font-size: 13px; }
+        .eff-table tr:last-child td { border-bottom: none; }
+        .eff-table tr:hover td { background: var(--gray-1); }
+        .eff-label { font-weight: 600; }
+        .eff-desc { font-size: 11px; color: var(--gray-5); margin-top: 1px; }
+        .eff-bar-bg { background: var(--gray-2); border-radius: 4px; height: 5px; margin-top: 5px; overflow: hidden; }
+        .eff-bar-fill { height: 5px; border-radius: 4px; }
+        .eff-val { text-align: right; font-weight: 800; font-size: 14px; vertical-align: middle; }
+
+        /* P&L table */
+        .pnl-scroll { overflow-x: auto; }
+        .pnl-table { width: 100%; border-collapse: collapse; min-width: 540px; }
+        .pnl-table th { font-size: 11px; font-weight: 700; color: var(--gray-5); padding: 8px 12px; text-align: right; border-bottom: 2px solid var(--gray-2); background: var(--gray-1); white-space: nowrap; }
+        .pnl-table th:first-child { text-align: left; }
+        .pnl-table td { font-size: 12px; padding: 9px 12px; border-bottom: 1px solid var(--gray-2); text-align: right; white-space: nowrap; }
+        .pnl-table td:first-child { text-align: left; }
+        .pnl-table tr:hover td { background: var(--gray-1); }
+        .pnl-table tr.row-subtotal td { color: var(--gray-5); }
+        .pnl-table tr.row-total td { font-weight: 800; border-top: 2px solid var(--gray-2); }
+
+        /* BEP gauge */
+        .bep-wrap { display: flex; align-items: center; gap: 24px; }
+        .gauge-area { width: 140px; height: 140px; flex-shrink: 0; position: relative; }
+        .gauge-area canvas { position: absolute; top: 0; left: 0; width: 140px !important; height: 140px !important; }
+        .gauge-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; z-index: 1; }
+        .gauge-pct { font-size: 22px; font-weight: 800; color: var(--navy); }
+        .gauge-lbl { font-size: 10px; color: var(--gray-5); margin-top: 2px; }
+        .bep-info { flex: 1; display: flex; flex-direction: column; gap: 11px; }
+        .bep-row { display: flex; align-items: baseline; justify-content: space-between; font-size: 13px; }
+        .bep-row-label { color: var(--gray-5); font-weight: 600; }
+        .bep-row-val { font-weight: 800; }
+
+        /* Feedback */
+        .feedback-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .fb-card { border-radius: 10px; padding: 14px 16px; border: 1px solid transparent; }
+        .fb-card.success { background: rgba(34,201,122,.07); border-color: rgba(34,201,122,.25); }
+        .fb-card.warning { background: rgba(255,140,66,.07); border-color: rgba(255,140,66,.25); }
+        .fb-card.danger { background: rgba(255,59,59,.07); border-color: rgba(255,59,59,.25); }
+        .fb-card.info { background: var(--blue-bg); border-color: rgba(26,107,255,.2); }
+        .fb-head { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+        .fb-icon { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .fb-icon.success { background: rgba(34,201,122,.2); color: var(--green); }
+        .fb-icon.warning { background: rgba(255,140,66,.2); color: var(--orange); }
+        .fb-icon.danger { background: rgba(255,59,59,.2); color: var(--red); }
+        .fb-icon.info { background: rgba(26,107,255,.15); color: var(--blue); }
+        .fb-title { font-size: 12px; font-weight: 800; }
+        .fb-title.success { color: #15a05c; }
+        .fb-title.warning { color: #c96600; }
+        .fb-title.danger { color: var(--red); }
+        .fb-title.info { color: var(--blue); }
+        .fb-body { font-size: 11px; color: var(--gray-7); line-height: 1.6; }
+
+        /* Empty state */
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 420px; text-align: center; }
+        .empty-title { font-size: 18px; font-weight: 800; color: var(--navy); margin: 16px 0 8px; }
+        .empty-desc { font-size: 13px; color: var(--gray-5); line-height: 1.7; margin-bottom: 22px; }
+        .empty-btn { display: inline-block; padding: 11px 24px; background: var(--blue); color: white; border-radius: 10px; font-size: 14px; font-weight: 700; text-decoration: none; }
+
+        footer { background: var(--navy); padding: 14px 26px; text-align: center; }
+        footer p { font-size: 12px; color: rgba(255,255,255,.4); }
     </style>
 </head>
 <body>
 <div class="layout">
     <div id="sidebar-root"></div>
     <div class="content">
-        <div class="content-inner">
-            <div class="placeholder-icon">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-                </svg>
+        <div class="page-body">
+            <div class="page-breadcrumb">
+                <a href="dashboard.html">병원 현황</a> › 재무 분석
             </div>
-            <p class="placeholder-title">재무 분석</p>
-            <p class="placeholder-desc">이 기능은 준비 중입니다.<br>더 나은 서비스로 곧 찾아뵙겠습니다.</p>
-            <a class="placeholder-back" href="dashboard.html">← 병원 현황으로</a>
+            <div class="page-title-row">
+                <div class="page-title">재무 분석</div>
+                <div class="filter-bar" id="filter-bar" style="display:none">
+                    <span class="filter-label">기간</span>
+                    <select class="filter-select" id="filter-start" onchange="onFilterChange()"></select>
+                    <span class="filter-sep">–</span>
+                    <select class="filter-select" id="filter-end" onchange="onFilterChange()"></select>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchTab('summary',this)">요약</button>
+                <button class="tab-btn" onclick="switchTab('detail',this)">상세 손익</button>
+            </div>
+
+            <!-- Empty state -->
+            <div id="empty-state" style="display:none">
+                <div class="empty-state">
+                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    <p class="empty-title">재무 데이터가 없습니다</p>
+                    <p class="empty-desc">병원 운영을 최소 1개월 진행하면<br>월별 재무 현황이 여기에 표시됩니다.</p>
+                    <a class="empty-btn" href="dashboard.html">← 병원 현황으로</a>
+                </div>
+            </div>
+
+            <!-- Summary tab -->
+            <div id="tab-summary">
+                <!-- KPI Cards -->
+                <div class="kpi-grid" id="kpi-grid"></div>
+
+                <!-- P&L Trend Chart -->
+                <div class="section-card">
+                    <div class="section-title">
+                        손익 추이
+                        <span class="section-title-sub" id="chart-range-label"></span>
+                    </div>
+                    <div class="chart-wrap"><canvas id="pnl-chart"></canvas></div>
+                </div>
+
+                <!-- Cost donut + Efficiency -->
+                <div class="two-col">
+                    <div class="section-card">
+                        <div class="section-title">비용 구조 (월평균)</div>
+                        <div class="donut-wrap"><canvas id="cost-donut"></canvas></div>
+                        <div class="cost-legend" id="cost-legend"></div>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-title">재무 효율 지표</div>
+                        <table class="eff-table"><tbody id="eff-tbody"></tbody></table>
+                    </div>
+                </div>
+
+                <!-- P&L Summary Table -->
+                <div class="section-card">
+                    <div class="section-title">월별 손익 요약</div>
+                    <div class="pnl-scroll">
+                        <table class="pnl-table">
+                            <thead id="pnl-thead"></thead>
+                            <tbody id="pnl-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- BEP Gauge + Feedback -->
+                <div class="two-col">
+                    <div class="section-card">
+                        <div class="section-title">손익분기점 달성 현황</div>
+                        <div class="bep-wrap">
+                            <div class="gauge-area">
+                                <canvas id="bep-gauge"></canvas>
+                                <div class="gauge-center">
+                                    <div class="gauge-pct" id="gauge-pct">-</div>
+                                    <div class="gauge-lbl">BEP 달성률</div>
+                                </div>
+                            </div>
+                            <div class="bep-info" id="bep-info"></div>
+                        </div>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-title">진단 피드백</div>
+                        <div class="feedback-grid" id="feedback-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail tab -->
+            <div id="tab-detail" style="display:none">
+                <div class="section-card">
+                    <div style="text-align:center;padding:48px 0;color:var(--gray-5)">
+                        <p style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:6px">상세 손익 분석</p>
+                        <p style="font-size:13px">준비 중입니다.</p>
+                    </div>
+                </div>
+            </div>
         </div>
         <footer><p>MEDSIM © 2026. All rights reserved.</p></footer>
     </div>
 </div>
+
 <script src="common.js"></script>
-<script>requireAuth(); renderSidebar('finance');</script>
+<script>
+requireAuth();
+renderSidebar('finance');
+
+// ── Constants ──────────────────────────────────────────────────
+var STAFF_COST_MAP = { MIN_STAFF: 860, BALANCED: 1670, SERVICE_ENHANCED: 3340 }; // 만원/월
+var COST_COLORS  = ['#1A6BFF', '#FF8C42', '#22C97A', '#8B5CF6', '#3D4F63', '#C8D0DC'];
+var COST_LABELS  = ['인건비', '임대료', '마케팅', '감가상각', '기타 고정', '변동비'];
+var VAR_RATIO    = 0.30;
+var SVG_CHECK    = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>';
+var SVG_WARN     = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+var SVG_UP       = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
+var SVG_DOWN     = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>';
+
+// ── State ──────────────────────────────────────────────────────
+var filterStart = 1, filterEnd = 1;
+
+// ── Data Enrichment ────────────────────────────────────────────
+function enrichRecord(r, prev, cfg) {
+    var fixedWon   = cfg.fixedCost * 10000;
+    var rev        = r.revenue || 0;
+    var net        = r.netProfit || 0;
+    var exp        = rev - net;
+    var varCost    = Math.max(0, exp - fixedWon);
+    var style      = r.operationStyle || cfg.operationStyle || 'BALANCED';
+    var labor      = (STAFF_COST_MAP[style] || STAFF_COST_MAP.BALANCED) * 10000;
+    var rent       = (cfg.monthlyRent || 0) * 10000;
+    var mkt        = (cfg.marketingCost || 0) * 10000;
+    var totalInv   = ((cfg.ownedCash || 0) + (cfg.loanAmount || 0)) * 10000;
+    var depr       = totalInv > 0 ? totalInv / 60 : 0;
+    var otherFixed = Math.max(0, fixedWon - labor - rent - mkt - depr);
+    var margin     = rev > 0 ? net / rev : 0;
+    var fixRatio   = rev > 0 ? fixedWon / rev : 0;
+    var varRatio   = rev > 0 ? varCost / rev : 0;
+    var patRev     = (r.patients || 0) > 0 ? rev / r.patients : 0;
+    var revGrowth  = (prev && prev.revenue > 0) ? (rev - prev.revenue) / prev.revenue : null;
+    return {
+        month: r.month, revenue: rev, netProfit: net, expenses: exp,
+        fixedCost: fixedWon, varCost: varCost,
+        labor: labor, rent: rent, marketing: mkt, depr: depr, otherFixed: otherFixed,
+        margin: margin, fixRatio: fixRatio, varRatio: varRatio,
+        patRev: patRev, revGrowth: revGrowth,
+        patients: r.patients || 0, cash: r.cash || 0, reputation: r.reputation || 0,
+    };
+}
+
+function getEnrichedAll() {
+    var all = getAllMonthlyData(), cfg = getConfig();
+    return all.map(function (r, i) { return enrichRecord(r, i > 0 ? all[i - 1] : null, cfg); });
+}
+
+function getFiltered() {
+    return getEnrichedAll().filter(function (r) { return r.month >= filterStart && r.month <= filterEnd; });
+}
+
+// ── BEP ───────────────────────────────────────────────────────
+function calcBEP() {
+    var all = getEnrichedAll();
+    if (!all.length) return null;
+    var fixedWon   = getConfig().fixedCost * 10000;
+    var bepRev     = fixedWon / (1 - VAR_RATIO);
+    var bepMonth   = null;
+    for (var i = 0; i < all.length; i++) {
+        if (all[i].revenue >= bepRev) { bepMonth = all[i].month; break; }
+    }
+    var lastRev = all[all.length - 1].revenue;
+    var pct     = bepRev > 0 ? Math.min(100, Math.round(lastRev / bepRev * 100)) : 0;
+    return { bepRev: bepRev, bepMonth: bepMonth, lastRev: lastRev, pct: pct };
+}
+
+// ── Month Selectors ────────────────────────────────────────────
+function buildSelectors() {
+    var all = getAllMonthlyData();
+    var startEl = document.getElementById('filter-start');
+    var endEl   = document.getElementById('filter-end');
+    var bar     = document.getElementById('filter-bar');
+    if (!startEl || !endEl || all.length === 0) return;
+    var opts = all.map(function (r) {
+        return '<option value="' + r.month + '">' + r.month + '개월차</option>';
+    }).join('');
+    startEl.innerHTML = opts;
+    endEl.innerHTML   = opts;
+    filterStart = all[0].month;
+    filterEnd   = all[all.length - 1].month;
+    startEl.value = filterStart;
+    endEl.value   = filterEnd;
+    if (bar) bar.style.display = '';
+}
+
+function onFilterChange() {
+    var s = parseInt(document.getElementById('filter-start').value);
+    var e = parseInt(document.getElementById('filter-end').value);
+    if (s > e) { e = s; document.getElementById('filter-end').value = s; }
+    filterStart = s; filterEnd = e;
+    renderAll();
+}
+
+// ── Tab ───────────────────────────────────────────────────────
+function switchTab(id, btn) {
+    document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    document.getElementById('tab-summary').style.display = id === 'summary' ? '' : 'none';
+    document.getElementById('tab-detail').style.display  = id === 'detail'  ? '' : 'none';
+}
+
+// ── KPI Cards ─────────────────────────────────────────────────
+function renderKpiCards(f) {
+    var el = document.getElementById('kpi-grid');
+    if (!el || !f.length) return;
+    var totalRev   = f.reduce(function (s, r) { return s + r.revenue; }, 0);
+    var cumProfit  = f.reduce(function (s, r) { return s + r.netProfit; }, 0);
+    var avgMargin  = f.reduce(function (s, r) { return s + r.margin; }, 0) / f.length * 100;
+    var firstRev   = f[0].revenue, lastRev = f[f.length - 1].revenue;
+    var revGrowth  = firstRev > 0 ? (lastRev - firstRev) / firstRev * 100 : 0;
+
+    var cards = [
+        { label: '기간 총 매출', value: formatKRW(totalRev),
+          valueColor: 'var(--navy)', sub: '평균 ' + formatKRW(Math.round(totalRev / f.length)) + ' / 월' },
+        { label: '누적 순이익', value: formatKRW(cumProfit),
+          valueColor: cumProfit >= 0 ? 'var(--green)' : 'var(--red)',
+          sub: cumProfit >= 0 ? '흑자 운영 중' : '적자 운영 중' },
+        { label: '평균 이익률', value: avgMargin.toFixed(1) + '%',
+          valueColor: avgMargin >= 10 ? 'var(--green)' : avgMargin >= 0 ? 'var(--orange)' : 'var(--red)',
+          sub: '순이익 ÷ 매출' },
+        { label: '매출 성장률', value: (revGrowth >= 0 ? '+' : '') + revGrowth.toFixed(1) + '%',
+          valueColor: revGrowth >= 0 ? 'var(--green)' : 'var(--red)',
+          sub: f.length > 1 ? f[0].month + '→' + f[f.length-1].month + '개월차' : '단일 월' },
+    ];
+
+    el.innerHTML = cards.map(function (c) {
+        return '<div class="kpi-card">' +
+            '<div class="kpi-label">' + c.label + '</div>' +
+            '<div class="kpi-value" style="color:' + c.valueColor + '">' + c.value + '</div>' +
+            '<div class="kpi-sub">' + c.sub + '</div>' +
+            '</div>';
+    }).join('');
+}
+
+// ── P&L Trend Chart ───────────────────────────────────────────
+function renderPnlChart(f) {
+    var lbl = document.getElementById('chart-range-label');
+    if (lbl) lbl.textContent = f.length ? f[0].month + '개월차 ~ ' + f[f.length-1].month + '개월차' : '';
+    if (!f.length) return;
+    var labels = f.map(function (r) { return r.month + '월'; });
+    var toMan  = function (v) { return Math.round(v / 10000); };
+    var datasets = [
+        { label: '매출(만원)', data: f.map(function(r){return toMan(r.revenue);}),
+          borderColor:'#1A6BFF', backgroundColor:'rgba(26,107,255,0.08)', fill:true, tension:0.4, pointRadius:4, borderWidth:2.5 },
+        { label: '비용(만원)', data: f.map(function(r){return toMan(r.expenses);}),
+          borderColor:'#FF8C42', backgroundColor:'rgba(255,140,66,0.06)', fill:true, tension:0.4, pointRadius:4, borderWidth:2 },
+        { label: '순이익(만원)', data: f.map(function(r){return toMan(r.netProfit);}),
+          borderColor:'#22C97A', backgroundColor:'rgba(34,201,122,0.07)', fill:false, tension:0.4, pointRadius:4, borderWidth:2 },
+        { label: '현금(만원)', data: f.map(function(r){return toMan(r.cash);}),
+          borderColor:'#8B5CF6', backgroundColor:'rgba(139,92,246,0.05)', fill:false, tension:0.4, pointRadius:4, borderWidth:2, borderDash:[5,3] },
+    ];
+    createLineChart('pnl-chart', labels, datasets);
+}
+
+// ── Cost Donut ────────────────────────────────────────────────
+function renderCostChart(f) {
+    if (!f.length) return;
+    var avg = function (fn) { return f.reduce(function (s, r) { return s + fn(r); }, 0) / f.length; };
+    var vals = [
+        avg(function(r){return r.labor;}),
+        avg(function(r){return r.rent;}),
+        avg(function(r){return r.marketing;}),
+        avg(function(r){return r.depr;}),
+        avg(function(r){return r.otherFixed;}),
+        avg(function(r){return r.varCost;}),
+    ];
+    var total = vals.reduce(function (s, v) { return s + v; }, 0);
+    if (total === 0) return;
+    var pcts = vals.map(function (v) { return Math.round(v / total * 100); });
+    createDoughnutChart('cost-donut', COST_LABELS, pcts, COST_COLORS);
+
+    var legend = document.getElementById('cost-legend');
+    if (!legend) return;
+    var sorted = COST_LABELS.map(function (l, i) {
+        return { l: l, v: vals[i], p: pcts[i], c: COST_COLORS[i] };
+    }).sort(function (a, b) { return b.v - a.v; });
+    legend.innerHTML = sorted.map(function (item) {
+        return '<div class="cost-legend-item">' +
+            '<div class="legend-dot" style="background:' + item.c + '"></div>' +
+            '<span class="legend-name">' + item.l + '</span>' +
+            '<span class="legend-val">' + formatKRW(Math.round(item.v)) + '</span>' +
+            '<span class="legend-pct">' + item.p + '%</span>' +
+            '</div>';
+    }).join('');
+}
+
+// ── Efficiency Table ──────────────────────────────────────────
+function renderEffTable(f) {
+    var tbody = document.getElementById('eff-tbody');
+    if (!tbody || !f.length) return;
+    var avg = function (fn) { return f.reduce(function (s, r) { return s + fn(r); }, 0) / f.length; };
+    var avgMargin   = avg(function(r){return r.margin;}) * 100;
+    var avgFixRatio = avg(function(r){return r.fixRatio;}) * 100;
+    var avgVarRatio = avg(function(r){return r.varRatio;}) * 100;
+    var avgPatRev   = avg(function(r){return r.patRev;});
+    var avgRev      = avg(function(r){return r.revenue;});
+    var rep         = f[f.length-1].reputation;
+
+    var rows = [
+        { label:'평균 이익률', desc:'순이익 ÷ 매출', val: avgMargin.toFixed(1) + '%', bar: Math.max(0, Math.min(100, avgMargin)),
+          color: avgMargin>=10?'var(--green)':avgMargin>=0?'var(--orange)':'var(--red)' },
+        { label:'고정비 비율', desc:'고정비 ÷ 매출', val: avgFixRatio.toFixed(1) + '%', bar: Math.min(100, avgFixRatio),
+          color: avgFixRatio<=40?'var(--green)':avgFixRatio<=59?'var(--orange)':'var(--red)' },
+        { label:'변동비 비율', desc:'변동비 ÷ 매출', val: avgVarRatio.toFixed(1) + '%', bar: Math.min(100, avgVarRatio),
+          color: avgVarRatio<=30?'var(--green)':'var(--orange)' },
+        { label:'환자 1인 매출', desc:'월평균 매출 ÷ 환자 수', val: formatKRW(Math.round(avgPatRev)), bar: null, color:'var(--navy)' },
+        { label:'월 평균 매출', desc:'기간 내 평균', val: formatKRW(Math.round(avgRev)), bar: null, color:'var(--navy)' },
+        { label:'평판 점수', desc:'현재 평판 수치', val: rep + 'pt', bar: Math.min(100, rep),
+          color: rep>=70?'var(--green)':rep>=40?'var(--orange)':'var(--red)' },
+    ];
+
+    tbody.innerHTML = rows.map(function (row) {
+        var barHtml = row.bar !== null
+            ? '<div class="eff-bar-bg"><div class="eff-bar-fill" style="width:'+row.bar+'%;background:'+row.color+'"></div></div>'
+            : '';
+        return '<tr>' +
+            '<td><div class="eff-label">' + row.label + '</div>' +
+            '<div class="eff-desc">' + row.desc + '</div>' + barHtml + '</td>' +
+            '<td class="eff-val" style="color:' + row.color + '">' + row.val + '</td>' +
+            '</tr>';
+    }).join('');
+}
+
+// ── P&L Summary Table ─────────────────────────────────────────
+function renderPlTable(f) {
+    var thead = document.getElementById('pnl-thead');
+    var tbody = document.getElementById('pnl-tbody');
+    if (!thead || !tbody || !f.length) return;
+
+    var monthCols = f.map(function (r) { return '<th>' + r.month + '월</th>'; }).join('');
+    thead.innerHTML = '<tr><th>항목</th>' + monthCols + '<th>합계/평균</th></tr>';
+
+    var totRev  = f.reduce(function(s,r){return s+r.revenue;},0);
+    var totExp  = f.reduce(function(s,r){return s+r.expenses;},0);
+    var avgFix  = f.reduce(function(s,r){return s+r.fixedCost;},0) / f.length;
+    var avgVar  = f.reduce(function(s,r){return s+r.varCost;},0) / f.length;
+    var totNet  = f.reduce(function(s,r){return s+r.netProfit;},0);
+    var avgMgn  = f.reduce(function(s,r){return s+r.margin;},0) / f.length * 100;
+    var netColor= totNet>=0?'var(--green)':'var(--red)';
+
+    function mgrColor(pct) { return pct >= 0 ? 'var(--green)' : 'var(--red)'; }
+    function npColor(v)    { return v >= 0 ? 'var(--green)' : 'var(--red)'; }
+
+    var rows = [
+        // Revenue
+        '<tr><td style="font-weight:700">매출</td>' +
+        f.map(function(r){return '<td style="font-weight:700">'+formatKRW(Math.round(r.revenue))+'</td>';}).join('') +
+        '<td style="font-weight:700">' + formatKRW(totRev) + '</td></tr>',
+        // Expenses
+        '<tr><td style="color:var(--orange)">총비용</td>' +
+        f.map(function(r){return '<td style="color:var(--orange)">'+formatKRW(Math.round(r.expenses))+'</td>';}).join('') +
+        '<td style="color:var(--orange)">' + formatKRW(totExp) + '</td></tr>',
+        // Fixed (indent)
+        '<tr class="row-subtotal"><td style="padding-left:20px">고정비</td>' +
+        f.map(function(r){return '<td>'+formatKRW(Math.round(r.fixedCost))+'</td>';}).join('') +
+        '<td>' + formatKRW(Math.round(avgFix)) + '</td></tr>',
+        // Var (indent)
+        '<tr class="row-subtotal"><td style="padding-left:20px">변동비</td>' +
+        f.map(function(r){return '<td>'+formatKRW(Math.round(r.varCost))+'</td>';}).join('') +
+        '<td>' + formatKRW(Math.round(avgVar)) + '</td></tr>',
+        // Net profit
+        '<tr class="row-total"><td>순이익</td>' +
+        f.map(function(r){return '<td style="color:'+npColor(r.netProfit)+';font-weight:700">'+formatKRW(Math.round(r.netProfit))+'</td>';}).join('') +
+        '<td style="color:'+netColor+'">' + formatKRW(totNet) + '</td></tr>',
+        // Margin
+        '<tr><td style="color:var(--gray-5)">이익률</td>' +
+        f.map(function(r){var pct=r.margin*100;return '<td style="color:'+mgrColor(pct)+'">'+pct.toFixed(1)+'%</td>';}).join('') +
+        '<td style="color:'+mgrColor(avgMgn)+'">' + avgMgn.toFixed(1) + '%</td></tr>',
+    ];
+
+    tbody.innerHTML = rows.join('');
+}
+
+// ── BEP Gauge ────────────────────────────────────────────────
+function renderBepGauge() {
+    var bep     = calcBEP();
+    var pctEl   = document.getElementById('gauge-pct');
+    var infoEl  = document.getElementById('bep-info');
+    if (!bep) {
+        if (pctEl)  pctEl.textContent = '-';
+        if (infoEl) infoEl.innerHTML  = '<p style="color:var(--gray-5);font-size:12px">데이터가 부족합니다.</p>';
+        return;
+    }
+    var pct = bep.pct;
+    var clr = pct >= 100 ? '#22C97A' : pct >= 70 ? '#FF8C42' : '#FF3B3B';
+    if (pctEl) pctEl.textContent = pct + '%';
+    createDoughnutChart('bep-gauge', ['달성','미달성'], [pct, 100-pct], [clr, '#E8ECF2'], { cutout:'70%' });
+
+    var statusText  = bep.bepMonth !== null ? bep.bepMonth + '개월차 달성' : '미달성';
+    var statusColor = bep.bepMonth !== null ? 'var(--green)' : 'var(--red)';
+    if (infoEl) infoEl.innerHTML = [
+        { l:'BEP 매출',    v: formatKRW(Math.round(bep.bepRev)),  c:'' },
+        { l:'최근 월 매출', v: formatKRW(Math.round(bep.lastRev)), c:'' },
+        { l:'달성 여부',   v: statusText,  c: statusColor },
+        { l:'달성률',      v: pct + '%',   c: clr },
+    ].map(function (item) {
+        return '<div class="bep-row">' +
+            '<span class="bep-row-label">' + item.l + '</span>' +
+            '<span class="bep-row-val" style="color:' + (item.c||'var(--navy)') + '">' + item.v + '</span>' +
+            '</div>';
+    }).join('');
+}
+
+// ── Feedback Cards ────────────────────────────────────────────
+function renderFeedback(f) {
+    var el = document.getElementById('feedback-grid');
+    if (!el || !f.length) return;
+    var bep       = calcBEP();
+    var avgMargin = f.reduce(function(s,r){return s+r.margin;},0)/f.length*100;
+    var avgFixed  = f.reduce(function(s,r){return s+r.fixRatio;},0)/f.length*100;
+    var lastCash  = f[f.length-1].cash;
+    var reserve   = getConfig().fixedCost * 10000 * 3;
+    var cards     = [];
+
+    // BEP
+    if (bep) {
+        if      (bep.bepMonth !== null && bep.bepMonth <= 6)  cards.push({ t:'success', ico:SVG_CHECK, title:'빠른 BEP 달성', body: bep.bepMonth+'개월차에 손익분기점을 달성했습니다. 초기 성장 속도가 매우 양호합니다.' });
+        else if (bep.bepMonth !== null && bep.bepMonth <= 12) cards.push({ t:'warning', ico:SVG_WARN,  title:'BEP 달성', body: bep.bepMonth+'개월차에 BEP를 달성했습니다. 12개월 내 달성은 평균적 수준입니다.' });
+        else if (bep.bepMonth === null)                        cards.push({ t:'danger',  ico:SVG_DOWN,  title:'BEP 미달성', body:'아직 손익분기점에 도달하지 못했습니다. 매출 확대 또는 비용 절감이 필요합니다.' });
+    }
+
+    // Margin
+    if      (avgMargin >= 10) cards.push({ t:'success', ico:SVG_UP,   title:'양호한 이익률',  body:'평균 이익률 '+avgMargin.toFixed(1)+'%로 안정적인 수익성을 유지하고 있습니다.' });
+    else if (avgMargin >= 0)  cards.push({ t:'warning', ico:SVG_WARN, title:'이익률 개선 필요', body:'평균 이익률 '+avgMargin.toFixed(1)+'%입니다. 10% 이상을 목표로 수익 구조를 개선해 보세요.' });
+    else                      cards.push({ t:'danger',  ico:SVG_DOWN, title:'수익성 위험',     body:'평균 이익률 '+avgMargin.toFixed(1)+'%로 적자 운영 중입니다. 즉각적인 비용 검토가 필요합니다.' });
+
+    // Fixed cost ratio
+    if      (avgFixed <= 40) cards.push({ t:'success', ico:SVG_CHECK, title:'안정적인 고정비', body:'고정비 비율 '+avgFixed.toFixed(1)+'%로 비용 구조가 건전합니다.' });
+    else if (avgFixed <= 59) cards.push({ t:'warning', ico:SVG_WARN,  title:'고정비 주의',    body:'고정비 비율 '+avgFixed.toFixed(1)+'%입니다. 60% 미만 유지를 목표로 비용 효율화를 검토하세요.' });
+    else                     cards.push({ t:'danger',  ico:SVG_DOWN,  title:'고정비 과다',    body:'고정비 비율 '+avgFixed.toFixed(1)+'%로 매우 높습니다. 임대료 재협상이나 인력 최적화를 고려하세요.' });
+
+    // Cash reserve
+    if      (lastCash >= reserve) cards.push({ t:'success', ico:SVG_CHECK, title:'충분한 예비금', body:'현금 잔액이 3개월 운영비('+formatKRW(reserve)+') 이상입니다. 재무 안전성이 양호합니다.' });
+    else if (lastCash > 0)        cards.push({ t:'warning', ico:SVG_WARN,  title:'예비금 부족',  body:'현금 잔액 '+formatKRW(lastCash)+'이 3개월 운영비('+formatKRW(reserve)+')에 미치지 못합니다.' });
+    else                          cards.push({ t:'danger',  ico:SVG_DOWN,  title:'현금 위기',    body:'현금 잔액이 0 이하입니다. 즉각적인 자금 조달이 필요합니다.' });
+
+    el.innerHTML = cards.slice(0, 4).map(function (c) {
+        return '<div class="fb-card ' + c.t + '">' +
+            '<div class="fb-head">' +
+            '<div class="fb-icon ' + c.t + '">' + c.ico + '</div>' +
+            '<span class="fb-title ' + c.t + '">' + c.title + '</span>' +
+            '</div>' +
+            '<p class="fb-body">' + c.body + '</p>' +
+            '</div>';
+    }).join('');
+}
+
+// ── Render All ────────────────────────────────────────────────
+function renderAll() {
+    var f = getFiltered();
+    renderKpiCards(f);
+    renderPnlChart(f);
+    renderCostChart(f);
+    renderEffTable(f);
+    renderPlTable(f);
+    renderBepGauge();
+    renderFeedback(f);
+}
+
+// ── Init ─────────────────────────────────────────────────────
+function init() {
+    var all      = getAllMonthlyData();
+    var emptyEl  = document.getElementById('empty-state');
+    var summaryEl= document.getElementById('tab-summary');
+    if (!all.length) {
+        if (emptyEl)   emptyEl.style.display   = '';
+        if (summaryEl) summaryEl.style.display  = 'none';
+        return;
+    }
+    if (emptyEl)   emptyEl.style.display   = 'none';
+    if (summaryEl) summaryEl.style.display  = '';
+    buildSelectors();
+    renderAll();
+}
+
+init();
+</script>
 </body>
 </html>
