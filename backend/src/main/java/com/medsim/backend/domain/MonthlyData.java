@@ -96,6 +96,13 @@ public class MonthlyData {
 
     // ── 비용 세부 내역 (자금 지출 순위 도넛 차트용) ─────────────────────────────────
 
+    private Long laborCost;
+    private Long insuranceCost;
+    private Long rentCost;
+    private Long marketingCost;
+    private Long depreciationCost;
+    private Long otherMgmtCost;
+
     // 월별 항목별 비용 breakdown
     // 예: {"인건비": 5000000, "마케팅비": 800000, "임대료": 3000000, "의료소모품": 500000}
     private Map<String, Long> costBreakdown;

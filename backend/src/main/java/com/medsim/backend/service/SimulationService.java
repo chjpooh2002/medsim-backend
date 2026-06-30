@@ -208,8 +208,41 @@ public class SimulationService {
         state.setReturnPatientRate(clamp(
                 state.getReturnPatientRate() + (rrTarget - state.getReturnPatientRate()) * 0.05, 0, 1));
 
+        // ⑪ 신규/재진 분할
+        int returnPatientCount = (month == 1) ? 0 : (int)(patients * state.getReturnPatientRate());
+        int newPatientCount    = patients - returnPatientCount;
+
+        // ⑫ 비용 세부 Map
+        Map<String, Long> monthCostBreakdown = new LinkedHashMap<>();
+        monthCostBreakdown.put("인건비",    laborCost);
+        monthCostBreakdown.put("4대보험",   insuranceCost);
+        monthCostBreakdown.put("임대료",    rentCost);
+        monthCostBreakdown.put("마케팅비",  marketingCost);
+        monthCostBreakdown.put("감가상각비", depreciationCost);
+        monthCostBreakdown.put("기타관리비", otherMgmtCost);
+        monthCostBreakdown.put("변동비",    variableCost);
+        monthCostBreakdown.put("이자비용",  interest);
+
+        // ⑬ 전월 대비 증감율
+        List<MonthlyData> history = state.getMonthlyHistory();
+        double cashChangeRate       = 0.0;
+        double patientsChangeRate   = 0.0;
+        double reputationChangeRate = 0.0;
+        if (!history.isEmpty()) {
+            MonthlyData prev = history.get(history.size() - 1);
+            long   prevCash  = prev.getCumulativeCash()  != null ? prev.getCumulativeCash()  : 0L;
+            int    prevPats  = prev.getPatientsCount()   != null ? prev.getPatientsCount()   : 0;
+            double prevRep   = prev.getReputationScore() != null ? prev.getReputationScore() : 0.0;
+            if (prevCash > 0) cashChangeRate       = round4((double)(state.getCashBalance() - prevCash) / prevCash);
+            if (prevPats > 0) patientsChangeRate   = round4((double)(patients - prevPats) / prevPats);
+            if (prevRep  > 0) reputationChangeRate = round4((state.getReputationScore() - prevRep) / prevRep);
+        }
+
         MonthlyData data = MonthlyData.builder()
                 .month(month)
+                .patientsCount(patients)
+                .newPatientCount(newPatientCount)
+                .returnPatientCount(returnPatientCount)
                 .revenue(revenue)
                 .variableCost(variableCost)
                 .fixedCost(fixedMonthly)
@@ -221,11 +254,22 @@ public class SimulationService {
                 .investingCashFlow(investingCF)
                 .financingCashFlow(financingCF)
                 .cumulativeCash(state.getCashBalance())
+                .cashChangeRate(cashChangeRate)
+                .patientsChangeRate(patientsChangeRate)
+                .reputationChangeRate(reputationChangeRate)
                 .reputationScore(round2(state.getReputationScore()))
                 .patientSatisfaction(round2(state.getSatisfactionScore()))
                 .returnPatientRate(round3(state.getReturnPatientRate()))
                 .staffMorale(round3(state.getStaffMorale()))
+                .laborCost(laborCost)
+                .insuranceCost(insuranceCost)
+                .rentCost(rentCost)
+                .marketingCost(marketingCost)
+                .depreciationCost(depreciationCost)
+                .otherMgmtCost(otherMgmtCost)
+                .costBreakdown(monthCostBreakdown)
                 .activeEvents(activeEventIds)
+                .appliedDecisions(decisions)
                 .build();
 
         state.getMonthlyHistory().add(data);
@@ -504,8 +548,38 @@ public class SimulationService {
             double rrTarget = reputation / 10.0;
             returnRate = clamp(returnRate + (rrTarget - returnRate) * 0.05, 0, 1);
 
+            // 신규/재진 분할
+            int retPats = (month == 1) ? 0 : (int)(patients * returnRate);
+            int newPats = patients - retPats;
+
+            // 비용 세부 Map
+            Map<String, Long> mCostBreakdown = new LinkedHashMap<>();
+            mCostBreakdown.put("인건비",    laborCost);
+            mCostBreakdown.put("4대보험",   insuranceCost);
+            mCostBreakdown.put("임대료",    rentCost);
+            mCostBreakdown.put("마케팅비",  marketingCost);
+            mCostBreakdown.put("감가상각비", depreciationCost);
+            mCostBreakdown.put("기타관리비", otherMgmtCost);
+            mCostBreakdown.put("변동비",    variableCost);
+            mCostBreakdown.put("이자비용",  interest);
+
+            // 전월 대비 증감율
+            double mCashCR = 0.0, mPatsCR = 0.0, mRepCR = 0.0;
+            if (!monthlyList.isEmpty()) {
+                MonthlyData prev = monthlyList.get(monthlyList.size() - 1);
+                long   prevCash  = prev.getCumulativeCash()  != null ? prev.getCumulativeCash()  : 0L;
+                int    prevPats  = prev.getPatientsCount()   != null ? prev.getPatientsCount()   : 0;
+                double prevRep   = prev.getReputationScore() != null ? prev.getReputationScore() : 0.0;
+                if (prevCash > 0) mCashCR = round4((double)(cashBalance - prevCash) / prevCash);
+                if (prevPats > 0) mPatsCR = round4((double)(patients - prevPats) / prevPats);
+                if (prevRep  > 0) mRepCR  = round4((reputation - prevRep) / prevRep);
+            }
+
             monthlyList.add(MonthlyData.builder()
                     .month(month)
+                    .patientsCount(patients)
+                    .newPatientCount(newPats)
+                    .returnPatientCount(retPats)
                     .revenue(revenue)
                     .variableCost(variableCost)
                     .fixedCost(fixedMonthly)
@@ -517,11 +591,22 @@ public class SimulationService {
                     .investingCashFlow(investingCF)
                     .financingCashFlow(financingCF)
                     .cumulativeCash(cashBalance)
+                    .cashChangeRate(mCashCR)
+                    .patientsChangeRate(mPatsCR)
+                    .reputationChangeRate(mRepCR)
                     .reputationScore(round2(reputation))
                     .patientSatisfaction(round2(satisfaction))
                     .returnPatientRate(round3(returnRate))
                     .staffMorale(round3(staffMorale))
+                    .laborCost(laborCost)
+                    .insuranceCost(insuranceCost)
+                    .rentCost(rentCost)
+                    .marketingCost(marketingCost)
+                    .depreciationCost(depreciationCost)
+                    .otherMgmtCost(otherMgmtCost)
+                    .costBreakdown(mCostBreakdown)
                     .activeEvents(monthEvents)
+                    .appliedDecisions(Collections.emptyList())
                     .build());
         }
 
@@ -697,6 +782,7 @@ public class SimulationService {
     }
 
     private double clamp(double v, double min, double max) { return Math.max(min, Math.min(max, v)); }
-    private double round2(double v) { return Math.round(v * 100)  / 100.0; }
-    private double round3(double v) { return Math.round(v * 1000) / 1000.0; }
+    private double round2(double v) { return Math.round(v * 100)   / 100.0; }
+    private double round3(double v) { return Math.round(v * 1000)  / 1000.0; }
+    private double round4(double v) { return Math.round(v * 10000) / 10000.0; }
 }

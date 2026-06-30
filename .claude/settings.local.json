@@ -14,7 +14,8 @@
       "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --msg-filter 'grep -v \"Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\" || true' 73b9310~1..HEAD)",
       "Bash(git commit *)",
       "Bash(git push *)",
-      "Bash(git remote *)"
+      "Bash(git remote *)",
+      "Bash(Get-Content *)"
     ]
   }
 }
