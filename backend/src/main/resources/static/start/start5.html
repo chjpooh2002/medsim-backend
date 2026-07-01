@@ -309,33 +309,63 @@
 
     const payload = { ...s2, ...s3, ...s4 };
 
+    // ── SimulationRequest 조립 ──
+    const staffCountsRaw = JSON.parse(localStorage.getItem('medsim_staff_counts') || 'null') || {};
+    const staffList = [{ role: '의사', salary: 1000, count: 1 }];
+    if ((staffCountsRaw.nurse  || 0) > 0) staffList.push({ role: '간호사',   salary: 300, count: staffCountsRaw.nurse  });
+    if ((staffCountsRaw.admin  || 0) > 0) staffList.push({ role: '원무행정', salary: 250, count: staffCountsRaw.admin  });
+    if ((staffCountsRaw.radiol || 0) > 0) staffList.push({ role: '방사선사', salary: 350, count: staffCountsRaw.radiol });
+    if (staffList.length === 1) staffList.push({ role: '간호사', salary: 300, count: 1 }); // 최소 기본값
+
+    const sigungu       = s3.regionName || localStorage.getItem('medsim_sigungu') || '';
+    const loanAmount    = s4.loanNeeded  != null ? s4.loanNeeded  : (parseInt(localStorage.getItem('medsim_loan_amount'))  || 0);
+    const loanRate      = parseFloat(localStorage.getItem('medsim_interest_rate')) || 4.5;
+    const monthlyRent   = s4.monthlyRent != null ? s4.monthlyRent : (parseInt(localStorage.getItem('medsim_monthly_rent')) || 0);
+    const monthlyMkt    = parseInt(localStorage.getItem('medsim_marketing_cost')) || 0;
+    const initialInvest = s4.initialInvestment != null ? s4.initialInvestment
+                        : ((parseInt(localStorage.getItem('medsim_owned_cash')) || 0) + loanAmount);
+
+    const missingKeys = [];
+    if (!s2.specialty)     missingKeys.push('specialty(진료과)');
+    if (!sigungu)          missingKeys.push('regionSiGun(지역)');
+    if (!initialInvest)    missingKeys.push('initialInvestment(초기투자)');
+    if (missingKeys.length) console.warn('[MEDSIM] 누락 필드:', missingKeys.join(', '));
+
+    const simReq = {
+      deptCategory:      s2.specialty || '내과',
+      regionSiGun:       sigungu,
+      initialInvestment: initialInvest || 30000,
+      loanAmount:        loanAmount    || 0,
+      loanRate:          loanRate,
+      loanMonths:        36,
+      monthlyRent:       monthlyRent   || 0,
+      monthlyMarketing:  monthlyMkt    || 0,
+      staffList,
+    };
+    console.log('[MEDSIM] SimulationRequest:', simReq);
+
     try {
-      // TODO: /api/simulation/start 백엔드 구현 후 아래 주석 해제 및 mock 블록 제거
-      // const res = await fetch('/api/simulation/start', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': 'Bearer ' + token
-      //   },
-      //   body: JSON.stringify(payload)
-      // });
-      // if (!res.ok) throw new Error('서버 오류: ' + res.status);
-      // const data = await res.json();
-      // const simulationId = data.simulationId;
+      const data = await apiPost('/api/simulation/start', simReq);
+      console.log('[MEDSIM] startSimulation 응답:', data);
 
-      // ── mock 처리 (백엔드 미구현 시) ──
-      await new Promise(r => setTimeout(r, 1000));
-      const simulationId = 'demo-001';
-
-      localStorage.setItem('simulationId', simulationId);
-      localStorage.removeItem('onboardingShown');
-      localStorage.setItem('currentMonth', '1');
+      // 이전 시뮬레이션 데이터 초기화
+      resetSimulationData();
       localStorage.removeItem('medsim_history');
       localStorage.removeItem('medsim_events');
+      localStorage.removeItem('onboardingShown');
+
+      // 새 시뮬레이션 데이터 저장
+      localStorage.setItem('medsim_simulation_id', data.simulationId);
+      localStorage.setItem('medsim_monthly_data',  JSON.stringify([data.monthlyData]));
+      localStorage.setItem('currentMonth',          String(data.currentMonth));
+      localStorage.setItem('medsim_next_events',    JSON.stringify(data.nextEvents         || []));
+      localStorage.setItem('medsim_available_decisions', JSON.stringify(data.availableDecisions || []));
+
       window.location.href = '/dashboard.html';
 
     } catch (e) {
-      errEl.textContent = '시뮬레이션 시작에 실패했습니다. 잠시 후 다시 시도해주세요.';
+      console.error('[MEDSIM] startSimulation 실패:', e);
+      errEl.textContent = '시뮬레이션 시작에 실패했습니다: ' + e.message;
       errEl.classList.add('show');
       btn.disabled = false;
       btn.classList.remove('loading');

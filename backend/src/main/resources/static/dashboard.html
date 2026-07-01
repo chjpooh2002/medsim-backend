@@ -473,119 +473,12 @@
 
 const LS = k => localStorage.getItem(k);
 
-const _ownedCash = parseInt(LS('medsim_owned_cash')) || 0;
-const _loanAmt   = parseInt(LS('medsim_loan_amount')) || 0;
-const INIT_CASH  = (_ownedCash + _loanAmt) > 0 ? (_ownedCash + _loanAmt) * 10_000 : 200_000_000;
-
-const _fixedMan  = parseInt(LS('medsim_fixed_cost')) || 5028;
-const FIXED_COST = _fixedMan * 10_000;
-
-let currentMonth = parseInt(LS('currentMonth') || '1');
+let currentMonth = 1;
 
 let growthChartInst = null, patientChartInst = null, expChartInst = null;
 
-// ═══════════════════════════════════════════════════════════════
-//  시그모이드 계산
-// ═══════════════════════════════════════════════════════════════
-
-let _simParams = null;
-function calcSimParams() {
-    if (_simParams) return _simParams;
-    let Lm = 1.0, km = 1.0, t0a = 0;
-
-    const sigungu = LS('medsim_sigungu') || '';
-    if      (sigungu === '강남구') Lm *= 1.15;
-    else if (sigungu === '서초구') Lm *= 1.05;
-    else if (sigungu === '노원구') Lm *= 0.9;
-    else if (sigungu)              Lm *= 0.85;
-
-    const fp = parseInt(LS('medsim_floating_population')) || 0;
-    if      (fp >= 82000)          { Lm *= 1.15; km *= 1.05; t0a -= 1; }
-    else if (fp < 50000 && fp > 0)   Lm *= 0.85;
-
-    const comp = LS('medsim_competitor_count');
-    if (comp !== null) {
-        const c = parseInt(comp);
-        if      (c < 3)   { Lm *= 1.2;  km *= 1.05; }
-        else if (c >= 10) { Lm *= 0.85; km *= 0.95; t0a += 1; }
-    }
-
-    const pyeong = parseInt(LS('medsim_pyeong')) || 0;
-    if      (pyeong >= 80)                  Lm *= 1.1;
-    else if (pyeong >= 30 && pyeong < 50)   Lm *= 0.95;
-    else if (pyeong > 0  && pyeong < 30)    Lm *= 0.9;
-
-    const mkt = parseInt(LS('medsim_marketing_cost')) || 0;
-    if      (mkt >= 3000) { Lm *= 1.05; km *= 1.3;  t0a -= 4; }
-    else if (mkt >= 1000) { Lm *= 1.02; km *= 1.15; t0a -= 2; }
-    else if (mkt >= 500)  {             km *= 1.05; t0a -= 1; }
-
-    const interior = parseInt(LS('medsim_interior_cost')) || 0;
-    const szForInt = pyeong || 50;
-    const intPerPy = interior / szForInt;
-    if      (intPerPy >= 1000) { Lm *= 1.15; km *= 1.05; t0a -= 1; }
-    else if (intPerPy >= 600)  { Lm *= 1.07; km *= 1.02; }
-
-    const cs = LS('medsim_clinic_style') || 'BALANCED';
-    if      (cs === 'FAST_TURNOVER')      { Lm *= 1.2;  km *= 1.1; }
-    else if (cs === 'CONSULTATION_HEAVY') { Lm *= 0.85; km *= 0.9; t0a += 1; }
-
-    const oh = LS('medsim_operation_hours') || 'STANDARD';
-    if      (oh === 'NIGHT_AND_WEEKEND') { Lm *= 1.25; km *= 1.1;  t0a -= 2; }
-    else if (oh === 'NIGHT')             { Lm *= 1.15; km *= 1.05; t0a -= 1; }
-    else if (oh === 'WEEKEND')           { Lm *= 1.1;  km *= 1.03; t0a -= 1; }
-
-    const eq = parseInt(LS('medsim_equipment_total')) || 0;
-    if      (eq >= 5000) { Lm *= 1.2;  km *= 1.05; t0a -= 1; }
-    else if (eq >= 2000) { Lm *= 1.1;  km *= 1.02; }
-
-    const os = LS('medsim_operation_style') || 'BALANCED';
-    if      (os === 'SERVICE_ENHANCED') { Lm *= 1.15; km *= 1.05; t0a -= 1; }
-    else if (os === 'MIN_STAFF')        { Lm *= 0.92; km *= 0.9;  t0a += 1; }
-
-    _simParams = { L: 90 * Lm, k: 0.117 * km, t0: 12 + t0a };
-    return _simParams;
-}
-
-function calcDailyPatients(month) {
-    const { L, k, t0 } = calcSimParams();
-    return Math.floor(L / (1 + Math.exp(-k * (month - t0))));
-}
-
-function calcMonth(m) {
-    const dp        = calcDailyPatients(m);
-    const mp        = dp * 25;
-    const arpp      = Math.round(75_000 + (108_400 - 75_000) * (m - 1) / 35);
-    const revenue   = dp * 25 * arpp;
-    const varCost   = Math.round(revenue * 0.30);
-    const netProfit = revenue - FIXED_COST - varCost;
-    const newRatio  = Math.max(0.15, 1 - 0.85 * (m - 1) / 35);
-    const reputation = +Math.min(5.0, 3.5 + (m - 1) * 0.05).toFixed(1);
-    return { m, dp, mp, arpp, revenue, varCost, netProfit, newRatio, reputation };
-}
-
-// ── 계산 검증 (개발자 디버깅) ──
-if ((_ownedCash + _loanAmt) > 0) {
-    const _m1 = calcMonth(1);
-    console.log('[MEDSIM 계산 검증]', {
-        owned_cash:  _ownedCash + '만원',
-        loan:        _loanAmt   + '만원',
-        init_cash:   INIT_CASH  + '원 (' + Math.round(INIT_CASH / 10_000).toLocaleString() + '만원)',
-        fixed_cost:  FIXED_COST + '원 (' + Math.round(FIXED_COST / 10_000).toLocaleString() + '만원)',
-        m1_patients: _m1.dp    + '명/일',
-        m1_revenue:  _m1.revenue + '원 (' + Math.round(_m1.revenue / 10_000).toLocaleString() + '만원)',
-        m1_net:      _m1.netProfit + '원 (' + Math.round(_m1.netProfit / 10_000).toLocaleString() + '만원)',
-    });
-}
-
-function calcCash(upToMonth) {
-    let cash = INIT_CASH;
-    for (let m = 1; m <= upToMonth; m++) cash += calcMonth(m).netProfit;
-    return cash;
-}
-
 // ── 포맷팅 ──
-const fmtWon = v => formatKRW(v);
+const fmtWon = v => formatKRW(v * 10000); // 백엔드 값은 만원 단위
 function badge(pct) {
     if (pct === null) return '';
     const pos = pct >= 0;
@@ -601,15 +494,11 @@ function pctDiff(cur, prev) {
 // ═══════════════════════════════════════════════════════════════
 
 function renderKPI() {
-    const cur      = calcMonth(currentMonth);
-    const prev     = currentMonth > 1 ? calcMonth(currentMonth - 1) : null;
-    const cash     = calcCash(currentMonth);
-    const prevCash = currentMonth > 1 ? calcCash(currentMonth - 1) : null;
+    const data = getLatestMonthData();
+    const now  = new Date();
+    const pad  = n => String(n).padStart(2,'0');
 
     document.getElementById('sb-month-num').textContent = `M${currentMonth}`;
-
-    const now = new Date();
-    const pad = n => String(n).padStart(2,'0');
     document.getElementById('kpi-date').textContent  = `${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())}`;
     document.getElementById('kpi-month').textContent = `${currentMonth}개월 진행 중`;
     const mbadge = document.getElementById('kpi-month-badge');
@@ -620,18 +509,20 @@ function renderKPI() {
     const fmt = d => `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}`;
     document.getElementById('date-range-text').textContent = `${fmt(simStart)} ~ ${fmt(simEnd)}`;
 
-    document.getElementById('kpi-cash').textContent        = fmtWon(cash);
-    document.getElementById('kpi-cash-badge').innerHTML    = badge(pctDiff(cash, prevCash));
-    document.getElementById('kpi-patients').textContent    = cur.mp.toLocaleString() + '명';
-    document.getElementById('kpi-daily').textContent       = `일 평균 ${Math.round(cur.dp)}명`;
-    document.getElementById('kpi-patients-badge').innerHTML = badge(prev ? pctDiff(cur.mp, prev.mp) : null);
-    document.getElementById('kpi-rep').textContent         = cur.reputation;
-    document.getElementById('kpi-rep-badge').innerHTML     = badge(prev ? pctDiff(cur.reputation, prev.reputation) : null);
-
     const advLabel = document.getElementById('advance-month-label');
     if (advLabel) advLabel.textContent = `${currentMonth}개월`;
     const btn = document.getElementById('advance-btn');
     if (btn) btn.disabled = currentMonth >= 36;
+
+    if (!data) return;
+
+    document.getElementById('kpi-cash').textContent         = fmtWon(data.cumulativeCash);
+    document.getElementById('kpi-cash-badge').innerHTML     = badge(data.cashChangeRate != null ? data.cashChangeRate * 100 : null);
+    document.getElementById('kpi-patients').textContent     = (data.patientsCount || 0).toLocaleString() + '명';
+    document.getElementById('kpi-daily').textContent        = `일 평균 ${Math.round((data.patientsCount || 0) / 22)}명`;
+    document.getElementById('kpi-patients-badge').innerHTML = badge(data.patientsChangeRate != null ? data.patientsChangeRate * 100 : null);
+    document.getElementById('kpi-rep').textContent          = data.reputationScore != null ? Number(data.reputationScore).toFixed(1) : '-';
+    document.getElementById('kpi-rep-badge').innerHTML      = badge(data.reputationChangeRate != null ? data.reputationChangeRate * 100 : null);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -643,70 +534,39 @@ function initGrowthChart() {
     if (growthChartInst) { growthChartInst.destroy(); growthChartInst = null; }
     document.getElementById('chart-tip').style.display = 'none';
 
-    if (currentMonth === 1) {
-        document.getElementById('chart-period-label').textContent = '36개월 예측';
-        growthChartInst = new Chart(ctx, {
-            type: 'scatter',
-            data: {
-                datasets: [
-                    {
-                        label: '매출 예측',
-                        data: Array.from({length:36}, (_,i) => ({ x:i+1, y:Math.round(calcMonth(i+1).revenue/10_000) })),
-                        backgroundColor: 'rgba(26,107,255,0.4)',
-                        pointRadius: 5, pointHoverRadius: 7
-                    },
-                    {
-                        label: '순이익 예측',
-                        data: Array.from({length:36}, (_,i) => ({ x:i+1, y:Math.round(calcMonth(i+1).netProfit/10_000) })),
-                        backgroundColor: ctx => ctx.raw && ctx.raw.y >= 0 ? 'rgba(34,201,122,0.5)' : 'rgba(255,59,59,0.5)',
-                        pointRadius: 5, pointHoverRadius: 7
-                    }
-                ]
-            },
-            options: {
-                responsive:true, maintainAspectRatio:false,
-                plugins: {
-                    legend: { position:'top', labels:{font:{family:'Pretendard',weight:'600',size:12},padding:14,usePointStyle:true} },
-                    tooltip: { callbacks:{ label: ctx => ` M${ctx.raw.x}: ${ctx.parsed.y.toLocaleString()}만원` } }
-                },
-                scales: {
-                    x: { type:'linear', min:1, max:36, grid:{color:'#E8ECF2'}, ticks:{font:{family:'Pretendard',size:12},color:'#7A8699',callback:v=>`M${v}`} },
-                    y: { grid:{color:'#E8ECF2'}, ticks:{font:{family:'Pretendard',size:12},color:'#7A8699',callback:v=>v.toLocaleString()+'만'} }
-                }
-            }
-        });
-    } else {
-        const displayMonths = Math.max(currentMonth, 3);
-        document.getElementById('chart-period-label').textContent = displayMonths + '개월';
-        const labels   = Array.from({length:displayMonths}, (_,i) => `M${i+1}`);
-        const revenues = labels.map((_,i) => Math.round(calcMonth(i+1).revenue/10_000));
-        const profits  = labels.map((_,i) => Math.round(calcMonth(i+1).netProfit/10_000));
-        const hasDecrease = revenues.some((r,i) => i > 0 && r < revenues[i-1]);
-        if (hasDecrease) document.getElementById('chart-tip').style.display = 'block';
+    const allData = getAllMonthlyData();
+    if (allData.length === 0) return;
 
-        growthChartInst = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [
-                    { label:'매출', data:revenues, borderColor:'#1A6BFF', backgroundColor:'rgba(26,107,255,.07)', fill:true, tension:0.42, pointRadius:4, pointHoverRadius:6, pointBackgroundColor:'#1A6BFF', borderWidth:2.5 },
-                    { label:'순이익', data:profits, borderColor:'#22C97A', backgroundColor:'transparent', fill:false, tension:0.42, pointRadius:4, pointHoverRadius:6, pointBackgroundColor:profits.map(v=>v>=0?'#22C97A':'#FF3B3B'), borderWidth:2.5, segment:{borderColor:ctx=>ctx.p1.parsed.y<0?'#FF3B3B':'#22C97A'} }
-                ]
+    document.getElementById('chart-period-label').textContent = allData.length + '개월';
+    const labels   = allData.map(d => `M${d.month}`);
+    const revenues = allData.map(d => Math.round(d.revenue   || 0));
+    const profits  = allData.map(d => Math.round(d.netProfit || 0));
+
+    const hasDecrease = revenues.some((r, i) => i > 0 && r < revenues[i-1]);
+    if (hasDecrease) document.getElementById('chart-tip').style.display = 'block';
+
+    growthChartInst = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label:'매출', data:revenues, borderColor:'#1A6BFF', backgroundColor:'rgba(26,107,255,.07)', fill:true, tension:0.42, pointRadius:4, pointHoverRadius:6, pointBackgroundColor:'#1A6BFF', borderWidth:2.5 },
+                { label:'순이익', data:profits, borderColor:'#22C97A', backgroundColor:'transparent', fill:false, tension:0.42, pointRadius:4, pointHoverRadius:6, pointBackgroundColor:profits.map(v=>v>=0?'#22C97A':'#FF3B3B'), borderWidth:2.5, segment:{borderColor:ctx=>ctx.p1.parsed.y<0?'#FF3B3B':'#22C97A'} }
+            ]
+        },
+        options: {
+            responsive:true, maintainAspectRatio:false,
+            interaction:{mode:'index',intersect:false},
+            plugins:{
+                legend:{position:'top',labels:{font:{family:'Pretendard',weight:'600',size:12},padding:14,usePointStyle:true,pointStyleWidth:10}},
+                tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}만원`}}
             },
-            options: {
-                responsive:true, maintainAspectRatio:false,
-                interaction:{mode:'index',intersect:false},
-                plugins:{
-                    legend:{position:'top',labels:{font:{family:'Pretendard',weight:'600',size:12},padding:14,usePointStyle:true,pointStyleWidth:10}},
-                    tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}만원`}}
-                },
-                scales:{
-                    x:{grid:{display:false},ticks:{font:{family:'Pretendard',size:12},color:'#7A8699'}},
-                    y:{grid:{color:'#E8ECF2'},ticks:{font:{family:'Pretendard',size:12},color:'#7A8699',callback:v=>v.toLocaleString()+'만'}}
-                }
+            scales:{
+                x:{grid:{display:false},ticks:{font:{family:'Pretendard',size:12},color:'#7A8699'}},
+                y:{grid:{color:'#E8ECF2'},ticks:{font:{family:'Pretendard',size:12},color:'#7A8699',callback:v=>v.toLocaleString()+'만'}}
             }
-        });
-    }
+        }
+    });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -715,8 +575,11 @@ function initGrowthChart() {
 
 function initPatientChart() {
     if (patientChartInst) { patientChartInst.destroy(); patientChartInst = null; }
-    const { newRatio } = calcMonth(currentMonth);
-    const newPct = Math.round(newRatio * 100), returnPct = 100 - newPct;
+    const data   = getLatestMonthData();
+    const newPts = data ? (data.newPatientCount    || 0) : 0;
+    const retPts = data ? (data.returnPatientCount || 0) : 0;
+    const total  = newPts + retPts || 1;
+    const newPct = Math.round(newPts / total * 100), returnPct = 100 - newPct;
     document.getElementById('donut-return-pct').textContent  = returnPct + '%';
     document.getElementById('legend-new-pct').textContent    = newPct + '%';
     document.getElementById('legend-return-pct').textContent = returnPct + '%';
@@ -732,17 +595,24 @@ function initPatientChart() {
 // ═══════════════════════════════════════════════════════════════
 
 function getExpData() {
+    const data = getLatestMonthData();
+    if (data && data.costBreakdown && Object.keys(data.costBreakdown).length > 0) {
+        const COLORS = {
+            '인건비':'#1A6BFF', '4대보험':'#4D8EFF', '임대료':'#FF8C42',
+            '마케팅비':'#22C97A', '감가상각비':'#C8D0DC', '기타관리비':'#9B59B6',
+            '변동비':'#F7C59F', '이자비용':'#E74C3C'
+        };
+        return Object.entries(data.costBreakdown)
+            .filter(([, v]) => v > 0)
+            .map(([k, v]) => ({ name: k, amount: v, color: COLORS[k] || '#C8D0DC' }));
+    }
     const STAFF_COST = { MIN_STAFF: 860, BALANCED: 1670, SERVICE_ENHANCED: 3340 };
-    const os      = LS('medsim_operation_style') || 'BALANCED';
-    const staffMan = STAFF_COST[os] ?? 1670;
-    const rentMan  = parseInt(LS('medsim_monthly_rent'))   || 0;
-    const mktMan   = parseInt(LS('medsim_marketing_cost')) || 0;
-    const otherMan = 250;
+    const os = LS('medsim_operation_style') || 'BALANCED';
     return [
-        { name:'인건비',    amount: staffMan, color:'#1A6BFF' },
-        { name:'임대료',    amount: rentMan,  color:'#FF8C42' },
-        { name:'마케팅+리스', amount: mktMan, color:'#22C97A' },
-        { name:'기타',      amount: otherMan, color:'#C8D0DC' },
+        { name:'인건비',   amount: STAFF_COST[os] ?? 1670,                           color:'#1A6BFF' },
+        { name:'임대료',   amount: parseInt(LS('medsim_monthly_rent'))   || 0,       color:'#FF8C42' },
+        { name:'마케팅비', amount: parseInt(LS('medsim_marketing_cost')) || 0,       color:'#22C97A' },
+        { name:'기타',     amount: 250,                                               color:'#C8D0DC' },
     ].filter(d => d.amount > 0);
 }
 
@@ -764,19 +634,28 @@ function initExpChart() {
 // ═══════════════════════════════════════════════════════════════
 
 function renderEventCenter() {
-    const el = document.getElementById('event-center-content');
-    if (currentMonth < 6) {
+    const el     = document.getElementById('event-center-content');
+    const events = getNextEvents ? getNextEvents() : [];
+
+    if (!events || events.length === 0) {
         el.innerHTML = `<div class="event-empty">이벤트는 6개월 이후부터 발생합니다.<br>운영 전략 탭에서 다음 달로 진행하세요.</div>`;
         return;
     }
+
+    const rows = events.map(ev => {
+        const positive = ev.positive !== undefined ? ev.positive : true;
+        const pct      = ev.effectValue != null ? Math.abs(ev.effectValue * 100).toFixed(1) + '%' : '';
+        return `<tr>
+            <td class="event-name">${ev.description || ev.eventType || '이벤트'}</td>
+            <td class="event-val">${ev.effectDescription || pct}</td>
+            <td class="event-change"><span class="badge ${positive?'pos':'neg'}">${positive?'↑':'↓'}${pct}</span></td>
+        </tr>`;
+    }).join('');
+
     el.innerHTML = `
         <table class="event-table">
-            <thead><tr><th>항목</th><th>현재값</th><th style="text-align:right">변화</th></tr></thead>
-            <tbody>
-                <tr><td class="event-name">신규 경쟁 병원 개원</td><td class="event-val">+1개소</td><td class="event-change"><span class="badge neg">↓2.5%</span></td></tr>
-                <tr><td class="event-name">재진 환자 증가</td><td class="event-val">+12%</td><td class="event-change"><span class="badge pos">↑8.0%</span></td></tr>
-                <tr><td class="event-name">직원 만족도</td><td class="event-val">3.8 / 5.0</td><td class="event-change"><span class="badge pos">↑5.0%</span></td></tr>
-            </tbody>
+            <thead><tr><th>항목</th><th>내용</th><th style="text-align:right">변화</th></tr></thead>
+            <tbody>${rows}</tbody>
         </table>`;
 }
 
@@ -860,7 +739,6 @@ function toggleRepProg(id) {
 }
 function resetStrategy() {
     initStratState();
-    _simParams = null;
     renderStrategyTab();
     showToast('전략이 초기화되었습니다.');
 }
@@ -1127,21 +1005,22 @@ function _buildCard6() {
 
 // ── AI 코치 ──
 function _buildAICoach() {
-    const os  = stratState.operationStyle;
-    const mkt = stratState.marketingCost;
-    const oh  = stratState.operationHours;
-    const cur = calcMonth(currentMonth);
+    const os   = stratState.operationStyle;
+    const mkt  = stratState.marketingCost;
+    const oh   = stratState.operationHours;
+    const data = getLatestMonthData();
+    const netP = data ? (data.netProfit || 0) : 0;
 
     let mainText = '';
     const recs = [];
 
-    if (cur.netProfit < 0) {
-        mainText = `${currentMonth}개월차 기준 순이익 ${fmtWon(cur.netProfit)}으로 적자 중입니다. 고정비 구조 개선과 신환 유입 확대가 우선 과제입니다.`;
+    if (netP < 0) {
+        mainText = `${currentMonth}개월차 기준 순이익 ${fmtWon(netP)}으로 적자 중입니다. 고정비 구조 개선과 신환 유입 확대가 우선 과제입니다.`;
         recs.push('마케팅 예산 확대로 신환 유입을 빠르게 늘리세요');
         if (os === 'SERVICE_ENHANCED') recs.push('흑자 전환 전까지 균형 운영 인력 구성을 검토하세요');
         if (mkt < 500) recs.push('월 마케팅 비용 500만원 이상 투자를 권장합니다');
-    } else if (cur.netProfit > 0 && currentMonth >= 6) {
-        mainText = `${currentMonth}개월차 순이익 ${fmtWon(cur.netProfit)} 흑자 달성 중입니다. 이제 재진율과 평판을 높여 장기 성장 기반을 다질 시점입니다.`;
+    } else if (netP > 0 && currentMonth >= 6) {
+        mainText = `${currentMonth}개월차 순이익 ${fmtWon(netP)} 흑자 달성 중입니다. 이제 재진율과 평판을 높여 장기 성장 기반을 다질 시점입니다.`;
         recs.push('재진 알림 문자와 리뷰 관리로 재방문율을 높이세요');
         recs.push('잉여 현금으로 고수익 서비스 장비 추가를 검토하세요');
         recs.push('대출이 있다면 공격 상환으로 이자 부담을 줄이세요');
@@ -1163,14 +1042,12 @@ function renderStratMiniChart() {
     if (stratChartInst) { stratChartInst.destroy(); stratChartInst = null; }
     const canvas = document.getElementById('strat-chart');
     if (!canvas) return;
-    const endM = Math.min(currentMonth + 3, 36);
-    const labels = [], revenues = [], profits = [];
-    for (let m = currentMonth; m <= endM; m++) {
-        labels.push(`M${m}`);
-        const d = calcMonth(m);
-        revenues.push(Math.round(d.revenue   / 10_000));
-        profits.push (Math.round(d.netProfit / 10_000));
-    }
+    const allData = getAllMonthlyData();
+    const recent  = allData.slice(-4);
+    if (recent.length === 0) return;
+    const labels   = recent.map(d => `M${d.month}`);
+    const revenues = recent.map(d => Math.round(d.revenue   || 0));
+    const profits  = recent.map(d => Math.round(d.netProfit || 0));
     stratChartInst = new Chart(canvas.getContext('2d'), {
         type:'line',
         data:{ labels, datasets:[
@@ -1196,11 +1073,24 @@ function renderStrategyTab() {
     const panel = document.getElementById('tab-운영전략');
     if (!panel) return;
 
-    const cur      = calcMonth(currentMonth);
-    const prev     = currentMonth > 1 ? calcMonth(currentMonth - 1) : null;
-    const cash     = calcCash(currentMonth);
-    const prevCash = currentMonth > 1 ? calcCash(currentMonth - 1) : null;
-    const rep      = cur.reputation;
+    const allData       = getAllMonthlyData();
+    const latestD       = getLatestMonthData();
+    const prevD         = allData.length >= 2 ? allData[allData.length - 2] : null;
+
+    const cash          = latestD ? (latestD.cumulativeCash  || 0) : 0;
+    const prevCash      = prevD   ? (prevD.cumulativeCash    || 0) : null;
+    const netProfit     = latestD ? (latestD.netProfit       || 0) : 0;
+    const prevNetProfit = prevD   ? (prevD.netProfit         || 0) : null;
+    const patients      = latestD ? (latestD.patientsCount   || 0) : 0;
+    const prevPatients  = prevD   ? (prevD.patientsCount     || 0) : null;
+    const rep           = latestD ? (latestD.reputationScore || 0) : 0;
+    const prevRep       = prevD   ? (prevD.reputationScore   || 0) : null;
+    const returnRatio   = (latestD && latestD.patientsCount > 0)
+        ? latestD.returnPatientCount / latestD.patientsCount : 0;
+    const prevReturnRatio = (prevD && prevD.patientsCount > 0)
+        ? prevD.returnPatientCount / prevD.patientsCount : null;
+    const dailyPts = Math.round(patients / 22);
+    const repFmt   = v => (typeof v === 'number' ? v.toFixed(1) : String(v));
     const disabled = currentMonth >= 36 ? 'disabled' : '';
 
     const mkBadge = pct => {
@@ -1210,10 +1100,10 @@ function renderStrategyTab() {
     };
 
     const simItems = [
-        { color:'#1a73e8', name:'월 순이익',   val:fmtWon(cur.netProfit), pct: prev ? pctDiff(cur.netProfit, prev.netProfit) : null },
-        { color:'#22C97A', name:'환자 만족도', val:`${rep} / 5.0`,         pct: prev ? pctDiff(rep, prev.reputation)          : null },
-        { color:'#FF8C42', name:'재진률',      val:`${Math.round((1-cur.newRatio)*100)}%`,
-            pct: prev ? pctDiff(1-cur.newRatio, 1-prev.newRatio) : null },
+        { color:'#1a73e8', name:'월 순이익',   val:fmtWon(netProfit), pct: prevNetProfit !== null ? pctDiff(netProfit, prevNetProfit) : null },
+        { color:'#22C97A', name:'환자 만족도', val:`${repFmt(rep)} / 5.0`, pct: prevRep !== null ? pctDiff(rep, prevRep) : null },
+        { color:'#FF8C42', name:'재진률',      val:`${Math.round(returnRatio*100)}%`,
+            pct: prevReturnRatio !== null ? pctDiff(returnRatio, prevReturnRatio) : null },
         { color:'#9B59B6', name:'직원 피로도',
             val: stratState.operationStyle==='MIN_STAFF' ? '높음' : stratState.operationStyle==='SERVICE_ENHANCED' ? '보통' : '낮음',
             pct: null },
@@ -1236,22 +1126,22 @@ function renderStrategyTab() {
             <div class="strat-kpi-card">
                 <div class="strat-kpi-label">현금 보유</div>
                 <div class="strat-kpi-value">${fmtWon(cash)}</div>
-                <div class="strat-kpi-foot">${mkBadge(prevCash ? pctDiff(cash, prevCash) : null)}</div>
+                <div class="strat-kpi-foot">${mkBadge(prevCash !== null ? pctDiff(cash, prevCash) : null)}</div>
             </div>
             <div class="strat-kpi-card">
                 <div class="strat-kpi-label">월 순이익</div>
-                <div class="strat-kpi-value">${fmtWon(cur.netProfit)}</div>
-                <div class="strat-kpi-foot">${mkBadge(prev ? pctDiff(cur.netProfit, prev.netProfit) : null)}</div>
+                <div class="strat-kpi-value">${fmtWon(netProfit)}</div>
+                <div class="strat-kpi-foot">${mkBadge(prevNetProfit !== null ? pctDiff(netProfit, prevNetProfit) : null)}</div>
             </div>
             <div class="strat-kpi-card">
                 <div class="strat-kpi-label">월 환자 수</div>
-                <div class="strat-kpi-value">${cur.mp.toLocaleString()}명</div>
-                <div class="strat-kpi-foot">일 평균 ${cur.dp}명 ${mkBadge(prev ? pctDiff(cur.mp, prev.mp) : null)}</div>
+                <div class="strat-kpi-value">${patients.toLocaleString()}명</div>
+                <div class="strat-kpi-foot">일 평균 ${dailyPts}명 ${mkBadge(prevPatients !== null ? pctDiff(patients, prevPatients) : null)}</div>
             </div>
             <div class="strat-kpi-card">
                 <div class="strat-kpi-label">환자 만족도</div>
-                <div class="strat-kpi-value">${rep} / 5.0</div>
-                <div class="strat-kpi-foot">${mkBadge(prev ? pctDiff(rep, prev.reputation) : null)}</div>
+                <div class="strat-kpi-value">${repFmt(rep)} / 5.0</div>
+                <div class="strat-kpi-foot">${mkBadge(prevRep !== null ? pctDiff(rep, prevRep) : null)}</div>
             </div>
         </div>
 
@@ -1301,15 +1191,9 @@ function updateTabBadges() {
     const eventBadge   = document.getElementById('badge-event');
     const historyBadge = document.getElementById('badge-history');
 
-    if (currentMonth < 6) {
-        if (eventBadge)   eventBadge.style.display = 'none';
-        if (historyBadge) historyBadge.style.display = 'none';
-        return;
-    }
-
-    const events = JSON.parse(localStorage.getItem('medsim_events') || '[]');
+    const events  = getNextEvents ? getNextEvents() : [];
     if (eventBadge) {
-        if (events.length === 0) {
+        if (!events || events.length === 0) {
             eventBadge.style.display = 'none';
         } else {
             eventBadge.textContent = events.length > 99 ? '99+' : String(events.length);
@@ -1317,12 +1201,12 @@ function updateTabBadges() {
         }
     }
 
-    const history = JSON.parse(localStorage.getItem('medsim_history') || '[]');
+    const allData = getAllMonthlyData ? getAllMonthlyData() : [];
     if (historyBadge) {
-        if (history.length === 0) {
+        if (allData.length === 0) {
             historyBadge.style.display = 'none';
         } else {
-            historyBadge.textContent = history.length > 99 ? '99+' : String(history.length);
+            historyBadge.textContent = allData.length > 99 ? '99+' : String(allData.length);
             historyBadge.style.display = '';
         }
     }
@@ -1332,39 +1216,13 @@ function updateTabBadges() {
 //  운영 이력 저장 / 렌더링
 // ═══════════════════════════════════════════════════════════════
 
-function recordHistory(month) {
-    const data    = calcMonth(month);
-    const cash    = calcCash(month);
-    const history = JSON.parse(localStorage.getItem('medsim_history') || '[]');
-    const idx     = history.findIndex(h => h.month === month);
-    const record  = {
-        month,
-        revenue:        data.revenue,
-        netProfit:      data.netProfit,
-        patients:       data.mp,
-        cash,
-        reputation:     data.reputation,
-        operationStyle: stratState.operationStyle,
-    };
-    if (idx >= 0) history[idx] = record; else history.push(record);
-    localStorage.setItem('medsim_history', JSON.stringify(history));
-}
-
 function renderHistoryTab() {
     const el = document.getElementById('history-content');
     if (!el) return;
 
-    if (currentMonth < 6) {
-        el.innerHTML = `<div class="tab-placeholder">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/></svg>
-            <p>아직 운영 이력이 없습니다</p>
-            <span>첫 달을 진행해보세요. 6개월 이후부터 이력이 기록됩니다.</span>
-        </div>`;
-        return;
-    }
+    const allData = getAllMonthlyData();
 
-    const history = JSON.parse(localStorage.getItem('medsim_history') || '[]');
-    if (history.length === 0) {
+    if (allData.length === 0) {
         el.innerHTML = `<div class="tab-placeholder">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z"/></svg>
             <p>아직 운영 이력이 없습니다</p>
@@ -1373,20 +1231,20 @@ function renderHistoryTab() {
         return;
     }
 
-    const rows = [...history].reverse().map(h => `
+    const rows = [...allData].reverse().map(h => `
         <tr>
             <td style="font-weight:700;color:var(--blue)">M${h.month}</td>
             <td>${fmtWon(h.revenue)}</td>
-            <td style="font-weight:700;color:${h.netProfit >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtWon(h.netProfit)}</td>
-            <td>${h.patients.toLocaleString()}명</td>
-            <td>${fmtWon(h.cash)}</td>
-            <td>${h.reputation} / 5.0</td>
+            <td style="font-weight:700;color:${(h.netProfit||0) >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtWon(h.netProfit)}</td>
+            <td>${(h.patientsCount||0).toLocaleString()}명</td>
+            <td>${fmtWon(h.cumulativeCash)}</td>
+            <td>${h.reputationScore != null ? Number(h.reputationScore).toFixed(1) : '-'} / 5.0</td>
         </tr>`).join('');
 
     el.innerHTML = `<div class="card">
         <div class="card-head">
             <span class="card-title">운영 이력</span>
-            <span class="card-sub">최근 기록 순 · 총 ${history.length}건</span>
+            <span class="card-sub">최근 기록 순 · 총 ${allData.length}건</span>
         </div>
         <table class="event-table">
             <thead><tr><th>월차</th><th>매출</th><th>순이익</th><th>환자 수</th><th>현금 잔액</th><th>평판</th></tr></thead>
@@ -1413,25 +1271,49 @@ function switchTab(tabName, el) {
 //  진행하기
 // ═══════════════════════════════════════════════════════════════
 
-function advanceMonth() {
+async function advanceMonth() {
     if (currentMonth >= 36) { showToast('36개월 시뮬레이션이 완료되었습니다.'); return; }
 
-    // 전략 저장
-    localStorage.setItem('medsim_operation_style',  stratState.operationStyle);
-    localStorage.setItem('medsim_staff_counts',     JSON.stringify(stratState.staffCounts));
-    localStorage.setItem('medsim_clinic_style',     stratState.clinicStyle);
-    localStorage.setItem('medsim_operation_hours',  stratState.operationHours);
-    localStorage.setItem('medsim_services',         JSON.stringify(stratState.services));
-    localStorage.setItem('medsim_marketing_cost',   String(stratState.marketingCost));
-    localStorage.setItem('medsim_repayment_style',  stratState.repaymentStyle);
-    localStorage.setItem('medsim_rep_programs',     JSON.stringify(stratState.reputationPrograms));
+    localStorage.setItem('medsim_operation_style', stratState.operationStyle);
+    localStorage.setItem('medsim_staff_counts',    JSON.stringify(stratState.staffCounts));
+    localStorage.setItem('medsim_clinic_style',    stratState.clinicStyle);
+    localStorage.setItem('medsim_operation_hours', stratState.operationHours);
+    localStorage.setItem('medsim_services',        JSON.stringify(stratState.services));
+    localStorage.setItem('medsim_marketing_cost',  String(stratState.marketingCost));
+    localStorage.setItem('medsim_repayment_style', stratState.repaymentStyle);
+    localStorage.setItem('medsim_rep_programs',    JSON.stringify(stratState.reputationPrograms));
 
-    // 시그모이드 파라미터 강제 재계산
-    _simParams = null;
+    const btn = document.getElementById('advance-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '처리 중...'; }
 
-    recordHistory(currentMonth);
-    currentMonth++;
-    localStorage.setItem('currentMonth', String(currentMonth));
+    try {
+        const simulationId = getSimulationId();
+        if (!simulationId) { showToast('시뮬레이션 ID를 찾을 수 없습니다.'); return; }
+
+        const decisions   = getAvailableDecisions ? getAvailableDecisions() : [];
+        const decisionIds = decisions.map(d => d.id || d.decisionId).filter(Boolean);
+
+        const result = await apiPost(`/api/simulation/${simulationId}/next`, { decisionIds });
+
+        appendMonthlyData(result.monthlyData);
+        currentMonth = result.currentMonth;
+        localStorage.setItem('currentMonth', String(currentMonth));
+        localStorage.setItem('medsim_next_events',         JSON.stringify(result.nextEvents         || []));
+        localStorage.setItem('medsim_available_decisions', JSON.stringify(result.availableDecisions || []));
+
+        if (result.isBankrupt) {
+            showToast('파산! 현금이 부족하여 운영을 지속할 수 없습니다.');
+        } else if (result.isCompleted) {
+            showToast('36개월 시뮬레이션이 완료되었습니다!');
+        }
+    } catch (e) {
+        showToast('오류: ' + (e.message || '서버와 통신할 수 없습니다.'));
+        if (btn) { btn.disabled = currentMonth >= 36; btn.textContent = '진행하기 →'; }
+        return;
+    }
+
+    if (btn) { btn.disabled = currentMonth >= 36; btn.textContent = '진행하기 →'; }
+
     updateTabBadges();
     renderKPI();
     renderEventCenter();
@@ -1502,6 +1384,16 @@ function closeOnboarding() {
 // ═══════════════════════════════════════════════════════════════
 
 window.addEventListener('load', () => {
+    currentMonth = parseInt(localStorage.getItem('currentMonth') || '1') || 1;
+
+    if (!hasSimulationData() && !getSimulationId()) {
+        document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:Pretendard,sans-serif;gap:16px">
+            <p style="font-size:18px;color:#333">시뮬레이션을 먼저 시작해주세요</p>
+            <a href="/start/start1.html" style="color:#1A6BFF;text-decoration:underline">시작하기 →</a>
+        </div>`;
+        return;
+    }
+
     initStratState();
     renderKPI();
     renderEventCenter();

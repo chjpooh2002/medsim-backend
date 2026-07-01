@@ -15,7 +15,10 @@
       "Bash(git commit *)",
       "Bash(git push *)",
       "Bash(git remote *)",
-      "Bash(Get-Content *)"
+      "Bash(Get-Content *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\82109\\\\Desktop\\\\MEDSIM_Project\\\\backend\\\\src\\\\main\\\\resources\\\\static\" -Recurse)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)"
     ]
   }
 }

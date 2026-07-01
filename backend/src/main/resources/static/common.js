@@ -8,10 +8,15 @@ var STORAGE_KEYS = {
     TOKEN:               'token',
     NAME:                'name',
     CURRENT_MONTH:       'currentMonth',
-    SIMULATION_ID:       'simulationId',
+    SIMULATION_ID:       'medsim_simulation_id',
     ONBOARDING_SHOWN:    'onboardingShown',
     HISTORY:             'medsim_history',
     EVENTS:              'medsim_events',
+    // ── 시뮬레이션 진행 데이터 (백엔드 응답 누적) ──
+    MONTHLY_DATA:        'medsim_monthly_data',
+    NEXT_EVENTS:         'medsim_next_events',
+    AVAILABLE_DECISIONS: 'medsim_available_decisions',
+    // ── start1~5 입력값 (기존 유지) ──
     OWNED_CASH:          'medsim_owned_cash',
     LOAN_AMOUNT:         'medsim_loan_amount',
     FIXED_COST:          'medsim_fixed_cost',
@@ -74,6 +79,10 @@ var SIDEBAR_MENU = [
 //  시뮬레이션 데이터 접근
 // ═══════════════════════════════════════════════════════════════
 
+function getSimulationId() {
+    return localStorage.getItem(STORAGE_KEYS.SIMULATION_ID);
+}
+
 function getCurrentMonth() {
     return parseInt(localStorage.getItem(STORAGE_KEYS.CURRENT_MONTH) || '1');
 }
@@ -105,13 +114,42 @@ function getConfig() {
     };
 }
 
-function getMonthlyData(month) {
-    var history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || '[]');
-    return history.find(function (h) { return h.month === month; }) || null;
+function getAllMonthlyData() {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.MONTHLY_DATA) || '[]');
 }
 
-function getAllMonthlyData() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || '[]');
+function getMonthlyData(month) {
+    return getAllMonthlyData().find(function (h) { return h.month === month; }) || null;
+}
+
+function getLatestMonthData() {
+    var all = getAllMonthlyData();
+    return all.length > 0 ? all[all.length - 1] : null;
+}
+
+function getNextEvents() {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.NEXT_EVENTS) || '[]');
+}
+
+function getAvailableDecisions() {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.AVAILABLE_DECISIONS) || '[]');
+}
+
+function appendMonthlyData(newData) {
+    var all = getAllMonthlyData();
+    all.push(newData);
+    localStorage.setItem(STORAGE_KEYS.MONTHLY_DATA, JSON.stringify(all));
+}
+
+function resetSimulationData() {
+    localStorage.removeItem(STORAGE_KEYS.MONTHLY_DATA);
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_MONTH);
+    localStorage.removeItem(STORAGE_KEYS.NEXT_EVENTS);
+    localStorage.removeItem(STORAGE_KEYS.AVAILABLE_DECISIONS);
+}
+
+function hasSimulationData() {
+    return getAllMonthlyData().length > 0;
 }
 
 function getSimulationState() {
@@ -500,11 +538,18 @@ window.CHART_COLORS    = CHART_COLORS;
 window.CHART_FONT      = CHART_FONT;
 window.SIDEBAR_MENU    = SIDEBAR_MENU;
 
-window.getSimulationState = getSimulationState;
-window.getCurrentMonth    = getCurrentMonth;
-window.getMonthlyData     = getMonthlyData;
-window.getAllMonthlyData   = getAllMonthlyData;
-window.getConfig          = getConfig;
+window.getSimulationState      = getSimulationState;
+window.getSimulationId         = getSimulationId;
+window.getCurrentMonth         = getCurrentMonth;
+window.getMonthlyData          = getMonthlyData;
+window.getAllMonthlyData        = getAllMonthlyData;
+window.getLatestMonthData      = getLatestMonthData;
+window.getNextEvents           = getNextEvents;
+window.getAvailableDecisions   = getAvailableDecisions;
+window.appendMonthlyData       = appendMonthlyData;
+window.resetSimulationData     = resetSimulationData;
+window.hasSimulationData       = hasSimulationData;
+window.getConfig               = getConfig;
 
 window.formatKRW      = formatKRW;
 window.formatManwon   = formatManwon;
