@@ -130,6 +130,39 @@
         .empty-desc { font-size: 13px; color: var(--gray-5); line-height: 1.7; margin-bottom: 22px; }
         .empty-btn { display: inline-block; padding: 11px 24px; background: var(--blue); color: white; border-radius: 10px; font-size: 14px; font-weight: 700; text-decoration: none; }
 
+        /* ── Detail P&L table ─────────────────────────────────── */
+        .det-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .det-compare-lbl { font-size: 12px; color: var(--gray-5); font-weight: 600; }
+        .det-mode-wrap { display: flex; align-items: center; gap: 14px; }
+        .det-mode-title { font-size: 12px; color: var(--gray-5); font-weight: 600; margin-right: 4px; }
+        .det-mode-wrap label { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; color: var(--gray-7); cursor: pointer; }
+        .det-mode-wrap input[type=radio] { accent-color: var(--blue); cursor: pointer; }
+        .det-scroll { overflow-x: auto; }
+        .det-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        .det-table th { font-size: 11px; font-weight: 700; color: var(--gray-5); padding: 8px 12px; text-align: right; border-bottom: 2px solid var(--gray-2); background: var(--gray-1); white-space: nowrap; }
+        .det-table th:first-child { text-align: left; min-width: 160px; }
+        .det-table td { font-size: 12px; padding: 9px 12px; border-bottom: 1px solid var(--gray-2); text-align: right; white-space: nowrap; vertical-align: middle; }
+        .det-table td:first-child { text-align: left; }
+        .det-row-parent { cursor: pointer; background: rgba(200,208,220,.1); }
+        .det-row-parent:hover td { background: rgba(200,208,220,.22); }
+        .det-row-child:hover td { background: var(--gray-1); }
+        .det-row-subtotal td { background: var(--gray-1); font-weight: 700; border-top: 1.5px solid var(--gray-2); border-bottom: 1.5px solid var(--gray-2); }
+        .det-label { text-align: left !important; }
+        .det-child { padding-left: 22px !important; }
+        .det-tog { display: inline-block; width: 16px; font-size: 10px; color: var(--gray-5); cursor: pointer; user-select: none; }
+        .det-ind { display: inline-block; width: 16px; font-size: 11px; color: var(--gray-5); }
+        .det-val { font-weight: 700; }
+        .det-pct { min-width: 100px; }
+        .det-pct-num { font-size: 11px; color: var(--gray-5); margin-bottom: 3px; }
+        .det-bar-bg { background: var(--gray-2); border-radius: 3px; height: 5px; overflow: hidden; }
+        .det-bar-fill { height: 5px; border-radius: 3px; }
+        .det-avg { color: var(--gray-7); }
+        .det-na { color: var(--gray-5); font-size: 11px; }
+        .det-badge { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; }
+        .det-badge-success { background: rgba(34,201,122,.12); color: #15a05c; }
+        .det-badge-warning { background: rgba(255,140,66,.12); color: #c96600; }
+        .det-badge-danger  { background: rgba(255,59,59,.12);  color: var(--red); }
+
         footer { background: var(--navy); padding: 14px 26px; text-align: center; }
         footer p { font-size: 12px; color: rgba(255,255,255,.4); }
     </style>
@@ -233,9 +266,28 @@
             <!-- Detail tab -->
             <div id="tab-detail" style="display:none">
                 <div class="section-card">
-                    <div style="text-align:center;padding:48px 0;color:var(--gray-5)">
-                        <p style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:6px">상세 손익 분석</p>
-                        <p style="font-size:13px">준비 중입니다.</p>
+                    <div class="det-header">
+                        <div class="det-compare-lbl">비교 기준: 이전 동일 기간</div>
+                        <div class="det-mode-wrap">
+                            <span class="det-mode-title">표시 방식</span>
+                            <label><input type="radio" name="det-mode" value="cumulative" checked onchange="onDetModeChange('cumulative')"> 누적</label>
+                            <label><input type="radio" name="det-mode" value="average" onchange="onDetModeChange('average')"> 월평균</label>
+                        </div>
+                    </div>
+                    <div class="det-scroll">
+                        <table class="det-table">
+                            <thead>
+                                <tr>
+                                    <th>항목</th>
+                                    <th id="det-col-main">누적 합계</th>
+                                    <th style="min-width:110px">구성비</th>
+                                    <th>월평균</th>
+                                    <th>이전 기간 대비</th>
+                                    <th>상태</th>
+                                </tr>
+                            </thead>
+                            <tbody id="det-table-body"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -259,8 +311,18 @@ var SVG_WARN     = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" 
 var SVG_UP       = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
 var SVG_DOWN     = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>';
 
+// ── P&L 매출/원가 분할 비율 (추후 수정 용이하도록 상단에 명시) ──
+var PNL_REV_COVERED   = 0.70;  // 급여매출 비율
+var PNL_REV_UNCOVERED = 0.30;  // 비급여매출 비율
+var PNL_VAR_MEDICINE  = 0.40;  // 의약품비 비율
+var PNL_VAR_MATERIAL  = 0.35;  // 재료비 비율
+var PNL_VAR_EXTERNAL  = 0.25;  // 외주검사비 비율
+
 // ── State ──────────────────────────────────────────────────────
 var filterStart = 1, filterEnd = 1;
+var detMode    = 'cumulative'; // 'cumulative' | 'average'
+var _pnlAgg    = null;         // 집계 결과 캐시
+var _detGroups = {};           // 그룹 접힘 상태 { id: bool(true=접힘) }
 
 // ── Data Enrichment ────────────────────────────────────────────
 // 백엔드 MonthlyData는 모두 만원 단위 → 여기서 × 10000 하여 원으로 통일
@@ -344,6 +406,7 @@ function onFilterChange() {
     if (s > e) { e = s; document.getElementById('filter-end').value = s; }
     filterStart = s; filterEnd = e;
     renderAll();
+    if (document.getElementById('tab-detail').style.display !== 'none') renderDetailTab();
 }
 
 // ── Tab ───────────────────────────────────────────────────────
@@ -352,6 +415,11 @@ function switchTab(id, btn) {
     if (btn) btn.classList.add('active');
     document.getElementById('tab-summary').style.display = id === 'summary' ? '' : 'none';
     document.getElementById('tab-detail').style.display  = id === 'detail'  ? '' : 'none';
+    if (id === 'detail') {
+        var emEl = document.getElementById('empty-state');
+        if (emEl) emEl.style.display = 'none';
+        renderDetailTab();
+    }
 }
 
 // ── KPI Cards ─────────────────────────────────────────────────
@@ -608,6 +676,207 @@ function renderFeedback(f) {
             '<p class="fb-body">' + c.body + '</p>' +
             '</div>';
     }).join('');
+}
+
+// ── Detail P&L: 집계 ─────────────────────────────────────────
+function enrichRecordListForPnl(rawRecords) {
+    var cfg = getConfig();
+    var n = rawRecords.length;
+    if (!n) return null;
+    var s = { revenue:0, varCost:0, labor:0, rent:0, marketing:0, depr:0, insurance:0, otherMgmt:0, interest:0, netProfit:0 };
+    for (var i = 0; i < n; i++) {
+        var r = rawRecords[i];
+        var e = enrichRecord(r, i > 0 ? rawRecords[i-1] : null, cfg);
+        s.revenue   += e.revenue;
+        s.varCost   += e.varCost;
+        s.labor     += e.labor;
+        s.rent      += e.rent;
+        s.marketing += e.marketing;
+        s.depr      += e.depr;
+        var ins      = r.insuranceCost  != null ? r.insuranceCost  * 10000 : e.labor * 0.106;
+        var other    = r.otherMgmtCost  != null ? r.otherMgmtCost  * 10000 : Math.max(0, e.otherFixed - ins);
+        var interest = r.interestExpense != null ? r.interestExpense * 10000 : 0;
+        s.insurance += ins;
+        s.otherMgmt += other;
+        s.interest  += interest;
+        s.netProfit += e.netProfit;
+    }
+    s.coveredRev      = s.revenue * PNL_REV_COVERED;
+    s.uncoveredRev    = s.revenue * PNL_REV_UNCOVERED;
+    s.medicine        = s.varCost * PNL_VAR_MEDICINE;
+    s.material        = s.varCost * PNL_VAR_MATERIAL;
+    s.external        = s.varCost * PNL_VAR_EXTERNAL;
+    s.grossProfit     = s.revenue - s.varCost;
+    s.sga             = s.labor + s.rent + s.marketing + s.depr + s.insurance + s.otherMgmt;
+    s.operatingProfit = s.grossProfit - s.sga;
+    s.months          = n;
+    console.log('[PnL 집계(만원)] 매출:', Math.round(s.revenue/10000), '원가:', Math.round(s.varCost/10000),
+        '총이익:', Math.round(s.grossProfit/10000), '판관비:', Math.round(s.sga/10000),
+        '영업이익:', Math.round(s.operatingProfit/10000), '순이익:', Math.round(s.netProfit/10000));
+    return s;
+}
+
+// ── Detail P&L: 테이블 렌더링 ────────────────────────────────
+function _renderPnlTable() {
+    var agg = _pnlAgg;
+    if (!agg) return;
+    var bodyEl = document.getElementById('det-table-body');
+    if (!bodyEl) return;
+    var hdrEl = document.getElementById('det-col-main');
+    if (hdrEl) hdrEl.textContent = detMode === 'cumulative' ? '누적 합계' : '월평균';
+
+    var months = agg.months;
+    var rev    = agg.revenue;
+
+    function mv(v)  { return detMode === 'average' ? v / months : v; }
+    function avgv(v){ return v / months; }
+    function fmt(v) {
+        if (v === 0) return '0만원';
+        var sign = v < 0 ? '-' : '';
+        return sign + Math.round(Math.abs(v) / 10000).toLocaleString() + '만원';
+    }
+    function pctOf(part, total) { return total > 0 ? part / total * 100 : 0; }
+    function barCell(pctVal, blue) {
+        var clr = blue ? 'var(--blue)' : '#C8D0DC';
+        var w   = Math.min(100, Math.max(0, pctVal));
+        return '<td class="det-pct"><div class="det-pct-num">' + pctVal.toFixed(1) + '%</div>' +
+            '<div class="det-bar-bg"><div class="det-bar-fill" style="width:' + w + '%;background:' + clr + '"></div></div></td>';
+    }
+    function bdgHtml(type, val) {
+        var lbl, cls;
+        if (type === 'revGrowth') {
+            if (val >= 5)  { lbl='양호'; cls='success'; }
+            else if (val >= 0) { lbl='주의'; cls='warning'; }
+            else           { lbl='위험'; cls='danger'; }
+        } else if (type === 'varCostRatio') {
+            if (val <= 20) { lbl='양호'; cls='success'; }
+            else if (val <= 30) { lbl='주의'; cls='warning'; }
+            else           { lbl='위험'; cls='danger'; }
+        } else if (type === 'laborRatio') {
+            if (val <= 35) { lbl='양호'; cls='success'; }
+            else if (val <= 50) { lbl='주의'; cls='warning'; }
+            else           { lbl='위험'; cls='danger'; }
+        } else if (type === 'opRatio') {
+            if (val >= 15) { lbl='양호'; cls='success'; }
+            else if (val >= 0)  { lbl='주의'; cls='warning'; }
+            else           { lbl='위험'; cls='danger'; }
+        } else {
+            return '<span class="det-na">-</span>';
+        }
+        return '<span class="det-badge det-badge-' + cls + '">' + lbl + '</span>';
+    }
+    var na = '<span class="det-na">-</span>';
+
+    function pRow(id, label, value, pctVal, bdg, blue) {
+        return '<tr class="det-row-parent" onclick="toggleDetGroup(\'' + id + '\')">' +
+            '<td class="det-label"><span class="det-tog" id="dt-' + id + '">▼</span><strong>' + label + '</strong></td>' +
+            '<td class="det-val">' + fmt(mv(value)) + '</td>' +
+            barCell(pctVal, blue) +
+            '<td class="det-avg">' + fmt(avgv(value)) + '</td>' +
+            '<td style="text-align:right">' + na + '</td>' +
+            '<td style="text-align:right">' + (bdg||na) + '</td></tr>';
+    }
+    function cRow(parentId, label, value, pctVal, bdg, blue) {
+        return '<tr class="det-row-child det-of-' + parentId + '">' +
+            '<td class="det-label det-child"><span class="det-ind">└</span>' + label + '</td>' +
+            '<td class="det-val">' + fmt(mv(value)) + '</td>' +
+            barCell(pctVal, blue) +
+            '<td class="det-avg">' + fmt(avgv(value)) + '</td>' +
+            '<td style="text-align:right">' + na + '</td>' +
+            '<td style="text-align:right">' + (bdg||na) + '</td></tr>';
+    }
+    function tRow(label, value, pctVal, bdg) {
+        var clr = value >= 0 ? 'var(--green)' : 'var(--red)';
+        var pStr = pctVal !== null ? pctVal.toFixed(1) + '%' : '-';
+        return '<tr class="det-row-subtotal">' +
+            '<td class="det-label"><strong>' + label + '</strong></td>' +
+            '<td class="det-val" style="color:' + clr + '">' + fmt(mv(value)) + '</td>' +
+            '<td class="det-pct"><div class="det-pct-num">' + pStr + '</div></td>' +
+            '<td class="det-avg" style="color:' + clr + '">' + fmt(avgv(value)) + '</td>' +
+            '<td style="text-align:right">' + na + '</td>' +
+            '<td style="text-align:right">' + (bdg||na) + '</td></tr>';
+    }
+
+    // 매출 성장률: 필터 기간 첫/끝 월 비교
+    var allEnr   = getEnrichedAll();
+    var filtEnr  = allEnr.filter(function(r){ return r.month >= filterStart && r.month <= filterEnd; });
+    var revGrowthPct = 0;
+    if (filtEnr.length >= 2) {
+        var fr = filtEnr[0].revenue, lr = filtEnr[filtEnr.length-1].revenue;
+        revGrowthPct = fr > 0 ? (lr - fr) / fr * 100 : 0;
+    }
+    var varCostPct = pctOf(agg.varCost,           rev);
+    var laborPct   = pctOf(agg.labor,              rev);
+    var opPct      = pctOf(agg.operatingProfit,    rev);
+
+    var html = '';
+    // ▼ 매출
+    html += pRow('rev',  '매출',       rev,              100,                            bdgHtml('revGrowth',    revGrowthPct), true);
+    html += cRow('rev',  '급여매출',   agg.coveredRev,   pctOf(agg.coveredRev,   rev),  na,                                   true);
+    html += cRow('rev',  '비급여매출', agg.uncoveredRev, pctOf(agg.uncoveredRev, rev),  na,                                   true);
+    // ▼ 매출원가
+    html += pRow('cogs', '매출원가',   agg.varCost,      varCostPct,                     bdgHtml('varCostRatio', varCostPct),  false);
+    html += cRow('cogs', '의약품비',   agg.medicine,     pctOf(agg.medicine,  agg.varCost), na,                               false);
+    html += cRow('cogs', '재료비',     agg.material,     pctOf(agg.material,  agg.varCost), na,                               false);
+    html += cRow('cogs', '외주검사비', agg.external,     pctOf(agg.external,  agg.varCost), na,                               false);
+    // 매출총이익
+    html += tRow('매출총이익',         agg.grossProfit,  pctOf(agg.grossProfit, rev),    null);
+    // ▼ 판매관리비
+    html += pRow('sga',  '판매관리비', agg.sga,          pctOf(agg.sga,  rev),           null,                                false);
+    html += cRow('sga',  '인건비',     agg.labor,        pctOf(agg.labor,      agg.sga), bdgHtml('laborRatio',   laborPct),   false);
+    html += cRow('sga',  '임대료',     agg.rent,         pctOf(agg.rent,       agg.sga), na,                                  false);
+    html += cRow('sga',  '마케팅비',   agg.marketing,    pctOf(agg.marketing,  agg.sga), na,                                  false);
+    html += cRow('sga',  '감가상각비', agg.depr,         pctOf(agg.depr,       agg.sga), na,                                  false);
+    html += cRow('sga',  '4대보험',    agg.insurance,    pctOf(agg.insurance,  agg.sga), na,                                  false);
+    html += cRow('sga',  '기타관리비', agg.otherMgmt,    pctOf(agg.otherMgmt,  agg.sga), na,                                  false);
+    // 영업이익
+    html += tRow('영업이익',           agg.operatingProfit, opPct,                       bdgHtml('opRatio',      opPct));
+    // ▼ 영업외손익 (이자비용은 음수)
+    html += pRow('nonop','영업외손익', -agg.interest,    pctOf(agg.interest, rev),       null,                                false);
+    html += cRow('nonop','이자비용',   -agg.interest,    pctOf(agg.interest, rev),       na,                                  false);
+    // 당기순이익
+    html += tRow('당기순이익',         agg.netProfit,    pctOf(agg.netProfit, rev),      null);
+
+    bodyEl.innerHTML = html;
+
+    // 접힘 상태 복원
+    Object.keys(_detGroups).forEach(function(id) {
+        if (_detGroups[id]) {
+            document.querySelectorAll('.det-of-' + id).forEach(function(el){ el.style.display = 'none'; });
+            var tog = document.getElementById('dt-' + id);
+            if (tog) tog.textContent = '▶';
+        }
+    });
+}
+
+function renderDetailTab() {
+    var allRaw      = getAllMonthlyData();
+    var rawFiltered = allRaw.filter(function(r){ return r.month >= filterStart && r.month <= filterEnd; });
+    var bodyEl      = document.getElementById('det-table-body');
+    if (!bodyEl) return;
+    if (!rawFiltered.length) {
+        bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:48px;color:var(--gray-5)">' +
+            '<p style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:6px">재무 데이터가 없습니다</p>' +
+            '<p style="font-size:13px">병원 운영을 최소 1개월 진행하면 손익 데이터가 표시됩니다.</p>' +
+            '</td></tr>';
+        _pnlAgg = null;
+        return;
+    }
+    _pnlAgg = enrichRecordListForPnl(rawFiltered);
+    _renderPnlTable();
+}
+
+function toggleDetGroup(id) {
+    var collapsed      = !_detGroups[id];
+    _detGroups[id]     = collapsed;
+    document.querySelectorAll('.det-of-' + id).forEach(function(el){ el.style.display = collapsed ? 'none' : ''; });
+    var tog = document.getElementById('dt-' + id);
+    if (tog) tog.textContent = collapsed ? '▶' : '▼';
+}
+
+function onDetModeChange(mode) {
+    detMode = mode;
+    if (_pnlAgg) _renderPnlTable();
 }
 
 // ── Render All ────────────────────────────────────────────────
