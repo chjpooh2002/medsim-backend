@@ -258,8 +258,8 @@
       "description" : "인근에 경쟁 내과 개원 — 신환 유입 감소",
       "impactMap" : {
         "returnRate" : -0.02,
-        "revenue" : -0.08,
-        "reputation" : -0.2
+        "reputation" : -0.2,
+        "revenue" : -0.08
       }
     } ],
     "appliedDecisions" : [ ]
@@ -514,8 +514,8 @@
       "description" : "포털 긍정 리뷰 바이럴 — 신환 급증",
       "impactMap" : {
         "satisfaction" : 0.3,
-        "revenue" : 0.15,
-        "reputation" : 0.5
+        "reputation" : 0.5,
+        "revenue" : 0.15
       }
     } ],
     "appliedDecisions" : [ ]
@@ -852,8 +852,8 @@
       "description" : "초음파 장비 고장 — 수리비 발생 및 진료 차질",
       "impactMap" : {
         "satisfaction" : -0.2,
-        "revenue" : -0.05,
-        "extraCost" : 300.0
+        "extraCost" : 300.0,
+        "revenue" : -0.05
       }
     } ],
     "appliedDecisions" : [ ]
@@ -1189,8 +1189,8 @@
       "eventType" : "PATIENT_SURGE",
       "description" : "독감 시즌 환자 급증",
       "impactMap" : {
-        "staffMorale" : -0.1,
         "satisfaction" : -0.1,
+        "staffMorale" : -0.1,
         "revenue" : 0.2
       }
     } ],

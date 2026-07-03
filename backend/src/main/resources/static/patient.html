@@ -3,64 +3,893 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>환자 통계 – MEDSIM</title>
+    <title>환자 분석 – MEDSIM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-        :root { --blue:#1A6BFF; --blue-dark:#0F4FCC; --blue-bg:#EFF5FF; --navy:#0D1B2A; --gray-1:#F5F7FA; --gray-2:#E8ECF2; --gray-3:#C8D0DC; --gray-5:#7A8699; --gray-7:#3D4F63; --font:'Pretendard',-apple-system,sans-serif; --sb:160px; }
-        body { font-family:var(--font); color:var(--navy); background:var(--gray-1); min-height:100vh; }
-        .layout { display:flex; min-height:100vh; }
-        .sidebar { width:var(--sb); flex-shrink:0; position:fixed; top:0; left:0; height:100vh; background:white; border-right:1px solid var(--gray-2); display:flex; flex-direction:column; overflow-y:auto; z-index:40; }
-        .sb-logo { padding:17px 14px 13px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--gray-2); flex-shrink:0; }
-        .sb-logo-icon { width:22px; height:22px; background:var(--blue); border-radius:5px; display:flex; align-items:center; justify-content:center; }
-        .sb-logo-icon svg { width:12px; height:12px; fill:white; }
-        .sb-logo-type { font-size:14px; font-weight:800; color:var(--navy); }
-        .sb-icons { display:flex; gap:4px; padding:10px 12px; border-bottom:1px solid var(--gray-2); }
-        .sb-icon-btn { flex:1; height:28px; border:1px solid var(--gray-2); border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; background:white; color:#7A8699; }
-        .sb-icon-btn svg { width:12px; height:12px; }
-        .sb-search { padding:9px 12px; border-bottom:1px solid var(--gray-2); }
-        .sb-search-wrap { display:flex; align-items:center; gap:5px; background:var(--gray-1); border-radius:6px; padding:5px 9px; border:1px solid var(--gray-2); }
-        .sb-search-wrap svg { width:11px; height:11px; color:#C8D0DC; flex-shrink:0; }
-        .sb-search-wrap input { border:none; background:transparent; font-size:11px; font-family:var(--font); width:100%; outline:none; }
-        .sb-nav { flex:1; padding:6px 0; }
-        .sb-menu-item { display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:12px; font-weight:500; color:#7A8699; text-decoration:none; white-space:nowrap; }
-        .sb-menu-item:hover { background:var(--gray-1); color:var(--navy); }
-        .sb-menu-item.active { background:var(--blue-bg); color:var(--blue); font-weight:700; }
-        .sb-menu-item svg { width:14px; height:14px; flex-shrink:0; }
-        .sb-bottom { padding:12px 14px; border-top:1px solid var(--gray-2); }
-        .sb-month-badge { background:var(--blue-bg); border-radius:8px; padding:8px 10px; text-align:center; }
-        .sb-month-num { font-size:16px; font-weight:800; color:var(--blue); }
-        .sb-month-lbl { font-size:10px; color:var(--blue); opacity:.7; margin-top:1px; }
-        .content { margin-left:var(--sb); flex:1; min-width:0; display:flex; flex-direction:column; }
-        .content-inner { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; text-align:center; color:#7A8699; }
-        .placeholder-icon { margin-bottom:20px; }
-        .placeholder-title { font-size:20px; font-weight:800; color:#0D1B2A; margin-bottom:8px; }
-        .placeholder-desc { font-size:14px; line-height:1.7; margin-bottom:24px; }
-        .placeholder-back { display:inline-block; padding:11px 24px; background:var(--blue); color:white; border-radius:10px; font-size:14px; font-weight:700; text-decoration:none; }
-        footer { background:#0D1B2A; padding:14px 26px; text-align:center; }
-        footer p { font-size:12px; color:rgba(255,255,255,.4); }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --blue: #1A6BFF; --blue-dark: #0F4FCC; --blue-bg: #EFF5FF;
+            --navy: #0D1B2A;
+            --gray-1: #F5F7FA; --gray-2: #E8ECF2; --gray-3: #C8D0DC;
+            --gray-5: #7A8699; --gray-7: #3D4F63;
+            --green: #22C97A; --orange: #FF8C42; --red: #FF3B3B;
+            --purple: #8B5CF6;
+            --font: 'Pretendard', -apple-system, sans-serif;
+            --sb: 160px;
+        }
+        body { font-family: var(--font); color: var(--navy); background: var(--gray-1); min-height: 100vh; }
+        .layout { display: flex; min-height: 100vh; }
+        .content { margin-left: var(--sb); flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .page-body { flex: 1; padding: 28px 32px; }
+
+        /* Header */
+        .page-breadcrumb { font-size: 11px; color: var(--gray-5); margin-bottom: 6px; }
+        .page-breadcrumb a { color: var(--gray-5); text-decoration: none; }
+        .page-breadcrumb a:hover { color: var(--blue); }
+        .page-title-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .page-title { font-size: 20px; font-weight: 800; }
+        .filter-bar { display: flex; align-items: center; gap: 10px; }
+        .filter-label { font-size: 12px; color: var(--gray-5); font-weight: 600; }
+        .filter-select { height: 34px; padding: 0 10px; border: 1px solid var(--gray-2); border-radius: 8px; font-size: 12px; font-family: var(--font); background: white; color: var(--navy); cursor: pointer; outline: none; }
+        .filter-select:focus { border-color: var(--blue); }
+        .filter-sep { color: var(--gray-3); font-size: 14px; }
+
+        /* KPI 5-col */
+        .kpi-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px; }
+        .kpi-card { background: white; border: 1px solid var(--gray-2); border-radius: 12px; padding: 16px 18px; }
+        .kpi-label { font-size: 11px; font-weight: 700; color: var(--gray-5); letter-spacing: .5px; margin-bottom: 8px; }
+        .kpi-value { font-size: 20px; font-weight: 800; line-height: 1.2; margin-bottom: 3px; }
+        .kpi-sub { font-size: 11px; color: var(--gray-5); }
+        .kpi-badge { display: inline-block; margin-top: 5px; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+        .kpi-badge.pos { background: rgba(34,201,122,.12); color: #15a05c; }
+        .kpi-badge.neg { background: rgba(255,59,59,.12); color: var(--red); }
+        .kpi-badge.neu { background: var(--gray-1); color: var(--gray-5); border: 1px solid var(--gray-2); }
+
+        /* Section */
+        .section-card { background: white; border: 1px solid var(--gray-2); border-radius: 14px; padding: 22px 24px; margin-bottom: 18px; }
+        .section-title { font-size: 14px; font-weight: 800; color: var(--navy); margin-bottom: 16px; display: flex; align-items: center; }
+        .section-title-sub { font-size: 10px; font-weight: 500; color: var(--gray-5); margin-left: 8px; }
+
+        /* Chart */
+        .chart-wrap { position: relative; height: 240px; }
+
+        /* Three-col (trend | gauge | analysis) */
+        .three-col { display: grid; grid-template-columns: 5fr 3fr 4fr; gap: 18px; margin-bottom: 18px; }
+        .three-col > .section-card { margin-bottom: 0; }
+
+        /* Two-col */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+        .two-col > .section-card { margin-bottom: 0; }
+
+        /* Gauge – half-circle doughnut */
+        .gauge-outer { display: flex; flex-direction: column; align-items: center; }
+        .gauge-wrap { position: relative; width: 180px; height: 94px; overflow: hidden; margin: 0 auto; }
+        .gauge-wrap canvas { display: block; }
+        .gauge-center { text-align: center; margin-top: 6px; }
+        .gauge-pct-val { font-size: 26px; font-weight: 800; }
+        .gauge-lbl { font-size: 11px; color: var(--gray-5); margin-top: 1px; }
+        .gauge-range { display: flex; justify-content: space-between; width: 180px; margin: 6px auto 0; }
+        .gauge-range span { font-size: 10px; color: var(--gray-5); font-weight: 600; }
+        .gauge-leg-row { display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+        .gauge-leg-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--gray-5); }
+        .gauge-leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+        /* Churn analysis */
+        .churn-list { display: flex; flex-direction: column; gap: 8px; }
+        .churn-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid transparent; }
+        .churn-item.warn   { background: rgba(255,140,66,.07); border-color: rgba(255,140,66,.25); }
+        .churn-item.danger { background: rgba(255,59,59,.07);  border-color: rgba(255,59,59,.25); }
+        .churn-item.info   { background: var(--blue-bg);       border-color: rgba(26,107,255,.2); }
+        .churn-item.ok     { background: rgba(34,201,122,.07); border-color: rgba(34,201,122,.25); }
+        .churn-icon { font-size: 15px; flex-shrink: 0; line-height: 1.4; }
+        .churn-text { font-size: 12px; font-weight: 700; line-height: 1.5; }
+        .churn-text.warn   { color: #c96600; }
+        .churn-text.danger { color: var(--red); }
+        .churn-text.info   { color: var(--blue); }
+        .churn-text.ok     { color: #15a05c; }
+        .churn-sub { font-size: 10px; color: var(--gray-5); margin-top: 2px; }
+
+        /* Inflow channels */
+        .inflow-list { display: flex; flex-direction: column; gap: 13px; }
+        .inflow-row  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+        .inflow-name { font-size: 12px; font-weight: 700; color: var(--gray-7); }
+        .inflow-right { display: flex; align-items: center; gap: 6px; }
+        .inflow-pct  { font-size: 13px; font-weight: 800; }
+        .inflow-badge { padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+        .inflow-badge.pos { background: rgba(34,201,122,.12); color: #15a05c; }
+        .inflow-badge.neg { background: rgba(255,59,59,.12); color: var(--red); }
+        .inflow-badge.neu { background: var(--gray-1); color: var(--gray-5); border: 1px solid var(--gray-2); }
+        .inflow-bar-bg   { background: var(--gray-2); border-radius: 4px; height: 6px; overflow: hidden; }
+        .inflow-bar-fill { height: 6px; border-radius: 4px; }
+
+        /* Donut */
+        .donut-wrap { position: relative; height: 180px; }
+        .donut-legend { margin-top: 14px; display: flex; flex-direction: column; gap: 7px; }
+        .donut-legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .legend-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .legend-name { flex: 1; color: var(--gray-7); }
+        .legend-val  { font-weight: 700; color: var(--navy); }
+        .legend-pct  { font-size: 11px; color: var(--gray-5); min-width: 34px; text-align: right; }
+
+        /* Experience table */
+        .exp-table { width: 100%; border-collapse: collapse; }
+        .exp-table td { padding: 10px 8px; border-bottom: 1px solid var(--gray-2); font-size: 13px; vertical-align: middle; }
+        .exp-table tr:last-child td { border-bottom: none; }
+        .exp-table tr:hover td { background: var(--gray-1); }
+        .exp-label { font-weight: 700; }
+        .exp-desc  { font-size: 10px; color: var(--gray-5); margin-top: 2px; }
+        .exp-val   { text-align: right; font-weight: 800; font-size: 14px; }
+        .exp-badge-cell { text-align: right; }
+        .exp-badge { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; }
+        .exp-badge.good { background: rgba(34,201,122,.12); color: #15a05c; }
+        .exp-badge.warn { background: rgba(255,140,66,.12); color: #c96600; }
+        .exp-badge.bad  { background: rgba(255,59,59,.12);  color: var(--red); }
+
+        /* AI panel */
+        .ai-section-hd { font-size: 11px; font-weight: 700; color: var(--gray-5); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+        .ai-summary { font-size: 12px; color: var(--gray-7); line-height: 1.85; margin-bottom: 16px; background: var(--gray-1); border-radius: 10px; padding: 14px; }
+        .ai-actions { display: flex; flex-direction: column; gap: 8px; }
+        .ai-action  { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: var(--gray-7); line-height: 1.6; }
+        .ai-action-num { width: 20px; height: 20px; border-radius: 50%; background: var(--blue); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+
+        /* Empty state */
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 420px; text-align: center; }
+        .empty-title { font-size: 18px; font-weight: 800; color: var(--navy); margin: 16px 0 8px; }
+        .empty-desc  { font-size: 13px; color: var(--gray-5); line-height: 1.7; margin-bottom: 22px; }
+        .empty-btn   { display: inline-block; padding: 11px 24px; background: var(--blue); color: white; border-radius: 10px; font-size: 14px; font-weight: 700; text-decoration: none; }
+
+        /* Responsive */
+        @media (max-width: 1200px) { .kpi-grid-5 { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1100px) {
+            .three-col { grid-template-columns: 1fr 1fr; }
+            .three-col > .section-card:first-child { grid-column: 1 / -1; }
+        }
+        @media (max-width: 900px) {
+            .kpi-grid-5 { grid-template-columns: repeat(2, 1fr); }
+            .three-col { grid-template-columns: 1fr; }
+            .three-col > .section-card:first-child { grid-column: auto; }
+            .two-col { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            :root { --sb: 48px; }
+            .content { margin-left: 48px; }
+        }
+
+        footer { background: var(--navy); padding: 14px 26px; text-align: center; }
+        footer p { font-size: 12px; color: rgba(255,255,255,.4); }
     </style>
 </head>
 <body>
 <div class="layout">
     <div id="sidebar-root"></div>
     <div class="content">
-        <div class="content-inner">
-            <div class="placeholder-icon">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
-                </svg>
+        <div class="page-body">
+
+            <div class="page-breadcrumb">
+                <a href="dashboard.html">병원 현황</a> › 환자 분석
             </div>
-            <p class="placeholder-title">환자 통계</p>
-            <p class="placeholder-desc">이 기능은 준비 중입니다.<br>더 나은 서비스로 곧 찾아뵙겠습니다.</p>
-            <a class="placeholder-back" href="dashboard.html">← 병원 현황으로</a>
+
+            <div class="page-title-row">
+                <div class="page-title">환자 분석</div>
+                <div class="filter-bar" id="filter-bar" style="display:none">
+                    <span class="filter-label">기간</span>
+                    <select class="filter-select" id="filter-start" onchange="onFilterChange()"></select>
+                    <span class="filter-sep">–</span>
+                    <select class="filter-select" id="filter-end" onchange="onFilterChange()"></select>
+                </div>
+            </div>
+
+            <!-- 빈 데이터 상태 -->
+            <div id="empty-state" style="display:none">
+                <div class="empty-state">
+                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+                    </svg>
+                    <p class="empty-title">환자 데이터가 없습니다</p>
+                    <p class="empty-desc">병원 운영을 최소 1개월 진행하면<br>환자 분석 현황이 여기에 표시됩니다.</p>
+                    <a class="empty-btn" href="dashboard.html">← 병원 현황으로</a>
+                </div>
+            </div>
+
+            <!-- 메인 콘텐츠 -->
+            <div id="main-content">
+
+                <!-- A. KPI 카드 5개 -->
+                <div class="kpi-grid-5" id="kpi-grid"></div>
+
+                <!-- D. 3분할: 환자 추이 | 이탈률 게이지 | 재진/이탈 분석 -->
+                <div class="three-col">
+                    <div class="section-card">
+                        <div class="section-title">
+                            환자 수 추이
+                            <span class="section-title-sub" id="trend-range-label"></span>
+                        </div>
+                        <div class="chart-wrap"><canvas id="trend-chart"></canvas></div>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-title">이탈률 게이지</div>
+                        <div class="gauge-outer">
+                            <div class="gauge-wrap">
+                                <canvas id="churn-gauge" width="180" height="180" style="display:block"></canvas>
+                            </div>
+                            <div class="gauge-center">
+                                <div class="gauge-pct-val" id="gauge-pct-val">–</div>
+                                <div class="gauge-lbl">평균 이탈률</div>
+                            </div>
+                            <div class="gauge-range">
+                                <span>0%</span><span>50%</span><span>100%</span>
+                            </div>
+                            <div class="gauge-leg-row">
+                                <div class="gauge-leg-item"><div class="gauge-leg-dot" style="background:#22C97A"></div>안전 &lt;30%</div>
+                                <div class="gauge-leg-item"><div class="gauge-leg-dot" style="background:#FF8C42"></div>주의 ~60%</div>
+                                <div class="gauge-leg-item"><div class="gauge-leg-dot" style="background:#FF3B3B"></div>위험 &gt;60%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-title">재진/이탈 분석</div>
+                        <div class="churn-list" id="churn-list"></div>
+                    </div>
+                </div>
+
+                <!-- E. 2분할: 유입 경로 | 진료 유형 도넛 -->
+                <div class="two-col">
+                    <div class="section-card">
+                        <div class="section-title">
+                            환자 유입 경로
+                            <span class="section-title-sub">※ 데모 파생값 — 백엔드 확장 시 대체 예정</span>
+                        </div>
+                        <div class="inflow-list" id="inflow-list"></div>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-title">
+                            진료 유형별 환자 분석
+                            <span class="section-title-sub">※ 데모 파생값 — 백엔드 확장 시 대체 예정</span>
+                        </div>
+                        <div class="donut-wrap"><canvas id="treatment-donut"></canvas></div>
+                        <div class="donut-legend" id="treatment-legend"></div>
+                    </div>
+                </div>
+
+                <!-- F. 2분할: 환자 경험 지표 | AI 분석 -->
+                <div class="two-col">
+                    <div class="section-card">
+                        <div class="section-title">
+                            환자 경험 지표
+                            <span class="section-title-sub">※ 데모 파생값 — 백엔드 확장 시 대체 예정</span>
+                        </div>
+                        <table class="exp-table"><tbody id="exp-tbody"></tbody></table>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-title">AI 환자 분석</div>
+                        <div class="ai-section-hd">현재 환자 구조</div>
+                        <div class="ai-summary" id="ai-summary"></div>
+                        <div class="ai-section-hd">추천 액션</div>
+                        <div class="ai-actions" id="ai-actions"></div>
+                    </div>
+                </div>
+
+            </div><!-- /main-content -->
         </div>
         <footer><p>MEDSIM © 2026. All rights reserved.</p></footer>
     </div>
 </div>
+
 <script src="common.js"></script>
-<script>requireAuth(); renderSidebar('patient');</script>
+<script>
+requireAuth();
+renderSidebar('patient');
+
+// ═══════════════════════════════════════════════════════════════
+// 파생 비율 상수 (데모용 — 백엔드 확장 시 실제 데이터로 대체 예정)
+// ═══════════════════════════════════════════════════════════════
+
+// 환자 유입 경로 기본 비율
+// reputationScore ≥4 이면 referral 0.25, returnPatientRate >0.5 이면 returning 0.12로 조정
+var INFLOW_BASE = {
+    map_search:  0.42,
+    local_ad:    0.22,
+    referral:    0.18,
+    blog_sns:    0.10,
+    returning:   0.08,
+    // floating: 1 - sum (상권 유동인구, 나머지)
+};
+
+// 진료 유형별 매출 비율
+// returnPatientRate >0.5 이면 chronic ↑, cold_acute ↓로 자동 조정
+var TREATMENT_BASE = {
+    cold_acute:  0.35,
+    chronic:     0.25,
+    blood_test:  0.15,
+    endoscopy:   0.15,
+    checkup:     0.10,
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SVG 아이콘
+// ═══════════════════════════════════════════════════════════════
+var SVG_UP   = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
+var SVG_DOWN = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>';
+
+// ═══════════════════════════════════════════════════════════════
+// 차트 인스턴스 관리
+// ═══════════════════════════════════════════════════════════════
+var _charts = {};
+function destroyChart(id) {
+    if (_charts[id]) { _charts[id].destroy(); _charts[id] = null; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 상태
+// ═══════════════════════════════════════════════════════════════
+var filterStart = 1, filterEnd = 1;
+
+// ═══════════════════════════════════════════════════════════════
+// 데이터 보강 — finance.html enrichRecord 패턴 재사용
+// 백엔드 MonthlyData → 환자 분석 전용 필드 추출
+// ═══════════════════════════════════════════════════════════════
+function enrichPatientRecord(r, prev) {
+    var rev        = (r.revenue || 0) * 10000;           // 만원 → 원
+    var total      = r.patientsCount      || 0;
+    var newPat     = r.newPatientCount    || 0;
+    var returnPat  = r.returnPatientCount || 0;
+    var returnRate = r.returnPatientRate != null
+        ? r.returnPatientRate
+        : (total > 0 ? returnPat / total : 0);
+    var revPerPat  = total > 0 ? rev / total : 0;
+
+    var prevTotal      = prev ? (prev.patientsCount      || 0) : 0;
+    var prevReturnRate = prev ? (prev.returnPatientRate   || 0) : 0;
+    var patGrowth      = (prev && prevTotal > 0) ? (total - prevTotal) / prevTotal : null;
+    var returnDelta    = prev ? returnRate - prevReturnRate : null;
+
+    console.log('[patient] M' + r.month
+        + ' total=' + total + ' new=' + newPat + ' return=' + returnPat
+        + ' returnRate=' + returnRate.toFixed(3)
+        + ' satisfaction=' + (r.patientSatisfaction || '-')
+        + ' morale=' + (r.staffMorale || '-'));
+
+    return {
+        month: r.month,
+        total: total, newPat: newPat, returnPat: returnPat,
+        returnRate: returnRate, churnRate: 1 - returnRate,
+        revenue: rev, revPerPat: revPerPat,
+        patGrowth: patGrowth, returnDelta: returnDelta,
+        changeRate: r.patientsChangeRate != null ? r.patientsChangeRate : null,
+        satisfaction: r.patientSatisfaction != null ? r.patientSatisfaction : 3.5,
+        staffMorale:  r.staffMorale         != null ? r.staffMorale         : 0.7,
+        reputation:   r.reputationScore     != null ? r.reputationScore     : 3.5,
+    };
+}
+
+function getEnrichedAll() {
+    var all = getAllMonthlyData();
+    return all.map(function (r, i) { return enrichPatientRecord(r, i > 0 ? all[i - 1] : null); });
+}
+
+function getFiltered() {
+    return getEnrichedAll().filter(function (r) { return r.month >= filterStart && r.month <= filterEnd; });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 필터 선택자
+// ═══════════════════════════════════════════════════════════════
+function buildSelectors() {
+    var all    = getAllMonthlyData();
+    var startEl = document.getElementById('filter-start');
+    var endEl   = document.getElementById('filter-end');
+    var bar     = document.getElementById('filter-bar');
+    if (!startEl || !endEl || !all.length) return;
+    var opts = all.map(function (r) {
+        return '<option value="' + r.month + '">' + r.month + '개월차</option>';
+    }).join('');
+    startEl.innerHTML = opts;
+    endEl.innerHTML   = opts;
+    filterStart = all[0].month;
+    filterEnd   = all[all.length - 1].month;
+    startEl.value = filterStart;
+    endEl.value   = filterEnd;
+    if (bar) bar.style.display = '';
+}
+
+function onFilterChange() {
+    var s = parseInt(document.getElementById('filter-start').value);
+    var e = parseInt(document.getElementById('filter-end').value);
+    if (s > e) { e = s; document.getElementById('filter-end').value = s; }
+    filterStart = s; filterEnd = e;
+    renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KPI 카드 5개
+// ═══════════════════════════════════════════════════════════════
+function renderKpiCards(f) {
+    var el = document.getElementById('kpi-grid');
+    if (!el || !f.length) return;
+
+    var sumTotal  = f.reduce(function (s, r) { return s + r.total; }, 0);
+    var sumNew    = f.reduce(function (s, r) { return s + r.newPat; }, 0);
+    var sumReturn = f.reduce(function (s, r) { return s + r.returnPat; }, 0);
+    var sumRev    = f.reduce(function (s, r) { return s + r.revenue; }, 0);
+    var avgTotal  = Math.round(sumTotal / f.length);
+    var returnRate = sumTotal > 0 ? sumReturn / sumTotal * 100 : 0;
+    var revPerPat  = sumTotal > 0 ? Math.round(sumRev / sumTotal) : 0;
+
+    // 기간 내 성장: 첫→마지막 월 비교
+    var last = f[f.length - 1], first = f[0];
+    var lastChangeRate    = last.changeRate;
+    var newGrowth         = f.length > 1 && first.newPat > 0
+        ? (last.newPat - first.newPat) / first.newPat * 100 : null;
+    var returnCountGrowth = f.length > 1 && first.returnPat > 0
+        ? (last.returnPat - first.returnPat) / first.returnPat * 100 : null;
+    var lastReturnDelta   = f.length > 1 && last.returnDelta !== null
+        ? last.returnDelta * 100 : null;
+    var revPerPatGrowth   = f.length > 1 && first.revPerPat > 0
+        ? (last.revPerPat - first.revPerPat) / first.revPerPat * 100 : null;
+
+    function badge(val, fmt, positiveIsGood) {
+        if (val === null || val === undefined) return '<span class="kpi-badge neu">N/A</span>';
+        var good = positiveIsGood ? val >= 0 : val <= 0;
+        var cls  = good ? 'pos' : 'neg';
+        return '<span class="kpi-badge ' + cls + '">'
+            + (val >= 0 ? '+' : '') + fmt(val) + '</span>';
+    }
+    function pctFmt(v) { return Math.abs(v).toFixed(1) + '%'; }
+    function ppFmt(v)  { return Math.abs(v).toFixed(1) + 'pp'; }
+
+    var cards = [
+        {
+            label: '평균 월 환자 수',
+            value: formatNumber(avgTotal) + '명',
+            sub:   '기간 총 ' + formatNumber(sumTotal) + '명',
+            badge: badge(lastChangeRate !== null ? lastChangeRate * 100 : null, pctFmt, true),
+        },
+        {
+            label: '초진 환자',
+            value: formatNumber(sumNew) + '명',
+            sub:   '월평균 ' + formatNumber(Math.round(sumNew / f.length)) + '명',
+            badge: badge(newGrowth, pctFmt, true),
+        },
+        {
+            label: '재진 환자',
+            value: formatNumber(sumReturn) + '명',
+            sub:   '월평균 ' + formatNumber(Math.round(sumReturn / f.length)) + '명',
+            badge: badge(returnCountGrowth, pctFmt, true),
+        },
+        {
+            label: '재진율',
+            value: returnRate.toFixed(1) + '%',
+            sub:   '재진 ' + formatNumber(sumReturn) + ' / 전체 ' + formatNumber(sumTotal),
+            badge: badge(lastReturnDelta, ppFmt, true),
+        },
+        {
+            label: '평균 객단가',
+            value: formatKRW(revPerPat),
+            sub:   '총매출 ÷ 총환자 수',
+            badge: badge(revPerPatGrowth, pctFmt, true),
+        },
+    ];
+
+    el.innerHTML = cards.map(function (c) {
+        return '<div class="kpi-card">'
+            + '<div class="kpi-label">' + c.label + '</div>'
+            + '<div class="kpi-value">' + c.value + '</div>'
+            + '<div class="kpi-sub">' + c.sub + '</div>'
+            + c.badge
+            + '</div>';
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 환자 수 추이 라인 차트
+// ═══════════════════════════════════════════════════════════════
+function renderTrendChart(f) {
+    destroyChart('trend');
+    var lbl = document.getElementById('trend-range-label');
+    if (lbl) lbl.textContent = f.length > 1 ? 'M' + f[0].month + ' – M' + f[f.length-1].month : '';
+    if (!f.length) return;
+    var ctx = document.getElementById('trend-chart');
+    if (!ctx) return;
+
+    _charts['trend'] = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: f.map(function (r) { return 'M' + r.month; }),
+            datasets: [
+                {
+                    label: '총 환자',
+                    data: f.map(function (r) { return r.total; }),
+                    borderColor: '#1A6BFF', backgroundColor: 'rgba(26,107,255,0.07)',
+                    tension: 0.3, fill: false, pointRadius: 3, pointHoverRadius: 5,
+                },
+                {
+                    label: '초진',
+                    data: f.map(function (r) { return r.newPat; }),
+                    borderColor: '#22C97A', backgroundColor: 'rgba(34,201,122,0.07)',
+                    tension: 0.3, fill: false, pointRadius: 3, pointHoverRadius: 5,
+                },
+                {
+                    label: '재진',
+                    data: f.map(function (r) { return r.returnPat; }),
+                    borderColor: '#FF8C42', backgroundColor: 'rgba(255,140,66,0.07)',
+                    tension: 0.3, fill: false, pointRadius: 3, pointHoverRadius: 5,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: { family: 'Pretendard', size: 11, weight: '600' },
+                        boxWidth: 10, usePointStyle: true, pointStyle: 'circle',
+                    },
+                },
+                tooltip: { mode: 'index', intersect: false },
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { family: 'Pretendard', size: 11 } } },
+                y: {
+                    beginAtZero: false,
+                    grid: { color: '#E8ECF2' },
+                    ticks: { font: { family: 'Pretendard', size: 11 } },
+                },
+            },
+        },
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 이탈률 게이지 — 반원형 doughnut (rotation:180, circumference:180)
+// 캔버스 180×180, 래퍼 height:94px overflow:hidden → 상단 반원만 노출
+// ═══════════════════════════════════════════════════════════════
+function renderChurnGauge(f) {
+    destroyChart('gauge');
+    var valEl = document.getElementById('gauge-pct-val');
+    if (!f.length) { if (valEl) valEl.textContent = '–'; return; }
+
+    var sumReturn = f.reduce(function (s, r) { return s + r.returnPat; }, 0);
+    var sumTotal  = f.reduce(function (s, r) { return s + r.total; }, 0);
+    var churnPct  = sumTotal > 0 ? Math.round((1 - sumReturn / sumTotal) * 100) : 0;
+    var color     = churnPct < 30 ? '#22C97A' : churnPct <= 60 ? '#FF8C42' : '#FF3B3B';
+
+    console.log('[patient] gauge churn=' + churnPct + '% color=' + color);
+
+    if (valEl) { valEl.textContent = churnPct + '%'; valEl.style.color = color; }
+
+    var canvas = document.getElementById('churn-gauge');
+    if (!canvas) return;
+    _charts['gauge'] = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [churnPct, 100 - churnPct],
+                backgroundColor: [color, '#E8ECF2'],
+                borderWidth: 0,
+                hoverOffset: 0,
+            }],
+        },
+        options: {
+            rotation: 180,
+            circumference: 180,
+            cutout: '70%',
+            responsive: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            animation: { duration: 600 },
+        },
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 재진/이탈 분석 패널
+// ═══════════════════════════════════════════════════════════════
+function renderChurnAnalysis(f) {
+    var el = document.getElementById('churn-list');
+    if (!el || !f.length) return;
+
+    var latest = f[f.length - 1], first = f[0];
+    var sumTotal  = f.reduce(function (s, r) { return s + r.total; }, 0);
+    var sumReturn = f.reduce(function (s, r) { return s + r.returnPat; }, 0);
+    var avgReturn = sumTotal > 0 ? sumReturn / sumTotal : 0;
+    var avgChurn  = 1 - avgReturn;
+
+    var newDecreasing    = f.length > 1 && latest.newPat < first.newPat;
+    var returnRateLow    = avgReturn < 0.5;
+    var churnHigh        = avgChurn > 0.6;
+    var conversionIssue  = f.length >= 2
+        && (latest.returnPat / Math.max(1, f[f.length - 2].newPat)) < 0.3;
+
+    var items = [];
+
+    if (returnRateLow) {
+        items.push({ type: 'warn',   icon: '📋', text: '재진 유도 마케팅 필요',    sub: '재진율 ' + (avgReturn * 100).toFixed(1) + '% — 목표 50% 미만' });
+    } else {
+        items.push({ type: 'ok',     icon: '✅', text: '재진율 양호',              sub: '재진율 ' + (avgReturn * 100).toFixed(1) + '% — 목표 충족' });
+    }
+
+    if (churnHigh) {
+        items.push({ type: 'danger', icon: '🚨', text: '이탈 원인 분석 필요',      sub: '이탈률 ' + (avgChurn * 100).toFixed(1) + '% — 60% 초과' });
+    }
+
+    if (newDecreasing) {
+        items.push({ type: 'info',   icon: '📢', text: '신규 유입 채널 강화',      sub: '초진 M' + first.month + '→M' + latest.month + ' 감소 추세' });
+    }
+
+    if (conversionIssue) {
+        items.push({ type: 'warn',   icon: '💊', text: '첫 진료 경험 개선',        sub: '초진→재진 전환율 30% 미만' });
+    }
+
+    if (!items.length) {
+        items.push({ type: 'ok',     icon: '✅', text: '환자 흐름 안정적',         sub: '모든 지표 정상 범위' });
+    }
+
+    el.innerHTML = items.map(function (item) {
+        return '<div class="churn-item ' + item.type + '">'
+            + '<span class="churn-icon">' + item.icon + '</span>'
+            + '<div>'
+            +   '<div class="churn-text ' + item.type + '">' + item.text + '</div>'
+            +   '<div class="churn-sub">' + item.sub + '</div>'
+            + '</div>'
+            + '</div>';
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 환자 유입 경로
+// ═══════════════════════════════════════════════════════════════
+function renderInflowChannels(f) {
+    var el = document.getElementById('inflow-list');
+    if (!el || !f.length) return;
+
+    var latest  = f[f.length - 1];
+    var rep     = latest.reputation;
+    var avgReturn = f.reduce(function (s, r) { return s + r.returnRate; }, 0) / f.length;
+
+    // 평판·재진율 조건부 비율 조정
+    var referralRate  = rep >= 4    ? 0.25 : INFLOW_BASE.referral;
+    var returningRate = avgReturn > 0.5 ? 0.12 : INFLOW_BASE.returning;
+    var mapRate    = INFLOW_BASE.map_search;
+    var adRate     = INFLOW_BASE.local_ad;
+    var blogRate   = INFLOW_BASE.blog_sns;
+    var sumBase    = mapRate + adRate + referralRate + blogRate + returningRate;
+    var floating   = Math.max(0, Math.round((1 - sumBase) * 100) / 100);
+
+    var COLORS = ['#1A6BFF', '#8B5CF6', '#22C97A', '#FF8C42', '#3D4F63', '#C8D0DC'];
+    var channels = [
+        { name: '지도/검색',        rate: mapRate,       color: COLORS[0], badge: 'neu', badgeTxt: '기본' },
+        { name: '지역 광고',         rate: adRate,        color: COLORS[1], badge: 'neu', badgeTxt: '기본' },
+        { name: '지인 추천',         rate: referralRate,  color: COLORS[2], badge: rep >= 4 ? 'pos' : 'neu', badgeTxt: rep >= 4 ? '↑ 평판' : '기본' },
+        { name: '블로그/SNS',        rate: blogRate,      color: COLORS[3], badge: 'neu', badgeTxt: '기본' },
+        { name: '기존 환자 재방문',  rate: returningRate, color: COLORS[4], badge: avgReturn > 0.5 ? 'pos' : 'neu', badgeTxt: avgReturn > 0.5 ? '↑ 재진' : '기본' },
+        { name: '상권 유동인구',     rate: floating,      color: COLORS[5], badge: 'neu', badgeTxt: '기타' },
+    ];
+
+    el.innerHTML = channels.map(function (ch) {
+        var pct = Math.round(ch.rate * 100);
+        return '<div>'
+            + '<div class="inflow-row">'
+            +   '<span class="inflow-name">' + ch.name + '</span>'
+            +   '<div class="inflow-right">'
+            +     '<span class="inflow-pct" style="color:' + ch.color + '">' + pct + '%</span>'
+            +     '<span class="inflow-badge ' + ch.badge + '">' + ch.badgeTxt + '</span>'
+            +   '</div>'
+            + '</div>'
+            + '<div class="inflow-bar-bg"><div class="inflow-bar-fill" style="width:' + pct + '%;background:' + ch.color + '"></div></div>'
+            + '</div>';
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 진료 유형별 도넛 차트
+// ═══════════════════════════════════════════════════════════════
+function renderTreatmentDonut(f) {
+    destroyChart('treatment');
+    if (!f.length) return;
+
+    var sumRev     = f.reduce(function (s, r) { return s + r.revenue; }, 0);
+    var avgReturn  = f.reduce(function (s, r) { return s + r.returnRate; }, 0) / f.length;
+
+    // returnPatientRate >0.5 이면 만성질환재진 비중 상향 조정
+    var coldRatio    = avgReturn > 0.5 ? 0.30 : TREATMENT_BASE.cold_acute;
+    var chronicRatio = avgReturn > 0.5 ? 0.30 : TREATMENT_BASE.chronic;
+
+    var COLORS = ['#1A6BFF', '#22C97A', '#8B5CF6', '#FF8C42', '#FF3B3B'];
+    var raw = [
+        { name: '감기/급성질환',  ratio: coldRatio,                   color: COLORS[0] },
+        { name: '만성질환재진',   ratio: chronicRatio,                 color: COLORS[1] },
+        { name: '혈액검사 포함',  ratio: TREATMENT_BASE.blood_test,   color: COLORS[2] },
+        { name: '내시경 포함',    ratio: TREATMENT_BASE.endoscopy,    color: COLORS[3] },
+        { name: '건강검진',       ratio: TREATMENT_BASE.checkup,      color: COLORS[4] },
+    ];
+
+    // 정규화
+    var totalRatio = raw.reduce(function (s, t) { return s + t.ratio; }, 0);
+    var types = raw.map(function (t) {
+        return { name: t.name, ratio: t.ratio / totalRatio, color: t.color };
+    });
+
+    console.log('[patient] treatment avgReturn=' + avgReturn.toFixed(3));
+
+    var ctx = document.getElementById('treatment-donut');
+    if (!ctx) return;
+    _charts['treatment'] = new Chart(ctx.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: types.map(function (t) { return t.name; }),
+            datasets: [{
+                data: types.map(function (t) { return Math.round(t.ratio * 100); }),
+                backgroundColor: types.map(function (t) { return t.color; }),
+                borderWidth: 2, borderColor: 'white', hoverOffset: 4,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) { return ' ' + ctx.label + ': ' + ctx.parsed + '%'; },
+                    },
+                },
+            },
+        },
+    });
+
+    var lgEl = document.getElementById('treatment-legend');
+    if (lgEl) {
+        lgEl.innerHTML = types.map(function (t) {
+            return '<div class="donut-legend-item">'
+                + '<div class="legend-dot" style="background:' + t.color + '"></div>'
+                + '<span class="legend-name">' + t.name + '</span>'
+                + '<span class="legend-val">' + formatKRW(sumRev * t.ratio) + '</span>'
+                + '<span class="legend-pct">' + Math.round(t.ratio * 100) + '%</span>'
+                + '</div>';
+        }).join('');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 환자 경험 지표 — staffMorale, patientSatisfaction, reputationScore 기반 파생
+// ═══════════════════════════════════════════════════════════════
+function renderExperienceTable(f) {
+    var el = document.getElementById('exp-tbody');
+    if (!el || !f.length) return;
+
+    var latest  = f[f.length - 1];
+    var sat     = latest.satisfaction;   // 0~5
+    var morale  = latest.staffMorale;    // 0~1
+    var rep     = latest.reputation;     // 0~5
+
+    var waitMin     = Math.round(15 + (1 - morale) * 20);
+    var treatMin    = parseFloat((5 + sat * 0.5).toFixed(1));
+    var cancelPct   = parseFloat((5 + (1 - sat / 5) * 10).toFixed(1));
+    var noshowPct   = parseFloat((3 + (1 - rep  / 5) * 5).toFixed(1));
+    var complainPct = parseFloat((1 + (1 - sat / 5) * 5).toFixed(1));
+
+    console.log('[patient] experience wait=' + waitMin + 'm treat=' + treatMin
+        + 'm cancel=' + cancelPct + '% noshow=' + noshowPct + '% complain=' + complainPct + '%');
+
+    function expBadge(val, goodThreshold, warnThreshold) {
+        if (val <= goodThreshold) return '<span class="exp-badge good">양호</span>';
+        if (val <= warnThreshold) return '<span class="exp-badge warn">보통</span>';
+        return '<span class="exp-badge bad">주의</span>';
+    }
+
+    var rows = [
+        { label: '평균 대기시간',   desc: '직원 사기 기반 파생',   value: waitMin + '분',     badge: expBadge(waitMin, 15, 20) },
+        { label: '평균 진료 시간',  desc: '환자 만족도 기반 파생', value: treatMin + '분',    badge: treatMin >= 6.5 ? '<span class="exp-badge good">양호</span>' : treatMin >= 5.5 ? '<span class="exp-badge warn">보통</span>' : '<span class="exp-badge bad">주의</span>' },
+        { label: '예약 취소율',     desc: '환자 만족도 기반 파생', value: cancelPct + '%',    badge: expBadge(cancelPct, 5, 8) },
+        { label: '노쇼율',          desc: '평판 점수 기반 파생',   value: noshowPct + '%',    badge: expBadge(noshowPct, 3, 5) },
+        { label: '컴플레인 발생률', desc: '환자 만족도 기반 파생', value: complainPct + '%',  badge: expBadge(complainPct, 1.5, 3) },
+    ];
+
+    el.innerHTML = rows.map(function (row) {
+        return '<tr>'
+            + '<td><div class="exp-label">' + row.label + '</div><div class="exp-desc">' + row.desc + '</div></td>'
+            + '<td class="exp-val">' + row.value + '</td>'
+            + '<td class="exp-badge-cell">' + row.badge + '</td>'
+            + '</tr>';
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AI 환자 분석 패널
+// ═══════════════════════════════════════════════════════════════
+function renderAiPanel(f) {
+    var sumEl = document.getElementById('ai-summary');
+    var actEl = document.getElementById('ai-actions');
+    if (!sumEl || !actEl || !f.length) return;
+
+    var latest  = f[f.length - 1], first = f[0];
+    var avgReturn = f.reduce(function (s, r) { return s + r.returnRate; }, 0) / f.length * 100;
+    var returnTrend = f.length > 1
+        ? (latest.returnRate > first.returnRate ? '상승' : latest.returnRate < first.returnRate ? '하락' : '유지')
+        : '유지';
+    var newTrend = f.length > 1
+        ? (latest.newPat > first.newPat ? '증가' : latest.newPat < first.newPat ? '감소' : '유지')
+        : '유지';
+    var dominant = avgReturn > 50 ? '만성질환재진' : '감기/급성질환';
+
+    var lines = [
+        '• 재진율이 최근 <b>' + returnTrend + '</b> 추세이며, 선택 기간 평균 <b>' + avgReturn.toFixed(1) + '%</b>를 기록 중입니다.',
+        '• 초진 환자 유입은 <b>' + newTrend + '</b> 경향을 보입니다.',
+        '• 진료 유형 비중은 <b>' + dominant + '</b>이 가장 높게 나타납니다.',
+    ];
+    if (f.length < 3) lines.push('• 정확도 향상을 위해 3개월 이상 데이터 축적을 권장합니다.');
+
+    sumEl.innerHTML = lines.join('<br>');
+
+    // 추천 액션: 조건에 따라 생성, 항상 4개
+    var actions = [];
+    if (avgReturn < 50) {
+        actions.push('재진 환자 대상 정기 검진 알림 문자 발송으로 재진율 50% 이상 달성 목표');
+    }
+    if (newTrend === '감소') {
+        actions.push('네이버·카카오 지도 플레이스 최적화 및 블로그 마케팅 강화로 신규 유입 회복');
+    }
+    if (latest.satisfaction < 4) {
+        actions.push('예약 시스템 개선 또는 진료 스케줄 조정으로 대기 시간 단축 및 만족도 개선');
+    }
+    if (latest.reputation < 4) {
+        actions.push('네이버 리뷰·블로그 콘텐츠 관리로 온라인 평판 4점 이상 달성 목표');
+    }
+
+    var defaults = [
+        '환자 만족도 설문 도입으로 재방문 유도 방안 지속 모색',
+        '진료과목별 타겟 마케팅으로 초진 환자 유입 채널 다변화',
+        '직원 교육 강화로 서비스 품질 및 평판 점수 향상',
+        '월별 환자 분석 데이터를 마케팅 예산 배분에 적극 활용',
+    ];
+    while (actions.length < 4) { actions.push(defaults[actions.length % defaults.length]); }
+
+    actEl.innerHTML = actions.slice(0, 4).map(function (a, i) {
+        return '<div class="ai-action">'
+            + '<div class="ai-action-num">' + (i + 1) + '</div>'
+            + '<span>' + a + '</span>'
+            + '</div>';
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 전체 렌더
+// ═══════════════════════════════════════════════════════════════
+function renderAll() {
+    var f = getFiltered();
+    console.log('[patient] renderAll: ' + f.length + '개월 필터링됨');
+    renderKpiCards(f);
+    renderTrendChart(f);
+    renderChurnGauge(f);
+    renderChurnAnalysis(f);
+    renderInflowChannels(f);
+    renderTreatmentDonut(f);
+    renderExperienceTable(f);
+    renderAiPanel(f);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 초기화
+// ═══════════════════════════════════════════════════════════════
+(function init() {
+    var all    = getAllMonthlyData();
+    var emEl   = document.getElementById('empty-state');
+    var mainEl = document.getElementById('main-content');
+    if (!all.length) {
+        if (emEl)   emEl.style.display   = '';
+        if (mainEl) mainEl.style.display = 'none';
+        return;
+    }
+    if (emEl)   emEl.style.display   = 'none';
+    if (mainEl) mainEl.style.display = '';
+    buildSelectors();
+    renderAll();
+}());
+</script>
 </body>
 </html>
