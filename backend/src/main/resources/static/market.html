@@ -3,65 +3,951 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>시장 분석 – MEDSIM</title>
+    <title>상권 분석 – MEDSIM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=f26eb17ba8fd4ab4399206b4665037ca&libraries=services"></script>
     <style>
-        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-        :root { --blue:#1A6BFF; --blue-dark:#0F4FCC; --blue-bg:#EFF5FF; --navy:#0D1B2A; --gray-1:#F5F7FA; --gray-2:#E8ECF2; --gray-3:#C8D0DC; --gray-5:#7A8699; --gray-7:#3D4F63; --font:'Pretendard',-apple-system,sans-serif; --sb:160px; }
-        body { font-family:var(--font); color:var(--navy); background:var(--gray-1); min-height:100vh; }
-        .layout { display:flex; min-height:100vh; }
-        .sidebar { width:var(--sb); flex-shrink:0; position:fixed; top:0; left:0; height:100vh; background:white; border-right:1px solid var(--gray-2); display:flex; flex-direction:column; overflow-y:auto; z-index:40; }
-        .sb-logo { padding:17px 14px 13px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--gray-2); flex-shrink:0; }
-        .sb-logo-icon { width:22px; height:22px; background:var(--blue); border-radius:5px; display:flex; align-items:center; justify-content:center; }
-        .sb-logo-icon svg { width:12px; height:12px; fill:white; }
-        .sb-logo-type { font-size:14px; font-weight:800; color:var(--navy); }
-        .sb-icons { display:flex; gap:4px; padding:10px 12px; border-bottom:1px solid var(--gray-2); }
-        .sb-icon-btn { flex:1; height:28px; border:1px solid var(--gray-2); border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; background:white; color:#7A8699; }
-        .sb-icon-btn svg { width:12px; height:12px; }
-        .sb-search { padding:9px 12px; border-bottom:1px solid var(--gray-2); }
-        .sb-search-wrap { display:flex; align-items:center; gap:5px; background:var(--gray-1); border-radius:6px; padding:5px 9px; border:1px solid var(--gray-2); }
-        .sb-search-wrap svg { width:11px; height:11px; color:#C8D0DC; flex-shrink:0; }
-        .sb-search-wrap input { border:none; background:transparent; font-size:11px; font-family:var(--font); width:100%; outline:none; }
-        .sb-nav { flex:1; padding:6px 0; }
-        .sb-menu-item { display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:12px; font-weight:500; color:#7A8699; text-decoration:none; white-space:nowrap; }
-        .sb-menu-item:hover { background:var(--gray-1); color:var(--navy); }
-        .sb-menu-item.active { background:var(--blue-bg); color:var(--blue); font-weight:700; }
-        .sb-menu-item svg { width:14px; height:14px; flex-shrink:0; }
-        .sb-bottom { padding:12px 14px; border-top:1px solid var(--gray-2); }
-        .sb-month-badge { background:var(--blue-bg); border-radius:8px; padding:8px 10px; text-align:center; }
-        .sb-month-num { font-size:16px; font-weight:800; color:var(--blue); }
-        .sb-month-lbl { font-size:10px; color:var(--blue); opacity:.7; margin-top:1px; }
-        .content { margin-left:var(--sb); flex:1; min-width:0; display:flex; flex-direction:column; }
-        .content-inner { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; text-align:center; color:#7A8699; }
-        .placeholder-icon { margin-bottom:20px; }
-        .placeholder-title { font-size:20px; font-weight:800; color:#0D1B2A; margin-bottom:8px; }
-        .placeholder-desc { font-size:14px; line-height:1.7; margin-bottom:24px; }
-        .placeholder-back { display:inline-block; padding:11px 24px; background:var(--blue); color:white; border-radius:10px; font-size:14px; font-weight:700; text-decoration:none; }
-        footer { background:#0D1B2A; padding:14px 26px; text-align:center; }
-        footer p { font-size:12px; color:rgba(255,255,255,.4); }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --blue: #1A6BFF; --blue-dark: #0F4FCC; --blue-bg: #EFF5FF;
+            --navy: #0D1B2A;
+            --gray-1: #F5F7FA; --gray-2: #E8ECF2; --gray-3: #C8D0DC;
+            --gray-5: #7A8699; --gray-7: #3D4F63;
+            --green: #22C97A; --orange: #FF8C42; --red: #FF3B3B;
+            --purple: #8B5CF6;
+            --font: 'Pretendard', -apple-system, sans-serif;
+            --sb: 160px;
+        }
+        body { font-family: var(--font); color: var(--navy); background: var(--gray-1); min-height: 100vh; }
+        .layout { display: flex; min-height: 100vh; }
+        .content { margin-left: var(--sb); flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .page-body { flex: 1; padding: 28px 32px; }
+
+        /* Breadcrumb & Title */
+        .page-breadcrumb { font-size: 11px; color: var(--gray-5); margin-bottom: 6px; }
+        .page-breadcrumb a { color: var(--gray-5); text-decoration: none; }
+        .page-breadcrumb a:hover { color: var(--blue); }
+        .page-title-row { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .page-title { font-size: 20px; font-weight: 800; }
+        .page-subtitle { font-size: 12px; color: var(--gray-5); margin-top: 3px; }
+        .filter-bar { display: flex; align-items: center; gap: 8px; }
+        .radius-group { display: flex; border: 1px solid var(--gray-2); border-radius: 8px; overflow: hidden; background: white; }
+        .radius-btn { padding: 6px 14px; font-size: 12px; font-weight: 600; color: var(--gray-5); background: white; border: none; cursor: pointer; font-family: var(--font); transition: background .15s, color .15s; }
+        .radius-btn:not(:last-child) { border-right: 1px solid var(--gray-2); }
+        .radius-btn.active { background: var(--blue); color: white; }
+
+        /* KPI 5-col */
+        .kpi-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px; }
+        .kpi-card { background: white; border: 1px solid var(--gray-2); border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+        .kpi-label { font-size: 11px; font-weight: 700; color: var(--gray-5); letter-spacing: .5px; margin-bottom: 8px; }
+        .kpi-value { font-size: 20px; font-weight: 800; line-height: 1.2; margin-bottom: 3px; }
+        .kpi-sub { font-size: 11px; color: var(--gray-5); }
+        .kpi-badge { display: inline-block; margin-top: 5px; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+        .kpi-badge.pos  { background: rgba(34,201,122,.12); color: #15a05c; }
+        .kpi-badge.neg  { background: rgba(255,59,59,.12); color: var(--red); }
+        .kpi-badge.neu  { background: var(--gray-1); color: var(--gray-5); border: 1px solid var(--gray-2); }
+        .kpi-badge.warn { background: rgba(255,140,66,.12); color: #c96600; }
+
+        /* Section cards */
+        .section-card { background: white; border: 1px solid var(--gray-2); border-radius: 14px; padding: 22px 24px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+        .section-title { font-size: 14px; font-weight: 800; color: var(--navy); margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+        .section-title-sub { font-size: 10px; font-weight: 500; color: var(--gray-5); margin-left: auto; }
+
+        /* Map + Summary grid */
+        .map-section-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 18px; }
+        .map-card { padding: 20px 22px; }
+
+        /* Kakao map container */
+        .map-wrap { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--gray-2); min-height: 420px; }
+        #kakao-map { width: 100%; height: 420px; }
+        .map-error { display: none; align-items: center; justify-content: center; flex-direction: column; min-height: 420px; color: var(--gray-5); font-size: 13px; gap: 8px; }
+        .map-legend { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,.95); border: 1px solid var(--gray-2); border-radius: 8px; padding: 8px 12px; font-size: 11px; z-index: 10; display: flex; flex-direction: column; gap: 5px; }
+        .legend-row { display: flex; align-items: center; gap: 6px; color: var(--gray-7); font-weight: 600; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .legend-dot.blue   { background: #1A6BFF; }
+        .legend-dot.red    { background: #FF3B3B; }
+        .legend-dot.gray   { background: #7A8699; }
+        .legend-dot.green  { background: #22C97A; }
+
+        /* Market events strip */
+        .market-events { margin-top: 14px; }
+        .market-events-title { font-size: 11px; font-weight: 700; color: var(--gray-5); letter-spacing: .5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .events-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+        .event-chip { display: flex; align-items: center; gap: 6px; background: white; border: 1px solid var(--gray-2); border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 600; }
+        .event-chip.up   { border-color: rgba(34,201,122,.4); background: rgba(34,201,122,.06); color: #15a05c; }
+        .event-chip.down { border-color: rgba(255,59,59,.4);  background: rgba(255,59,59,.06);  color: var(--red); }
+        .event-chip.neu  { border-color: var(--gray-2); color: var(--gray-7); }
+
+        /* Location summary */
+        .loc-summary-list { display: flex; flex-direction: column; gap: 14px; }
+        .loc-summary-item { display: flex; flex-direction: column; gap: 3px; padding-bottom: 14px; border-bottom: 1px solid var(--gray-2); }
+        .loc-summary-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .loc-summary-label { font-size: 11px; font-weight: 700; color: var(--gray-5); }
+        .loc-summary-value { font-size: 14px; font-weight: 800; color: var(--navy); }
+        .loc-summary-sub { font-size: 11px; color: var(--gray-5); }
+        .type-badge { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; background: var(--blue-bg); color: var(--blue); margin-top: 2px; }
+        .risk-tag { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; margin-top: 2px; }
+        .risk-tag.low  { background: rgba(34,201,122,.12); color: #15a05c; }
+        .risk-tag.mid  { background: rgba(255,140,66,.12); color: #c96600; }
+        .risk-tag.high { background: rgba(255,59,59,.12);  color: var(--red); }
+
+        /* Bottom grid */
+        .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .charts-col { display: flex; flex-direction: column; gap: 18px; }
+        .chart-wrap { position: relative; height: 190px; }
+
+        /* Competitor table */
+        .comp-table { width: 100%; border-collapse: collapse; }
+        .comp-table th { font-size: 11px; font-weight: 700; color: var(--gray-5); letter-spacing: .4px; padding: 0 8px 10px; text-align: left; border-bottom: 1px solid var(--gray-2); }
+        .comp-table th.right { text-align: right; }
+        .comp-table td { padding: 11px 8px; border-bottom: 1px solid var(--gray-2); font-size: 13px; vertical-align: middle; }
+        .comp-table tr:last-child td { border-bottom: none; }
+        .comp-table tr:hover td { background: var(--gray-1); }
+        .comp-rank { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+        .comp-rank.r1 { background: #FFD700; color: #7a6200; }
+        .comp-rank.r2 { background: #C8D0DC; color: var(--gray-7); }
+        .comp-rank.r3 { background: #D4936A; color: #7a3200; }
+        .comp-rank.rn { background: var(--gray-1); color: var(--gray-5); border: 1px solid var(--gray-2); }
+        .comp-name { font-weight: 700; }
+        .comp-dist { font-size: 11px; color: var(--gray-5); margin-top: 2px; }
+        .star-val  { font-weight: 800; color: var(--navy); }
+        .star-icon { color: #FFB800; font-size: 11px; }
+        .comp-more { font-size: 12px; color: var(--blue); font-weight: 600; margin-top: 12px; cursor: pointer; }
+
+        /* Empty state */
+        .empty-state { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
+        .empty-title { font-size: 18px; font-weight: 800; color: var(--navy); margin: 16px 0 8px; }
+        .empty-desc  { font-size: 13px; color: var(--gray-5); line-height: 1.7; margin-bottom: 22px; }
+        .empty-btn   { display: inline-block; padding: 11px 24px; background: var(--blue); color: white; border-radius: 10px; font-size: 14px; font-weight: 700; text-decoration: none; }
+
+        footer { background: #0D1B2A; padding: 14px 26px; text-align: center; }
+        footer p { font-size: 12px; color: rgba(255,255,255,.4); }
+
+        @media (max-width: 1200px) { .kpi-grid-5 { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1100px) {
+            .map-section-grid { grid-template-columns: 1fr; }
+            .bottom-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 900px) { .kpi-grid-5 { grid-template-columns: repeat(2, 1fr); } }
     </style>
 </head>
 <body>
 <div class="layout">
     <div id="sidebar-root"></div>
     <div class="content">
-        <div class="content-inner">
-            <div class="placeholder-icon">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <div class="page-body">
+
+            <!-- 빈 데이터 상태 -->
+            <div class="empty-state" id="empty-state">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
                     <line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/>
                     <line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>
                 </svg>
+                <p class="empty-title">위치 정보가 없습니다</p>
+                <p class="empty-desc">시뮬레이션을 먼저 시작해 주세요.<br>입지 선택 단계에서 지역을 선택하면 상권 분석이 활성화됩니다.</p>
+                <a class="empty-btn" href="start/start1.html">← 시뮬레이션 시작하기</a>
             </div>
-            <p class="placeholder-title">시장 분석</p>
-            <p class="placeholder-desc">이 기능은 준비 중입니다.<br>더 나은 서비스로 곧 찾아뵙겠습니다.</p>
-            <a class="placeholder-back" href="dashboard.html">← 병원 현황으로</a>
-        </div>
+
+            <!-- 메인 콘텐츠 -->
+            <div id="main-content">
+                <div class="page-breadcrumb">
+                    <a href="dashboard.html">병원 현황</a> / 상권 분석
+                </div>
+                <div class="page-title-row">
+                    <div>
+                        <h1 class="page-title">상권 분석</h1>
+                        <p class="page-subtitle">시장 이벤트 · 입지 경쟁 · 유동인구 분석</p>
+                    </div>
+                    <div class="filter-bar">
+                        <span style="font-size:12px;color:var(--gray-5);font-weight:600;">반경</span>
+                        <div class="radius-group">
+                            <button class="radius-btn active" onclick="setRadius(1000, this)">1km</button>
+                            <button class="radius-btn" onclick="setRadius(3000, this)">3km</button>
+                            <button class="radius-btn" onclick="setRadius(5000, this)">5km</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 카드 5개 -->
+                <div class="kpi-grid-5" id="kpi-grid">
+                    <!-- JS로 렌더링 -->
+                </div>
+
+                <!-- 지도 + 지역 요약 -->
+                <div class="map-section-grid">
+
+                    <!-- 지도 카드 -->
+                    <div class="section-card map-card">
+                        <div class="section-title">
+                            지도 기반 분석
+                            <span class="section-title-sub" id="map-location-tag"></span>
+                        </div>
+                        <div class="map-wrap">
+                            <div id="kakao-map"></div>
+                            <div class="map-error" id="map-error">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5">
+                                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                                <span>지도를 불러올 수 없습니다</span>
+                            </div>
+                            <!-- 범례 (지도 위) -->
+                            <div class="map-legend">
+                                <div class="legend-row"><span class="legend-dot blue"></span> 병원 위치</div>
+                                <div class="legend-row"><span class="legend-dot red"></span> 경쟁 병원</div>
+                                <div class="legend-row"><span class="legend-dot gray"></span> 지하철역</div>
+                                <div class="legend-row"><span class="legend-dot green"></span> 약국</div>
+                            </div>
+                        </div>
+
+                        <!-- 시장 이벤트 -->
+                        <div class="market-events">
+                            <div class="market-events-title">
+                                시장 이벤트
+                                <span style="font-size:10px;color:var(--gray-5);font-weight:500;">※ 데모 파생값</span>
+                            </div>
+                            <div class="events-chips" id="events-chips">
+                                <!-- JS로 렌더링 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 선택 지역 요약 -->
+                    <div class="section-card">
+                        <div class="section-title">선택 지역 요약</div>
+                        <div class="loc-summary-list" id="loc-summary-list">
+                            <!-- JS로 렌더링 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 차트 + 경쟁 병원 -->
+                <div class="bottom-grid">
+
+                    <!-- 차트 2개 -->
+                    <div class="charts-col">
+                        <!-- 연령대별 인구 분포 -->
+                        <div class="section-card">
+                            <div class="section-title">
+                                연령대별 인구 분포
+                                <span class="section-title-sub">※ 데모 파생값 — 백엔드 확장 시 실제 인구통계 API 연동 예정</span>
+                            </div>
+                            <div class="chart-wrap"><canvas id="age-chart"></canvas></div>
+                        </div>
+                        <!-- 시간대별 유동인구 -->
+                        <div class="section-card">
+                            <div class="section-title">
+                                시간대별 유동인구
+                                <span class="section-title-sub">※ 데모 파생값</span>
+                            </div>
+                            <div class="chart-wrap"><canvas id="hourly-chart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- 경쟁 병원 분석 -->
+                    <div class="section-card">
+                        <div class="section-title">
+                            경쟁 병원 분석
+                            <span class="section-title-sub">※ 데모 파생값 — HIRA API 연동 예정</span>
+                        </div>
+                        <table class="comp-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:36px">순위</th>
+                                    <th>병원명</th>
+                                    <th class="right" style="width:60px">거리</th>
+                                    <th class="right" style="width:60px">평점</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comp-tbody">
+                                <!-- JS로 렌더링 -->
+                            </tbody>
+                        </table>
+                        <div class="comp-more" id="comp-more"></div>
+                    </div>
+                </div>
+            </div><!-- /main-content -->
+
+        </div><!-- /page-body -->
         <footer><p>MEDSIM © 2026. All rights reserved.</p></footer>
     </div>
 </div>
+
 <script src="common.js"></script>
 <script>requireAuth(); renderSidebar('market');</script>
+<script>
+(function () {
+
+    // ── 상태 ─────────────────────────────────────────────────────────────────────
+    var mapObj = null;
+    var circleObj = null;
+    var currentRadius = 1000;
+    var centerLatLng = null;
+
+    // ── 지역별 좌표 (지오코딩 실패 fallback) ─────────────────────────────────────
+    var GU_LATLNG = {
+        '강남구': [37.4979, 127.0276], '서초구': [37.4837, 127.0324],
+        '송파구': [37.5145, 127.1059], '마포구': [37.5638, 126.9084],
+        '종로구': [37.5704, 126.9788], '용산구': [37.5384, 126.9654],
+        '성동구': [37.5630, 127.0369]
+    };
+
+    // ── 구별 연령대 파생 프로파일 ─────────────────────────────────────────────────
+    var AGE_PROFILES = {
+        '20대 위주':    [5,  35, 25, 18, 12,  5],
+        '30대 위주':    [5,  20, 35, 25, 10,  5],
+        '30-40대 위주': [5,  15, 30, 28, 14,  8],
+        '40대 위주':    [5,  12, 22, 32, 20,  9],
+        '60대이상 위주':[3,   8, 12, 20, 25, 32],
+    };
+
+    // ── 상권 유형 파생 ─────────────────────────────────────────────────────────────
+    var AREA_TYPES = {
+        '역삼1동': '오피스+주거 혼합형', '삼성1동': '오피스 밀집형',
+        '논현1동': '상업+주거 혼합형',   '청담동':  '고급 상업형',
+        '서초1동': '역세권 상업형',       '방배1동': '주거 중심형',
+        '잠실본동': '주거 대단지형',      '문정1동': '신흥 상업형',
+        '서교동':  '청년 상업형',         '합정동':  '상업+주거 혼합형',
+        '망원1동': '주거 중심형',         '혜화동':  '대학로 문화형',
+        '사직동':  '주거 저밀도형',       '이태원1동':'특수 상업형',
+        '한남동':  '고급 주거+상업형',    '성수1가1동':'신흥 트렌드형',
+        '왕십리2동':'환승 상업형'
+    };
+
+    // ── 구별 기본 연령대 (fallback) ───────────────────────────────────────────────
+    var GU_AGE_DEFAULT = {
+        '강남구': '30대 위주', '서초구': '40대 위주', '마포구': '20대 위주',
+        '종로구': '20대 위주', '송파구': '30-40대 위주', '용산구': '30대 위주',
+        '성동구': '30대 위주'
+    };
+
+    // ── 오피스 상권 여부 (시간대 유동인구 패턴용) ─────────────────────────────────
+    var OFFICE_DONGS = ['역삼1동','삼성1동','논현1동','서초1동','문정1동','왕십리2동','혜화동'];
+
+    // ── 초기화 ────────────────────────────────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', function () {
+        var dong    = localStorage.getItem('medsim_dong')    || '';
+        var sigungu = localStorage.getItem('medsim_sigungu') || (getConfig().sigungu) || '';
+
+        if (!sigungu && !dong) {
+            document.getElementById('empty-state').style.display    = 'flex';
+            document.getElementById('main-content').style.display   = 'none';
+            return;
+        }
+
+        init(dong, sigungu);
+    });
+
+    async function init(dong, sigungu) {
+        var config    = getConfig();
+        var allData   = getAllMonthlyData();
+        var latest    = allData.length > 0 ? allData[allData.length - 1] : null;
+        var prevData  = allData.length >= 2 ? allData[allData.length - 2] : null;
+
+        // 백엔드 API 호출
+        var apiData = null;
+        try {
+            var params = new URLSearchParams({ dong: dong, sigungu: sigungu });
+            var res    = await fetch('/api/location/analyze?' + params.toString());
+            if (res.ok) {
+                apiData = await res.json();
+                console.log('[market] /api/location/analyze:', apiData);
+            } else {
+                console.warn('[market] API 응답 오류 HTTP', res.status, '— localStorage fallback');
+            }
+        } catch (e) {
+            console.error('[market] API 호출 실패 — localStorage fallback:', e);
+        }
+
+        // 데이터 병합 (API > localStorage > 파생)
+        var state = buildState(dong, sigungu, config, latest, prevData, apiData);
+        console.log('[market] 계산된 KPI:', {
+            locationScore: state.locationScore,
+            demandScore:   state.demandScore,
+            accessScore:   state.accessScore,
+            rentRatio:     state.rentRatio,
+            latestPatients: state.latestPatients
+        });
+
+        renderKPIs(state);
+        renderLocationSummary(state);
+        renderMarketEvents(state);
+        renderAgeChart(state);
+        renderHourlyChart(state);
+        renderCompetitorTable(state);
+
+        // 지도 태그
+        var tag = document.getElementById('map-location-tag');
+        if (tag) tag.textContent = sigungu + (dong ? ' ' + dong : '');
+
+        // 카카오 지도
+        if (typeof kakao !== 'undefined') {
+            initKakaoMap(dong, sigungu);
+        } else {
+            document.getElementById('map-error').style.display = 'flex';
+            console.warn('[market] 카카오 지도 SDK 로드 실패');
+        }
+    }
+
+    // ── 상태 빌더 ─────────────────────────────────────────────────────────────────
+    function buildState(dong, sigungu, config, latest, prevData, apiData) {
+        var floatingPop    = (apiData && apiData.floatingPopulation != null)
+                             ? apiData.floatingPopulation
+                             : (config.floatingPopulation || 50000);
+        var competitorCount = (apiData && apiData.competitorCount != null && apiData.competitorCount !== -1)
+                             ? apiData.competitorCount
+                             : (config.competitorCount != null ? config.competitorCount : 8);
+        var monthlyRent    = config.monthlyRent || 0; // 만원 단위
+        var mainAgeGroup   = (apiData && apiData.mainAgeGroup)
+                             ? apiData.mainAgeGroup
+                             : (GU_AGE_DEFAULT[sigungu] || '30-40대 위주');
+        var riskLevel      = (apiData && apiData.locationRiskLevel) || null;
+        var operationHours = config.operationHours || 'STANDARD';
+
+        // KPI 계산
+        var locationScore   = calcLocationScore(floatingPop, competitorCount, sigungu);
+        var demandScore     = (apiData && apiData.locationDemandScore != null)
+                              ? Math.round(apiData.locationDemandScore)
+                              : calcDemandScoreFallback(floatingPop, sigungu, latest);
+        var accessScore     = calcAccessScore(operationHours, sigungu);
+
+        var latestRevenue  = (latest && latest.revenue) || 0;
+        var rentRatio      = (latestRevenue > 0 && monthlyRent > 0)
+                             ? ((monthlyRent * 10000) / latestRevenue * 100)
+                             : null;
+
+        var latestPatients = (latest && latest.patientsCount) || null;
+        var patientGrowth  = null;
+        if (latest && prevData && latest.patientsChangeRate != null) {
+            patientGrowth = (latest.patientsChangeRate * 100).toFixed(1);
+        }
+
+        return {
+            dong:           dong,
+            sigungu:        sigungu,
+            floatingPop:    floatingPop,
+            competitorCount:competitorCount,
+            monthlyRent:    monthlyRent,
+            mainAgeGroup:   mainAgeGroup,
+            riskLevel:      riskLevel,
+            operationHours: operationHours,
+            locationScore:  locationScore,
+            demandScore:    demandScore,
+            accessScore:    accessScore,
+            rentRatio:      rentRatio,
+            latestPatients: latestPatients,
+            patientGrowth:  patientGrowth,
+            apiData:        apiData,
+            config:         config,
+            latest:         latest
+        };
+    }
+
+    // ── KPI 계산 ─────────────────────────────────────────────────────────────────
+    function calcLocationScore(floatingPop, competitorCount, sigungu) {
+        var densityByGu = {
+            '강남구': 85, '서초구': 80, '용산구': 78, '마포구': 75,
+            '종로구': 72, '송파구': 70, '성동구': 68
+        };
+        var densityScore     = densityByGu[sigungu] || 65;
+        var popScore         = Math.min(100, (floatingPop / 220879) * 100);
+        var compInverseScore = Math.max(0, (1 - competitorCount / 22) * 100);
+        var raw              = densityScore * 0.3 + popScore * 0.3 + compInverseScore * 0.4;
+        return Math.round(Math.min(100, Math.max(0, raw)));
+    }
+
+    function calcDemandScoreFallback(floatingPop, sigungu, latest) {
+        var densityByGu = {
+            '강남구': 85, '서초구': 80, '용산구': 78, '마포구': 75,
+            '종로구': 72, '송파구': 70, '성동구': 68
+        };
+        var popScore      = Math.min(100, (floatingPop / 220879) * 100);
+        var densityScore  = densityByGu[sigungu] || 65;
+        var returnRate    = (latest && latest.returnPatientRate != null)
+                            ? (latest.returnPatientRate * 100) : 65;
+        var raw           = popScore * 0.5 + densityScore * 0.3 + returnRate * 0.2;
+        return Math.round(Math.min(100, Math.max(0, raw)));
+    }
+
+    function calcAccessScore(operationHours, sigungu) {
+        var baseByGu = {
+            '강남구': 78, '서초구': 75, '마포구': 73, '종로구': 76,
+            '용산구': 74, '송파구': 71, '성동구': 69
+        };
+        var score = baseByGu[sigungu] || 68;
+        if (operationHours === '24H')   score = Math.min(100, score + 15);
+        else if (operationHours === 'NIGHT') score = Math.min(100, score + 7);
+        return Math.round(score);
+    }
+
+    // ── KPI 카드 렌더링 ───────────────────────────────────────────────────────────
+    function renderKPIs(state) {
+        var grid = document.getElementById('kpi-grid');
+        if (!grid) return;
+
+        // 입지 적합도 등급
+        var ls = state.locationScore;
+        var lsGrade   = ls >= 80 ? '우수' : ls >= 60 ? '양호' : ls >= 40 ? '보통' : '개선필요';
+        var lsBadgeCls = ls >= 80 ? 'pos' : ls >= 60 ? 'pos' : ls >= 40 ? 'warn' : 'neg';
+
+        // 월 환자 수 뱃지
+        var patientBadge = '';
+        if (state.patientGrowth !== null) {
+            var g = parseFloat(state.patientGrowth);
+            var cls = g >= 0 ? 'pos' : 'neg';
+            patientBadge = '<span class="kpi-badge ' + cls + '">' + (g >= 0 ? '+' : '') + g + '%</span>';
+        }
+
+        // 임대료 부담 등급
+        var rentDisplay = state.rentRatio != null
+            ? '매출 대비 ' + state.rentRatio.toFixed(1) + '%'
+            : (state.monthlyRent > 0 ? state.monthlyRent.toLocaleString() + '만원' : '–');
+        var rentBadgeCls = 'neu', rentBadgeTxt = '데이터 없음';
+        if (state.rentRatio != null) {
+            if      (state.rentRatio <= 15) { rentBadgeCls = 'pos';  rentBadgeTxt = '우수'; }
+            else if (state.rentRatio <= 25) { rentBadgeCls = 'warn'; rentBadgeTxt = '적정'; }
+            else                            { rentBadgeCls = 'neg';  rentBadgeTxt = '부담'; }
+        }
+
+        // 수요 점수 등급
+        var ds = state.demandScore;
+        var dsBadgeCls = ds >= 70 ? 'pos' : ds >= 50 ? 'warn' : 'neg';
+        var dsBadgeTxt = ds >= 70 ? '높음' : ds >= 50 ? '보통' : '낮음';
+
+        // 접근성 점수
+        var as = state.accessScore;
+        var asBadgeCls = as >= 75 ? 'pos' : as >= 60 ? 'warn' : 'neg';
+        var asBadgeTxt = as >= 75 ? '우수' : as >= 60 ? '보통' : '낮음';
+
+        grid.innerHTML = [
+            kpiCard(
+                '입지 적합도',
+                ls + '점',
+                '0~100 스케일',
+                '<span class="kpi-badge ' + lsBadgeCls + '">' + lsGrade + '</span>' +
+                '<span style="display:block;font-size:9px;color:var(--gray-5);margin-top:4px;">※ 데모 파생값</span>'
+            ),
+            kpiCard(
+                '예상 월 환자 수',
+                state.latestPatients != null ? state.latestPatients.toLocaleString() + '명' : '–',
+                '시뮬레이션 최근 월 기준',
+                patientBadge || '<span class="kpi-badge neu">데이터 없음</span>'
+            ),
+            kpiCard(
+                '수요 점수',
+                ds + '점',
+                '유동인구·인구밀도·재진율 기반',
+                '<span class="kpi-badge ' + dsBadgeCls + '">' + dsBadgeTxt + '</span>' +
+                '<span style="display:block;font-size:9px;color:var(--gray-5);margin-top:4px;">※ 데모 파생값</span>'
+            ),
+            kpiCard(
+                '접근성 점수',
+                as + '점',
+                '운영시간·교통 가중치 반영',
+                '<span class="kpi-badge ' + asBadgeCls + '">' + asBadgeTxt + '</span>' +
+                '<span style="display:block;font-size:9px;color:var(--gray-5);margin-top:4px;">※ 데모 파생값</span>'
+            ),
+            kpiCard(
+                '임대료 부담',
+                rentDisplay,
+                state.monthlyRent > 0 ? '월 임대료 ' + state.monthlyRent.toLocaleString() + '만원' : '임대료 정보 없음',
+                '<span class="kpi-badge ' + rentBadgeCls + '">' + rentBadgeTxt + '</span>'
+            )
+        ].join('');
+    }
+
+    function kpiCard(label, value, sub, badgeHtml) {
+        return '<div class="kpi-card">' +
+            '<div class="kpi-label">' + label + '</div>' +
+            '<div class="kpi-value">' + value + '</div>' +
+            '<div class="kpi-sub">' + sub + '</div>' +
+            (badgeHtml || '') +
+            '</div>';
+    }
+
+    // ── 지역 요약 렌더링 ──────────────────────────────────────────────────────────
+    function renderLocationSummary(state) {
+        var el = document.getElementById('loc-summary-list');
+        if (!el) return;
+
+        var areaType = AREA_TYPES[state.dong] || '혼합형';
+        var dailyPop = state.floatingPop;
+        var dailyPopDisplay = dailyPop.toLocaleString() + '명/일';
+        var risk1kmPop = Math.round(dailyPop * 0.4);
+
+        var riskTagHtml = '';
+        if (state.riskLevel) {
+            var rc = state.riskLevel === '낮음' ? 'low' : state.riskLevel === '보통' ? 'mid' : 'high';
+            riskTagHtml = '<span class="risk-tag ' + rc + '">' + state.riskLevel + '</span>';
+        }
+
+        el.innerHTML = [
+            summaryItem('지역',         (state.sigungu || '') + (state.dong ? ' ' + state.dong : ''), ''),
+            summaryItem('상권 유형',    '<span class="type-badge">' + areaType + '</span>', ''),
+            summaryItem('일평균 유동인구', dailyPopDisplay, '백엔드 FloatingPopulationService 기반'),
+            summaryItem('반경 1km 인구', '약 ' + risk1kmPop.toLocaleString() + '명', '유동인구의 40% 추산 · ※ 데모 파생값'),
+            summaryItem('동일 진료과 병원', state.competitorCount + '개', '반경 2km 기준 · CompetitorService'),
+            summaryItem('예상 월세',    state.monthlyRent > 0 ? state.monthlyRent.toLocaleString() + '만원' : '–', '입력 평수 기반'),
+            riskTagHtml
+                ? '<div class="loc-summary-item"><div class="loc-summary-label">입지 리스크</div>' + riskTagHtml + '</div>'
+                : ''
+        ].join('');
+    }
+
+    function summaryItem(label, value, sub) {
+        return '<div class="loc-summary-item">' +
+            '<div class="loc-summary-label">' + label + '</div>' +
+            '<div class="loc-summary-value">' + value + '</div>' +
+            (sub ? '<div class="loc-summary-sub">' + sub + '</div>' : '') +
+            '</div>';
+    }
+
+    // ── 시장 이벤트 렌더링 ────────────────────────────────────────────────────────
+    function renderMarketEvents(state) {
+        var el = document.getElementById('events-chips');
+        if (!el) return;
+
+        var comp = state.competitorCount;
+        var pharmacyChg  = +(seededRand(state.dong + 'ph') * 10 - 2).toFixed(1);
+        var revenueChg   = state.latest && state.latest.revenue && comp > 5
+                           ? -+(comp * 0.2).toFixed(1)
+                           :  +(seededRand(state.dong + 'rev') * 8).toFixed(1);
+        var closureRisk  = +(comp / 22 * 12).toFixed(1);
+
+        el.innerHTML = [
+            chip('약국 수', (pharmacyChg >= 0 ? '+' : '') + pharmacyChg + '%', pharmacyChg >= 0 ? 'up' : 'down'),
+            chip('평판 변화', '없음', 'neu'),
+            chip('매출 영향', (revenueChg >= 0 ? '+' : '') + revenueChg + '%', revenueChg >= 0 ? 'up' : 'down'),
+            chip('폐업위험도', closureRisk + '%', closureRisk >= 8 ? 'down' : 'neu')
+        ].join('');
+    }
+
+    function chip(label, val, cls) {
+        return '<span class="event-chip ' + cls + '">' + label + ' <strong>' + val + '</strong></span>';
+    }
+
+    // ── 연령대 차트 ───────────────────────────────────────────────────────────────
+    var ageChartObj = null;
+    function renderAgeChart(state) {
+        var canvas = document.getElementById('age-chart');
+        if (!canvas) return;
+
+        var profile = AGE_PROFILES[state.mainAgeGroup] || AGE_PROFILES['30-40대 위주'];
+        var labels  = ['10대', '20대', '30대', '40대', '50대', '60대+'];
+        var colors  = [
+            'rgba(26,107,255,.7)',
+            'rgba(26,107,255,.85)',
+            '#1A6BFF',
+            'rgba(26,107,255,.8)',
+            'rgba(26,107,255,.65)',
+            'rgba(26,107,255,.5)'
+        ];
+
+        if (ageChartObj) { ageChartObj.destroy(); ageChartObj = null; }
+        ageChartObj = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: profile,
+                    backgroundColor: colors,
+                    borderRadius: 5,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) { return ctx.parsed.y + '%'; }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { family: 'Pretendard', size: 11 }, color: '#7A8699' } },
+                    y: {
+                        beginAtZero: true,
+                        max: 45,
+                        ticks: { callback: function (v) { return v + '%'; }, font: { family: 'Pretendard', size: 11 }, color: '#7A8699' },
+                        grid: { color: '#E8ECF2' }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── 시간대 유동인구 차트 ───────────────────────────────────────────────────────
+    var hourlyChartObj = null;
+    function renderHourlyChart(state) {
+        var canvas = document.getElementById('hourly-chart');
+        if (!canvas) return;
+
+        var isOffice = OFFICE_DONGS.indexOf(state.dong) !== -1;
+        var isNight  = state.operationHours === '24H' || state.operationHours === 'NIGHT';
+
+        // 2시간 간격 00~24시 → 13개 포인트
+        var labels = ['00','02','04','06','08','10','12','14','16','18','20','22','24'];
+        var data;
+        if (isOffice) {
+            data = [1, 1, 1, 2, 6, 14, 10, 13, 8, 5, 13, 15, 3, 2];
+            // 실제 13개: 00,02,04,06,08,10,12,14,16,18,20,22,24
+            data = [1, 1, 1, 2, 6, 14, 10, 13, 8, 14, 10, 3, 2];
+        } else {
+            data = [2, 1, 1, 2, 8, 10, 8, 7, 7, 9, 13, 11, 3];
+        }
+        if (isNight) {
+            data[0] = Math.min(15, data[0] + 6);
+            data[12] = Math.min(15, data[12] + 5);
+            data[11] = Math.min(15, data[11] + 3);
+        }
+
+        if (hourlyChartObj) { hourlyChartObj.destroy(); hourlyChartObj = null; }
+        hourlyChartObj = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    borderColor: '#1A6BFF',
+                    backgroundColor: 'rgba(26,107,255,.08)',
+                    borderWidth: 2.5,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#1A6BFF',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) { return ctx.parsed.y + '%'; }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { family: 'Pretendard', size: 11 }, color: '#7A8699', maxTicksLimit: 7 } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: function (v) { return v + '%'; }, font: { family: 'Pretendard', size: 11 }, color: '#7A8699' },
+                        grid: { color: '#E8ECF2' }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── 경쟁 병원 테이블 ─────────────────────────────────────────────────────────
+    function renderCompetitorTable(state) {
+        var tbody  = document.getElementById('comp-tbody');
+        var moreEl = document.getElementById('comp-more');
+        if (!tbody) return;
+
+        var cacheKey = 'medsim_competitor_cache_' + state.dong;
+        var cached   = null;
+        try { cached = JSON.parse(sessionStorage.getItem(cacheKey)); } catch (e) { /* ignore */ }
+
+        var hospitals;
+        if (cached && Array.isArray(cached)) {
+            hospitals = cached;
+        } else {
+            hospitals = generateMockCompetitors(state.dong, state.sigungu, state.competitorCount);
+            try { sessionStorage.setItem(cacheKey, JSON.stringify(hospitals)); } catch (e) { /* ignore */ }
+        }
+
+        var rankCls = ['r1','r2','r3'];
+        var top4    = hospitals.slice(0, 4);
+        tbody.innerHTML = top4.map(function (h, i) {
+            var rc = i < 3 ? rankCls[i] : 'rn';
+            return '<tr>' +
+                '<td><span class="comp-rank ' + rc + '">' + (i + 1) + '</span></td>' +
+                '<td>' +
+                    '<div class="comp-name">' + h.name + '</div>' +
+                    '<div class="comp-dist">' + h.dist + 'm</div>' +
+                '</td>' +
+                '<td style="text-align:right"><span class="star-icon">★</span> <span class="star-val">' + h.rating + '</span></td>' +
+                '</tr>';
+        }).join('');
+
+        if (moreEl) {
+            moreEl.textContent = '전체 ' + state.competitorCount + '개 병원 보기 →';
+        }
+    }
+
+    function generateMockCompetitors(dong, sigungu, count) {
+        var seed    = [...(dong + sigungu)].reduce(function (a, c) { return a + c.charCodeAt(0); }, 0);
+        var rng     = seededRngFactory(seed);
+        var prefixes = ['연세', '삼성', '베스트', '임', '서울', '강남', '국제', '현대', '미래', '한양'];
+        var suffixes = ['내과의원', '내과', '내과클리닉', '의원'];
+        var hospitals = [];
+        var usedNames = {};
+        for (var i = 0; i < Math.min(count, 8); i++) {
+            var name, tries = 0;
+            do {
+                name = prefixes[Math.floor(rng() * prefixes.length)]
+                     + suffixes[Math.floor(rng() * suffixes.length)];
+                tries++;
+            } while (usedNames[name] && tries < 20);
+            usedNames[name] = true;
+            var dist   = Math.floor(rng() * 900 + 100);
+            var rating = (rng() * 1.2 + 3.5).toFixed(1);
+            hospitals.push({ rank: i + 1, name: name, dist: dist, rating: rating });
+        }
+        // 거리 기준 정렬
+        hospitals.sort(function (a, b) { return a.dist - b.dist; });
+        hospitals.forEach(function (h, i) { h.rank = i + 1; });
+        return hospitals;
+    }
+
+    // ── 카카오 지도 초기화 ────────────────────────────────────────────────────────
+    function initKakaoMap(dong, sigungu) {
+        var container = document.getElementById('kakao-map');
+        if (!container) return;
+
+        var fallback = GU_LATLNG[sigungu] || [37.4979, 127.0276];
+        var options  = {
+            center: new kakao.maps.LatLng(fallback[0], fallback[1]),
+            level: 5
+        };
+        mapObj = new kakao.maps.Map(container, options);
+
+        // 지오코딩으로 dong 좌표 획득
+        if (dong) {
+            var geocoder = new kakao.maps.services.Geocoder();
+            var query    = (sigungu || '') + ' ' + dong;
+            geocoder.addressSearch(query, function (result, status) {
+                if (status === kakao.maps.services.Status.OK && result.length > 0) {
+                    var lat = parseFloat(result[0].y);
+                    var lng = parseFloat(result[0].x);
+                    var latlng = new kakao.maps.LatLng(lat, lng);
+                    mapObj.setCenter(latlng);
+                    mapObj.setLevel(5);
+                    onCenterReady(latlng, dong, sigungu);
+                } else {
+                    // addressSearch 실패 → coord2RegionCode로 재시도 대신 fallback 사용
+                    console.warn('[market] addressSearch 실패 — 구 중심 fallback');
+                    var fb = new kakao.maps.LatLng(fallback[0], fallback[1]);
+                    onCenterReady(fb, dong, sigungu);
+                }
+            });
+        } else {
+            var fb = new kakao.maps.LatLng(fallback[0], fallback[1]);
+            onCenterReady(fb, dong, sigungu);
+        }
+    }
+
+    function onCenterReady(latlng, dong, sigungu) {
+        centerLatLng = latlng;
+
+        // 반경 원
+        circleObj = new kakao.maps.Circle({
+            center:         latlng,
+            radius:         currentRadius,
+            strokeWeight:   2,
+            strokeColor:    '#1A6BFF',
+            strokeOpacity:  0.5,
+            fillColor:      '#1A6BFF',
+            fillOpacity:    0.05
+        });
+        circleObj.setMap(mapObj);
+
+        // 병원 위치 (중심) — 파란 마커
+        addMarker(latlng, 'blue', (sigungu || '') + ' ' + (dong || ''), true);
+
+        // 지하철역, 약국 검색 (Kakao Places 사용)
+        if (kakao.maps.services.Places) {
+            var ps = new kakao.maps.services.Places();
+            ps.keywordSearch('지하철역', function (data, status) {
+                if (status !== kakao.maps.services.Status.OK) return;
+                data.slice(0, 4).forEach(function (place) {
+                    var ll = new kakao.maps.LatLng(parseFloat(place.y), parseFloat(place.x));
+                    addMarker(ll, 'gray', place.place_name, false);
+                });
+            }, { location: centerLatLng, radius: currentRadius });
+
+            ps.keywordSearch('약국', function (data, status) {
+                if (status !== kakao.maps.services.Status.OK) return;
+                data.slice(0, 3).forEach(function (place) {
+                    var ll = new kakao.maps.LatLng(parseFloat(place.y), parseFloat(place.x));
+                    addMarker(ll, 'green', place.place_name, false);
+                });
+            }, { location: centerLatLng, radius: currentRadius });
+
+            ps.keywordSearch('내과의원', function (data, status) {
+                if (status !== kakao.maps.services.Status.OK) return;
+                data.slice(0, 5).forEach(function (place) {
+                    var ll = new kakao.maps.LatLng(parseFloat(place.y), parseFloat(place.x));
+                    addMarker(ll, 'red', place.place_name, false);
+                });
+            }, { location: centerLatLng, radius: currentRadius });
+        }
+    }
+
+    function addMarker(latlng, color, title, isCenter) {
+        var markerColors = { blue: '#1A6BFF', red: '#FF3B3B', gray: '#7A8699', green: '#22C97A' };
+        var size   = isCenter ? 36 : 26;
+        var mc     = markerColors[color] || '#1A6BFF';
+        var svg    = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 24 24">' +
+                     '<circle cx="12" cy="10" r="6" fill="' + mc + '" fill-opacity="0.9" stroke="white" stroke-width="1.5"/>' +
+                     '<path d="M12 22 C12 22 6 15 6 10 A6 6 0 0 1 18 10 C18 15 12 22 12 22Z" fill="' + mc + '" fill-opacity="0.9" stroke="white" stroke-width="1.5"/>' +
+                     '</svg>';
+        var imgSrc  = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        var imgSize = new kakao.maps.Size(size, size);
+        var imgOpt  = new kakao.maps.Point(size / 2, size);
+        var markerImg  = new kakao.maps.MarkerImage(imgSrc, imgSize, { offset: imgOpt });
+        var marker = new kakao.maps.Marker({
+            position: latlng,
+            image:    markerImg,
+            title:    title
+        });
+        marker.setMap(mapObj);
+
+        // 인포윈도우
+        var iw = new kakao.maps.InfoWindow({ content: '<div style="padding:5px 10px;font-size:12px;font-family:Pretendard,sans-serif;font-weight:700;white-space:nowrap;">' + title + '</div>' });
+        kakao.maps.event.addListener(marker, 'click', function () {
+            iw.open(mapObj, marker);
+            setTimeout(function () { iw.close(); }, 2500);
+        });
+
+        return marker;
+    }
+
+    // ── 반경 변경 ─────────────────────────────────────────────────────────────────
+    window.setRadius = function (meters, btn) {
+        currentRadius = meters;
+        document.querySelectorAll('.radius-btn').forEach(function (b) { b.classList.remove('active'); });
+        if (btn) btn.classList.add('active');
+        if (circleObj) circleObj.setRadius(meters);
+        if (mapObj) {
+            var level = meters <= 1000 ? 5 : meters <= 3000 ? 7 : 8;
+            mapObj.setLevel(level);
+        }
+    };
+
+    // ── 유틸 ─────────────────────────────────────────────────────────────────────
+    function seededRngFactory(seed) {
+        var s = seed;
+        return function () {
+            s = (s * 1664525 + 1013904223) & 0x7fffffff;
+            return s / 0x7fffffff;
+        };
+    }
+
+    function seededRand(str) {
+        var seed = [...str].reduce(function (a, c) { return a + c.charCodeAt(0); }, 0);
+        var rng  = seededRngFactory(seed);
+        return rng();
+    }
+
+})();
+</script>
 </body>
 </html>
