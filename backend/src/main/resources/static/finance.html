@@ -263,31 +263,35 @@ var SVG_DOWN     = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" 
 var filterStart = 1, filterEnd = 1;
 
 // ── Data Enrichment ────────────────────────────────────────────
+// 백엔드 MonthlyData는 모두 만원 단위 → 여기서 × 10000 하여 원으로 통일
 function enrichRecord(r, prev, cfg) {
-    var fixedWon   = cfg.fixedCost * 10000;
-    var rev        = r.revenue || 0;
-    var net        = r.netProfit || 0;
-    var exp        = rev - net;
-    var varCost    = Math.max(0, exp - fixedWon);
-    var style      = r.operationStyle || cfg.operationStyle || 'BALANCED';
-    var labor      = (STAFF_COST_MAP[style] || STAFF_COST_MAP.BALANCED) * 10000;
-    var rent       = (cfg.monthlyRent || 0) * 10000;
-    var mkt        = (cfg.marketingCost || 0) * 10000;
-    var totalInv   = ((cfg.ownedCash || 0) + (cfg.loanAmount || 0)) * 10000;
-    var depr       = totalInv > 0 ? totalInv / 60 : 0;
+    var rev       = (r.revenue     || 0) * 10000;  // 만원 → 원
+    var net       = (r.netProfit   || 0) * 10000;  // 만원 → 원
+    var fixedWon  = ((r.fixedCost != null ? r.fixedCost : cfg.fixedCost) || 0) * 10000;
+    var varCostBe = (r.variableCost || 0) * 10000; // 백엔드 variableCost (만원 → 원)
+    var exp       = rev - net;
+    var varCost   = varCostBe > 0 ? varCostBe : Math.max(0, exp - fixedWon);
+    var style     = r.operationStyle || cfg.operationStyle || 'BALANCED';
+    var labor     = r.laborCost       ? r.laborCost       * 10000 : (STAFF_COST_MAP[style] || STAFF_COST_MAP.BALANCED) * 10000;
+    var rent      = r.rentCost        ? r.rentCost        * 10000 : (cfg.monthlyRent  || 0) * 10000;
+    var mkt       = r.marketingCost   ? r.marketingCost   * 10000 : (cfg.marketingCost || 0) * 10000;
+    var totalInv  = ((cfg.ownedCash || 0) + (cfg.loanAmount || 0)) * 10000;
+    var depr      = r.depreciationCost ? r.depreciationCost * 10000 : (totalInv > 0 ? totalInv / 60 : 0);
     var otherFixed = Math.max(0, fixedWon - labor - rent - mkt - depr);
-    var margin     = rev > 0 ? net / rev : 0;
-    var fixRatio   = rev > 0 ? fixedWon / rev : 0;
-    var varRatio   = rev > 0 ? varCost / rev : 0;
-    var patRev     = (r.patients || 0) > 0 ? rev / r.patients : 0;
-    var revGrowth  = (prev && prev.revenue > 0) ? (rev - prev.revenue) / prev.revenue : null;
+    var margin    = rev > 0 ? net / rev : 0;
+    var fixRatio  = rev > 0 ? fixedWon / rev : 0;
+    var varRatio  = rev > 0 ? varCost  / rev : 0;
+    var patCnt    = r.patientsCount || 0;
+    var patRev    = patCnt > 0 ? rev / patCnt : 0;
+    var prevRev   = prev ? (prev.revenue || 0) * 10000 : 0;
+    var revGrowth = (prev && prevRev > 0) ? (rev - prevRev) / prevRev : null;
     return {
         month: r.month, revenue: rev, netProfit: net, expenses: exp,
         fixedCost: fixedWon, varCost: varCost,
         labor: labor, rent: rent, marketing: mkt, depr: depr, otherFixed: otherFixed,
         margin: margin, fixRatio: fixRatio, varRatio: varRatio,
         patRev: patRev, revGrowth: revGrowth,
-        patients: r.patients || 0, cash: r.cash || 0, reputation: r.reputation || 0,
+        patients: patCnt, cash: (r.cumulativeCash || 0) * 10000, reputation: r.reputationScore || 0,
     };
 }
 
@@ -388,19 +392,25 @@ function renderPnlChart(f) {
     var lbl = document.getElementById('chart-range-label');
     if (lbl) lbl.textContent = f.length ? f[0].month + '개월차 ~ ' + f[f.length-1].month + '개월차' : '';
     if (!f.length) return;
-    var labels = f.map(function (r) { return r.month + '월'; });
-    var toMan  = function (v) { return Math.round(v / 10000); };
+    var labels  = f.map(function (r) { return r.month + '월'; });
+    var toMan   = function (v) { return Math.round(v / 10000); }; // 원 → 만원
+    var revData  = f.map(function(r){ return toMan(r.revenue); });
+    var expData  = f.map(function(r){ return toMan(r.expenses); });
+    var netData  = f.map(function(r){ return toMan(r.netProfit); });
+    var cashData = f.map(function(r){ return toMan(r.cash); });
+    console.log('손익추이(만원) - 매출:', revData, '비용:', expData, '순이익:', netData, '현금:', cashData);
     var datasets = [
-        { label: '매출(만원)', data: f.map(function(r){return toMan(r.revenue);}),
-          borderColor:'#1A6BFF', backgroundColor:'rgba(26,107,255,0.08)', fill:true, tension:0.4, pointRadius:4, borderWidth:2.5 },
-        { label: '비용(만원)', data: f.map(function(r){return toMan(r.expenses);}),
-          borderColor:'#FF8C42', backgroundColor:'rgba(255,140,66,0.06)', fill:true, tension:0.4, pointRadius:4, borderWidth:2 },
-        { label: '순이익(만원)', data: f.map(function(r){return toMan(r.netProfit);}),
-          borderColor:'#22C97A', backgroundColor:'rgba(34,201,122,0.07)', fill:false, tension:0.4, pointRadius:4, borderWidth:2 },
-        { label: '현금(만원)', data: f.map(function(r){return toMan(r.cash);}),
-          borderColor:'#8B5CF6', backgroundColor:'rgba(139,92,246,0.05)', fill:false, tension:0.4, pointRadius:4, borderWidth:2, borderDash:[5,3] },
+        { label: '매출(만원)',   data: revData,  borderColor:'#1A6BFF', backgroundColor:'rgba(26,107,255,0.08)', fill:true,  tension:0.4, pointRadius:4, borderWidth:2.5 },
+        { label: '비용(만원)',   data: expData,  borderColor:'#FF8C42', backgroundColor:'rgba(255,140,66,0.06)',  fill:true,  tension:0.4, pointRadius:4, borderWidth:2 },
+        { label: '순이익(만원)', data: netData,  borderColor:'#22C97A', backgroundColor:'rgba(34,201,122,0.07)', fill:false, tension:0.4, pointRadius:4, borderWidth:2 },
+        { label: '현금(만원)',   data: cashData, borderColor:'#8B5CF6', backgroundColor:'rgba(139,92,246,0.05)', fill:false, tension:0.4, pointRadius:4, borderWidth:2, borderDash:[5,3] },
     ];
-    createLineChart('pnl-chart', labels, datasets);
+    createLineChart('pnl-chart', labels, datasets, {
+        scales: {
+            x: { grid: { display: false }, ticks: { font: { family: 'Pretendard', size: 12, weight: '600' }, color: '#7A8699' } },
+            y: { beginAtZero: false, grid: { color: '#E8ECF2' }, ticks: { font: { family: 'Pretendard', size: 12, weight: '600' }, color: '#7A8699', callback: function(v){ return v.toLocaleString(); } } }
+        }
+    });
 }
 
 // ── Cost Donut ────────────────────────────────────────────────
@@ -445,7 +455,11 @@ function renderEffTable(f) {
     var avgVarRatio = avg(function(r){return r.varRatio;}) * 100;
     var avgPatRev   = avg(function(r){return r.patRev;});
     var avgRev      = avg(function(r){return r.revenue;});
+    var totalFixed  = f.reduce(function(s,r){return s+r.fixedCost;},0);
     var rep         = f[f.length-1].reputation;
+    console.log('총매출(만원)', Math.round(avgRev / 10000));
+    console.log('총고정비(만원)', Math.round(totalFixed / 10000 / f.length));
+    console.log('고정비비율', avgFixRatio.toFixed(1) + '%');
 
     var rows = [
         { label:'평균 이익률', desc:'순이익 ÷ 매출', val: avgMargin.toFixed(1) + '%', bar: Math.max(0, Math.min(100, avgMargin)),
