@@ -1293,7 +1293,7 @@ async function advanceMonth() {
         const decisions   = getAvailableDecisions ? getAvailableDecisions() : [];
         const decisionIds = decisions.map(d => d.id || d.decisionId).filter(Boolean);
 
-        const result = await apiPost(`/api/simulation/${simulationId}/next`, { decisionIds });
+        const result = await apiPost(`/api/simulation/${simulationId}/next`, decisionIds);
 
         appendMonthlyData(result.monthlyData);
         currentMonth = result.currentMonth;

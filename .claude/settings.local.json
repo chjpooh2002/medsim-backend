@@ -18,7 +18,12 @@
       "Bash(Get-Content *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\82109\\\\Desktop\\\\MEDSIM_Project\\\\backend\\\\src\\\\main\\\\resources\\\\static\" -Recurse)",
       "Bash(Select-Object FullName, PSIsContainer)",
-      "Bash(Sort-Object FullName)"
+      "Bash(Sort-Object FullName)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/health)",
+      "Bash(./gradlew bootRun)",
+      "Bash(echo \"PID=$!\")",
+      "Bash(curl -s http://localhost:8080/health)",
+      "Bash(env)"
     ]
   }
 }
