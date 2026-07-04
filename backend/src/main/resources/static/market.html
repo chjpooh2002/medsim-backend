@@ -49,6 +49,7 @@
         .kpi-badge.neg  { background: rgba(255,59,59,.12); color: var(--red); }
         .kpi-badge.neu  { background: var(--gray-1); color: var(--gray-5); border: 1px solid var(--gray-2); }
         .kpi-badge.warn { background: rgba(255,140,66,.12); color: #c96600; }
+        .kpi-badge.info { background: rgba(26,107,255,.12); color: var(--blue); }
 
         /* Section cards */
         .section-card { background: white; border: 1px solid var(--gray-2); border-radius: 14px; padding: 22px 24px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
@@ -159,7 +160,7 @@
                 <div class="page-title-row">
                     <div>
                         <h1 class="page-title">상권 분석</h1>
-                        <p class="page-subtitle">시장 이벤트 · 입지 경쟁 · 유동인구 분석</p>
+                        <p class="page-subtitle">입지 · 상권 · 유동인구 분석</p>
                     </div>
                     <div class="filter-bar">
                         <span style="font-size:12px;color:var(--gray-5);font-weight:600;">반경</span>
@@ -284,6 +285,33 @@
     var circleObj = null;
     var currentRadius = 1000;
     var centerLatLng = null;
+    var stateData = null;
+
+    // ── KPI 파생 상수 (여기서만 수정) ─────────────────────────────────────────────
+    var KPI_POP_NORM_LOC      = 200000;  // 입지 적합도: 반경 내 인구 정규화 기준 (명)
+    var KPI_POP_NORM_DEMAND   = 300000;  // 수요 점수: 반경 내 인구 정규화 기준 (명)
+    var KPI_FLOAT_NORM_LOC    = 50000;   // 입지 적합도: 유동인구 정규화 기준 (명/일)
+    var KPI_FLOAT_NORM_DEMAND = 30000;   // 수요 점수: 유동인구 정규화 기준 (명/일)
+    var KPI_COMP_PENALTY      = 3;       // 경쟁병원 1개당 점수 감점
+    var KPI_DEMAND_MIN        = 40;      // 수요 점수 최소값 (오탐지 방지)
+    var KPI_ACCESS_MIN        = 50;      // 접근성 점수 최소값
+    var RISK_RENT_PCT         = 50;      // 임대료 리스크 기준 (%)
+    var RISK_COMP_COUNT       = 20;      // 경쟁 리스크 기준 (개)
+    var RISK_LOC_SCORE        = 50;      // 입지 리스크 기준 (점)
+    var RISK_ACCESS_SCORE     = 50;      // 접근성 리스크 기준 (점)
+
+    // 구별 반경 500m 지하철역 수 추정 (접근성 점수 고정 기준)
+    var SUBWAY_COUNTS_500M = {
+        '강남구': 4, '서초구': 3, '마포구': 3, '종로구': 4,
+        '송파구': 3, '용산구': 3, '성동구': 2
+    };
+
+    // 반경별 인구/병원 수 스케일 (1km 기준값 대비)
+    var RADIUS_SCALE = {
+        1000: { pop: 1.0, hospital: 1.0 },
+        3000: { pop: 3.0, hospital: 2.0 },
+        5000: { pop: 5.5, hospital: 3.5 }
+    };
 
     // ── 지역별 좌표 (지오코딩 실패 fallback) ─────────────────────────────────────
     var GU_LATLNG = {
@@ -340,12 +368,11 @@
     });
 
     async function init(dong, sigungu) {
-        var config    = getConfig();
-        var allData   = getAllMonthlyData();
-        var latest    = allData.length > 0 ? allData[allData.length - 1] : null;
-        var prevData  = allData.length >= 2 ? allData[allData.length - 2] : null;
+        var config   = getConfig();
+        var allData  = getAllMonthlyData();
+        var latest   = allData.length > 0 ? allData[allData.length - 1] : null;
+        var prevData = allData.length >= 2 ? allData[allData.length - 2] : null;
 
-        // 백엔드 API 호출
         var apiData = null;
         try {
             var params = new URLSearchParams({ dong: dong, sigungu: sigungu });
@@ -360,16 +387,9 @@
             console.error('[market] API 호출 실패 — localStorage fallback:', e);
         }
 
-        // 데이터 병합 (API > localStorage > 파생)
-        var state = buildState(dong, sigungu, config, latest, prevData, apiData);
-        console.log('[market] 계산된 KPI:', {
-            locationScore: state.locationScore,
-            demandScore:   state.demandScore,
-            accessScore:   state.accessScore,
-            rentRatio:     state.rentRatio,
-            latestPatients: state.latestPatients
-        });
+        stateData = { dong: dong, sigungu: sigungu, config: config, latest: latest, prevData: prevData, apiData: apiData };
 
+        var state = buildState(dong, sigungu, config, latest, prevData, apiData, currentRadius);
         renderKPIs(state);
         renderLocationSummary(state);
         renderMarketEvents(state);
@@ -377,45 +397,73 @@
         renderHourlyChart(state);
         renderCompetitorTable(state);
 
-        // 지도 태그
         var tag = document.getElementById('map-location-tag');
         if (tag) tag.textContent = sigungu + (dong ? ' ' + dong : '');
 
-        // 카카오 지도
         if (typeof kakao !== 'undefined') {
             initKakaoMap(dong, sigungu);
         } else {
             document.getElementById('map-error').style.display = 'flex';
             console.warn('[market] 카카오 지도 SDK 로드 실패');
         }
+
+        console.log('[상권 분석 로드]', {
+            currentRadius: currentRadius / 1000 + 'km',
+            rentManwon:    state.monthlyRent,
+            revenueManwon: state.latestRevenue,
+            rentBurdenPct: state.rentRatio != null ? state.rentRatio.toFixed(1) + '%' : 'null',
+            입지:   state.locationScore,
+            수요:   state.demandScore,
+            접근성: state.accessScore,
+            입지리스크: state.riskLevel,
+            위험요소:   state.risks
+        });
     }
 
     // ── 상태 빌더 ─────────────────────────────────────────────────────────────────
-    function buildState(dong, sigungu, config, latest, prevData, apiData) {
-        var floatingPop    = (apiData && apiData.floatingPopulation != null)
-                             ? apiData.floatingPopulation
-                             : (config.floatingPopulation || 50000);
-        var competitorCount = (apiData && apiData.competitorCount != null && apiData.competitorCount !== -1)
-                             ? apiData.competitorCount
-                             : (config.competitorCount != null ? config.competitorCount : 8);
-        var monthlyRent    = config.monthlyRent || 0; // 만원 단위
+    function buildState(dong, sigungu, config, latest, prevData, apiData, radiusM) {
+        var radiusKm = (radiusM || 1000) / 1000;
+        var scale    = RADIUS_SCALE[radiusM] || RADIUS_SCALE[1000];
+
+        var floatingPopBase = (apiData && apiData.floatingPopulation != null)
+                              ? apiData.floatingPopulation
+                              : (config.floatingPopulation || 50000);
+        var competitorCountBase = (apiData && apiData.competitorCount != null && apiData.competitorCount !== -1)
+                              ? apiData.competitorCount
+                              : (config.competitorCount != null ? config.competitorCount : 8);
+
+        var floatingPop     = Math.round(floatingPopBase * scale.pop);
+        var competitorCount = Math.round(competitorCountBase * scale.hospital);
+        var radiusPop       = Math.round(floatingPop * 0.4);
+
+        var monthlyRent    = config.monthlyRent || 0;
         var mainAgeGroup   = (apiData && apiData.mainAgeGroup)
                              ? apiData.mainAgeGroup
                              : (GU_AGE_DEFAULT[sigungu] || '30-40대 위주');
-        var riskLevel      = (apiData && apiData.locationRiskLevel) || null;
         var operationHours = config.operationHours || 'STANDARD';
 
-        // KPI 계산
-        var locationScore   = calcLocationScore(floatingPop, competitorCount, sigungu);
-        var demandScore     = (apiData && apiData.locationDemandScore != null)
-                              ? Math.round(apiData.locationDemandScore)
-                              : calcDemandScoreFallback(floatingPop, sigungu, latest);
-        var accessScore     = calcAccessScore(operationHours, sigungu);
+        var locationScore = calcLocationScore(floatingPop, radiusPop, competitorCount);
+        var demandScore   = (apiData && apiData.locationDemandScore != null)
+                            ? Math.max(KPI_DEMAND_MIN, Math.round(apiData.locationDemandScore))
+                            : calcDemandScore(floatingPop, radiusPop, latest);
+        var accessScore   = calcAccessScore(operationHours, sigungu);
 
-        var latestRevenue  = (latest && latest.revenue) || 0;
-        var rentRatio      = (latestRevenue > 0 && monthlyRent > 0)
-                             ? ((monthlyRent * 10000) / latestRevenue * 100)
-                             : null;
+        // 임대료 부담: 둘 다 만원 단위 → 직접 나눗셈
+        var latestRevenue = (latest && latest.revenue) || 0;
+        var rentRatio     = (latestRevenue > 0 && monthlyRent > 0)
+                            ? (monthlyRent / latestRevenue * 100)
+                            : null;
+
+        // 입지 리스크 판정
+        var risks = [];
+        if (rentRatio != null && rentRatio > RISK_RENT_PCT)  risks.push('임대료');
+        if (competitorCount > RISK_COMP_COUNT) risks.push('경쟁');
+        if (locationScore < RISK_LOC_SCORE)    risks.push('입지');
+        if (accessScore < RISK_ACCESS_SCORE)   risks.push('접근성');
+
+        var riskLevel = risks.length >= 3 ? '높음'
+                      : risks.length === 2 ? '중간'
+                      : risks.length === 1 ? '낮음' : '없음';
 
         var latestPatients = (latest && latest.patientsCount) || null;
         var patientGrowth  = null;
@@ -424,61 +472,56 @@
         }
 
         return {
-            dong:           dong,
-            sigungu:        sigungu,
-            floatingPop:    floatingPop,
-            competitorCount:competitorCount,
-            monthlyRent:    monthlyRent,
-            mainAgeGroup:   mainAgeGroup,
-            riskLevel:      riskLevel,
-            operationHours: operationHours,
-            locationScore:  locationScore,
-            demandScore:    demandScore,
-            accessScore:    accessScore,
-            rentRatio:      rentRatio,
-            latestPatients: latestPatients,
-            patientGrowth:  patientGrowth,
-            apiData:        apiData,
-            config:         config,
-            latest:         latest
+            dong:            dong,
+            sigungu:         sigungu,
+            radiusM:         radiusM || 1000,
+            radiusKm:        radiusKm,
+            floatingPopBase: floatingPopBase,
+            floatingPop:     floatingPop,
+            radiusPop:       radiusPop,
+            competitorCount: competitorCount,
+            monthlyRent:     monthlyRent,
+            latestRevenue:   latestRevenue,
+            mainAgeGroup:    mainAgeGroup,
+            riskLevel:       riskLevel,
+            risks:           risks,
+            operationHours:  operationHours,
+            locationScore:   locationScore,
+            demandScore:     demandScore,
+            accessScore:     accessScore,
+            rentRatio:       rentRatio,
+            latestPatients:  latestPatients,
+            patientGrowth:   patientGrowth,
+            apiData:         apiData,
+            config:          config,
+            latest:          latest
         };
     }
 
     // ── KPI 계산 ─────────────────────────────────────────────────────────────────
-    function calcLocationScore(floatingPop, competitorCount, sigungu) {
-        var densityByGu = {
-            '강남구': 85, '서초구': 80, '용산구': 78, '마포구': 75,
-            '종로구': 72, '송파구': 70, '성동구': 68
-        };
-        var densityScore     = densityByGu[sigungu] || 65;
-        var popScore         = Math.min(100, (floatingPop / 220879) * 100);
-        var compInverseScore = Math.max(0, (1 - competitorCount / 22) * 100);
-        var raw              = densityScore * 0.3 + popScore * 0.3 + compInverseScore * 0.4;
+    function calcLocationScore(floatingPop, radiusPop, competitorCount) {
+        var popDensityScore = Math.min(100, (radiusPop / KPI_POP_NORM_LOC) * 100);
+        var floatScore      = Math.min(100, (floatingPop / KPI_FLOAT_NORM_LOC) * 100);
+        var compScore       = Math.max(0, 100 - competitorCount * KPI_COMP_PENALTY);
+        var raw = popDensityScore * 0.3 + floatScore * 0.3 + compScore * 0.4;
         return Math.round(Math.min(100, Math.max(0, raw)));
     }
 
-    function calcDemandScoreFallback(floatingPop, sigungu, latest) {
-        var densityByGu = {
-            '강남구': 85, '서초구': 80, '용산구': 78, '마포구': 75,
-            '종로구': 72, '송파구': 70, '성동구': 68
-        };
-        var popScore      = Math.min(100, (floatingPop / 220879) * 100);
-        var densityScore  = densityByGu[sigungu] || 65;
-        var returnRate    = (latest && latest.returnPatientRate != null)
-                            ? (latest.returnPatientRate * 100) : 65;
-        var raw           = popScore * 0.5 + densityScore * 0.3 + returnRate * 0.2;
-        return Math.round(Math.min(100, Math.max(0, raw)));
+    function calcDemandScore(floatingPop, radiusPop, latest) {
+        var floatScore   = Math.min(100, (floatingPop / KPI_FLOAT_NORM_DEMAND) * 100);
+        var densityScore = Math.min(100, (radiusPop / KPI_POP_NORM_DEMAND) * 100);
+        var returnRate   = (latest && latest.returnPatientRate != null)
+                           ? (latest.returnPatientRate * 100) : 65;
+        var raw = floatScore * 0.4 + densityScore * 0.3 + returnRate * 0.3;
+        return Math.max(KPI_DEMAND_MIN, Math.round(Math.min(100, raw)));
     }
 
     function calcAccessScore(operationHours, sigungu) {
-        var baseByGu = {
-            '강남구': 78, '서초구': 75, '마포구': 73, '종로구': 76,
-            '용산구': 74, '송파구': 71, '성동구': 69
-        };
-        var score = baseByGu[sigungu] || 68;
-        if (operationHours === '24H')   score = Math.min(100, score + 15);
-        else if (operationHours === 'NIGHT') score = Math.min(100, score + 7);
-        return Math.round(score);
+        var subwayCount = SUBWAY_COUNTS_500M[sigungu] || 2;
+        var subwayScore = Math.min(60, subwayCount * 15);
+        var hoursBonus  = operationHours === '24H' ? 30
+                        : operationHours === 'NIGHT' ? 20 : 10;
+        return Math.max(KPI_ACCESS_MIN, Math.round(Math.min(100, subwayScore + hoursBonus)));
     }
 
     // ── KPI 카드 렌더링 ───────────────────────────────────────────────────────────
@@ -486,74 +529,61 @@
         var grid = document.getElementById('kpi-grid');
         if (!grid) return;
 
-        // 입지 적합도 등급
         var ls = state.locationScore;
-        var lsGrade   = ls >= 80 ? '우수' : ls >= 60 ? '양호' : ls >= 40 ? '보통' : '개선필요';
-        var lsBadgeCls = ls >= 80 ? 'pos' : ls >= 60 ? 'pos' : ls >= 40 ? 'warn' : 'neg';
+        var lsGrade    = ls >= 80 ? '우수' : ls >= 60 ? '양호' : ls >= 40 ? '보통' : '개선필요';
+        var lsBadgeCls = ls >= 80 ? 'pos'  : ls >= 60 ? 'pos'  : ls >= 40 ? 'warn' : 'neg';
 
-        // 월 환자 수 뱃지
         var patientBadge = '';
         if (state.patientGrowth !== null) {
-            var g = parseFloat(state.patientGrowth);
+            var g   = parseFloat(state.patientGrowth);
             var cls = g >= 0 ? 'pos' : 'neg';
             patientBadge = '<span class="kpi-badge ' + cls + '">' + (g >= 0 ? '+' : '') + g + '%</span>';
         }
 
-        // 임대료 부담 등급
-        var rentDisplay = state.rentRatio != null
-            ? '매출 대비 ' + state.rentRatio.toFixed(1) + '%'
-            : (state.monthlyRent > 0 ? state.monthlyRent.toLocaleString() + '만원' : '–');
-        var rentBadgeCls = 'neu', rentBadgeTxt = '데이터 없음';
-        if (state.rentRatio != null) {
-            if      (state.rentRatio <= 15) { rentBadgeCls = 'pos';  rentBadgeTxt = '우수'; }
-            else if (state.rentRatio <= 25) { rentBadgeCls = 'warn'; rentBadgeTxt = '적정'; }
-            else                            { rentBadgeCls = 'neg';  rentBadgeTxt = '부담'; }
+        var rentDisplay, rentBadgeCls, rentBadgeTxt, rentSub;
+        if (state.rentRatio == null) {
+            rentDisplay  = state.monthlyRent > 0 ? '매출 데이터 부족' : '–';
+            rentBadgeCls = 'neu';
+            rentBadgeTxt = state.monthlyRent > 0 ? '–' : '데이터 없음';
+            rentSub      = state.monthlyRent > 0 ? '월 임대료 ' + state.monthlyRent.toLocaleString() + '만원' : '임대료 정보 없음';
+        } else if (state.rentRatio > 100) {
+            rentDisplay  = '임대료 > 매출';
+            rentBadgeCls = 'neg';
+            rentBadgeTxt = '초기 개원';
+            rentSub      = '월 임대료 ' + state.monthlyRent.toLocaleString() + '만원 (매출 초과)';
+        } else {
+            rentDisplay  = '매출 대비 ' + state.rentRatio.toFixed(1) + '%';
+            rentSub      = '월 임대료 ' + state.monthlyRent.toLocaleString() + '만원';
+            if      (state.rentRatio <= 20) { rentBadgeCls = 'pos';  rentBadgeTxt = '우수'; }
+            else if (state.rentRatio <= 35) { rentBadgeCls = 'info'; rentBadgeTxt = '적정'; }
+            else if (state.rentRatio <= 60) { rentBadgeCls = 'warn'; rentBadgeTxt = '부담'; }
+            else                            { rentBadgeCls = 'neg';  rentBadgeTxt = '위험'; }
         }
 
-        // 수요 점수 등급
         var ds = state.demandScore;
         var dsBadgeCls = ds >= 70 ? 'pos' : ds >= 50 ? 'warn' : 'neg';
         var dsBadgeTxt = ds >= 70 ? '높음' : ds >= 50 ? '보통' : '낮음';
 
-        // 접근성 점수
         var as = state.accessScore;
         var asBadgeCls = as >= 75 ? 'pos' : as >= 60 ? 'warn' : 'neg';
         var asBadgeTxt = as >= 75 ? '우수' : as >= 60 ? '보통' : '낮음';
 
         grid.innerHTML = [
-            kpiCard(
-                '입지 적합도',
-                ls + '점',
-                '0~100 스케일',
+            kpiCard('입지 적합도', ls + '점', '0~100 스케일',
                 '<span class="kpi-badge ' + lsBadgeCls + '">' + lsGrade + '</span>' +
-                '<span style="display:block;font-size:9px;color:var(--gray-5);margin-top:4px;">※ 데모 파생값</span>'
-            ),
-            kpiCard(
-                '예상 월 환자 수',
+                '<span style="display:block;font-size:9px;color:var(--gray-5);margin-top:4px;">※ 데모 파생값</span>'),
+            kpiCard('예상 월 환자 수',
                 state.latestPatients != null ? state.latestPatients.toLocaleString() + '명' : '–',
                 '시뮬레이션 최근 월 기준',
-                patientBadge || '<span class="kpi-badge neu">데이터 없음</span>'
-            ),
-            kpiCard(
-                '수요 점수',
-                ds + '점',
-                '유동인구·인구밀도·재진율 기반',
+                patientBadge || '<span class="kpi-badge neu">데이터 없음</span>'),
+            kpiCard('수요 점수', ds + '점', '유동인구·인구밀도·재진율 기반',
                 '<span class="kpi-badge ' + dsBadgeCls + '">' + dsBadgeTxt + '</span>' +
-                '<span style="display:block;font-size:9px;color:var(--gray-5);margin-top:4px;">※ 데모 파생값</span>'
-            ),
-            kpiCard(
-                '접근성 점수',
-                as + '점',
-                '운영시간·교통 가중치 반영',
+                '<span style="display:block;font-size:9px;color:var(--gray-5);margin-top:4px;">※ 데모 파생값</span>'),
+            kpiCard('접근성 점수', as + '점', '운영시간·교통 가중치 반영',
                 '<span class="kpi-badge ' + asBadgeCls + '">' + asBadgeTxt + '</span>' +
-                '<span style="display:block;font-size:9px;color:var(--gray-5);margin-top:4px;">※ 데모 파생값</span>'
-            ),
-            kpiCard(
-                '임대료 부담',
-                rentDisplay,
-                state.monthlyRent > 0 ? '월 임대료 ' + state.monthlyRent.toLocaleString() + '만원' : '임대료 정보 없음',
-                '<span class="kpi-badge ' + rentBadgeCls + '">' + rentBadgeTxt + '</span>'
-            )
+                '<span style="display:block;font-size:9px;color:var(--gray-5);margin-top:4px;">※ 데모 파생값</span>'),
+            kpiCard('임대료 부담', rentDisplay, rentSub,
+                '<span class="kpi-badge ' + rentBadgeCls + '">' + rentBadgeTxt + '</span>')
         ].join('');
     }
 
@@ -571,27 +601,24 @@
         var el = document.getElementById('loc-summary-list');
         if (!el) return;
 
-        var areaType = AREA_TYPES[state.dong] || '혼합형';
-        var dailyPop = state.floatingPop;
-        var dailyPopDisplay = dailyPop.toLocaleString() + '명/일';
-        var risk1kmPop = Math.round(dailyPop * 0.4);
+        var areaType    = AREA_TYPES[state.dong] || '혼합형';
+        var radiusLabel = '반경 ' + state.radiusKm + 'km 인구';
 
-        var riskTagHtml = '';
-        if (state.riskLevel) {
-            var rc = state.riskLevel === '낮음' ? 'low' : state.riskLevel === '보통' ? 'mid' : 'high';
-            riskTagHtml = '<span class="risk-tag ' + rc + '">' + state.riskLevel + '</span>';
+        var rc = state.riskLevel === '없음' || state.riskLevel === '낮음' ? 'low'
+               : state.riskLevel === '중간' ? 'mid' : 'high';
+        var riskHtml = '<span class="risk-tag ' + rc + '">' + state.riskLevel + '</span>';
+        if (state.risks.length > 0) {
+            riskHtml += '<div class="loc-summary-sub" style="margin-top:4px;">위험 요소: ' + state.risks.join(', ') + '</div>';
         }
 
         el.innerHTML = [
-            summaryItem('지역',         (state.sigungu || '') + (state.dong ? ' ' + state.dong : ''), ''),
-            summaryItem('상권 유형',    '<span class="type-badge">' + areaType + '</span>', ''),
-            summaryItem('일평균 유동인구', dailyPopDisplay, '백엔드 FloatingPopulationService 기반'),
-            summaryItem('반경 1km 인구', '약 ' + risk1kmPop.toLocaleString() + '명', '유동인구의 40% 추산 · ※ 데모 파생값'),
-            summaryItem('동일 진료과 병원', state.competitorCount + '개', '반경 2km 기준 · CompetitorService'),
-            summaryItem('예상 월세',    state.monthlyRent > 0 ? state.monthlyRent.toLocaleString() + '만원' : '–', '입력 평수 기반'),
-            riskTagHtml
-                ? '<div class="loc-summary-item"><div class="loc-summary-label">입지 리스크</div>' + riskTagHtml + '</div>'
-                : ''
+            summaryItem('지역',            (state.sigungu || '') + (state.dong ? ' ' + state.dong : ''), ''),
+            summaryItem('상권 유형',       '<span class="type-badge">' + areaType + '</span>', ''),
+            summaryItem('일평균 유동인구', state.floatingPopBase.toLocaleString() + '명/일', '백엔드 FloatingPopulationService 기반'),
+            summaryItem(radiusLabel,       '약 ' + state.radiusPop.toLocaleString() + '명', '유동인구의 40% 추산 · ※ 데모 파생값'),
+            summaryItem('동일 진료과 병원', state.competitorCount + '개', '반경 ' + state.radiusKm + 'km 기준 · CompetitorService'),
+            summaryItem('예상 월세',       state.monthlyRent > 0 ? state.monthlyRent.toLocaleString() + '만원' : '–', '입력 평수 기반'),
+            '<div class="loc-summary-item"><div class="loc-summary-label">입지 리스크</div>' + riskHtml + '</div>'
         ].join('');
     }
 
@@ -689,12 +716,9 @@
         var isOffice = OFFICE_DONGS.indexOf(state.dong) !== -1;
         var isNight  = state.operationHours === '24H' || state.operationHours === 'NIGHT';
 
-        // 2시간 간격 00~24시 → 13개 포인트
         var labels = ['00','02','04','06','08','10','12','14','16','18','20','22','24'];
         var data;
         if (isOffice) {
-            data = [1, 1, 1, 2, 6, 14, 10, 13, 8, 5, 13, 15, 3, 2];
-            // 실제 13개: 00,02,04,06,08,10,12,14,16,18,20,22,24
             data = [1, 1, 1, 2, 6, 14, 10, 13, 8, 14, 10, 3, 2];
         } else {
             data = [2, 1, 1, 2, 8, 10, 8, 7, 7, 9, 13, 11, 3];
@@ -750,7 +774,7 @@
         var moreEl = document.getElementById('comp-more');
         if (!tbody) return;
 
-        var cacheKey = 'medsim_competitor_cache_' + state.dong;
+        var cacheKey = 'medsim_competitor_cache_' + state.dong + '_' + state.radiusM;
         var cached   = null;
         try { cached = JSON.parse(sessionStorage.getItem(cacheKey)); } catch (e) { /* ignore */ }
 
@@ -782,8 +806,8 @@
     }
 
     function generateMockCompetitors(dong, sigungu, count) {
-        var seed    = [...(dong + sigungu)].reduce(function (a, c) { return a + c.charCodeAt(0); }, 0);
-        var rng     = seededRngFactory(seed);
+        var seed     = [...(dong + sigungu)].reduce(function (a, c) { return a + c.charCodeAt(0); }, 0);
+        var rng      = seededRngFactory(seed);
         var prefixes = ['연세', '삼성', '베스트', '임', '서울', '강남', '국제', '현대', '미래', '한양'];
         var suffixes = ['내과의원', '내과', '내과클리닉', '의원'];
         var hospitals = [];
@@ -800,7 +824,6 @@
             var rating = (rng() * 1.2 + 3.5).toFixed(1);
             hospitals.push({ rank: i + 1, name: name, dist: dist, rating: rating });
         }
-        // 거리 기준 정렬
         hospitals.sort(function (a, b) { return a.dist - b.dist; });
         hospitals.forEach(function (h, i) { h.rank = i + 1; });
         return hospitals;
@@ -818,7 +841,6 @@
         };
         mapObj = new kakao.maps.Map(container, options);
 
-        // 지오코딩으로 dong 좌표 획득
         if (dong) {
             var geocoder = new kakao.maps.services.Geocoder();
             var query    = (sigungu || '') + ' ' + dong;
@@ -831,7 +853,6 @@
                     mapObj.setLevel(5);
                     onCenterReady(latlng, dong, sigungu);
                 } else {
-                    // addressSearch 실패 → coord2RegionCode로 재시도 대신 fallback 사용
                     console.warn('[market] addressSearch 실패 — 구 중심 fallback');
                     var fb = new kakao.maps.LatLng(fallback[0], fallback[1]);
                     onCenterReady(fb, dong, sigungu);
@@ -846,22 +867,19 @@
     function onCenterReady(latlng, dong, sigungu) {
         centerLatLng = latlng;
 
-        // 반경 원
         circleObj = new kakao.maps.Circle({
-            center:         latlng,
-            radius:         currentRadius,
-            strokeWeight:   2,
-            strokeColor:    '#1A6BFF',
-            strokeOpacity:  0.5,
-            fillColor:      '#1A6BFF',
-            fillOpacity:    0.05
+            center:        latlng,
+            radius:        currentRadius,
+            strokeWeight:  2,
+            strokeColor:   '#1A6BFF',
+            strokeOpacity: 0.5,
+            fillColor:     '#1A6BFF',
+            fillOpacity:   0.05
         });
         circleObj.setMap(mapObj);
 
-        // 병원 위치 (중심) — 파란 마커
         addMarker(latlng, 'blue', (sigungu || '') + ' ' + (dong || ''), true);
 
-        // 지하철역, 약국 검색 (Kakao Places 사용)
         if (kakao.maps.services.Places) {
             var ps = new kakao.maps.services.Places();
             ps.keywordSearch('지하철역', function (data, status) {
@@ -909,7 +927,6 @@
         });
         marker.setMap(mapObj);
 
-        // 인포윈도우
         var iw = new kakao.maps.InfoWindow({ content: '<div style="padding:5px 10px;font-size:12px;font-family:Pretendard,sans-serif;font-weight:700;white-space:nowrap;">' + title + '</div>' });
         kakao.maps.event.addListener(marker, 'click', function () {
             iw.open(mapObj, marker);
@@ -929,6 +946,21 @@
             var level = meters <= 1000 ? 5 : meters <= 3000 ? 7 : 8;
             mapObj.setLevel(level);
         }
+
+        if (!stateData) return;
+        var state = buildState(
+            stateData.dong, stateData.sigungu, stateData.config,
+            stateData.latest, stateData.prevData, stateData.apiData, meters
+        );
+        renderKPIs(state);
+        renderLocationSummary(state);
+        renderCompetitorTable(state);
+
+        console.log('[반경 변경]', meters / 1000 + 'km', {
+            인구: state.radiusPop,
+            병원수: state.competitorCount,
+            KPI: { 입지: state.locationScore, 수요: state.demandScore, 접근성: state.accessScore }
+        });
     };
 
     // ── 유틸 ─────────────────────────────────────────────────────────────────────
