@@ -6,60 +6,744 @@
     <title>평판 관리 – MEDSIM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-        :root { --blue:#1A6BFF; --blue-dark:#0F4FCC; --blue-bg:#EFF5FF; --navy:#0D1B2A; --gray-1:#F5F7FA; --gray-2:#E8ECF2; --gray-3:#C8D0DC; --gray-5:#7A8699; --gray-7:#3D4F63; --font:'Pretendard',-apple-system,sans-serif; --sb:160px; }
-        body { font-family:var(--font); color:var(--navy); background:var(--gray-1); min-height:100vh; }
-        .layout { display:flex; min-height:100vh; }
-        .sidebar { width:var(--sb); flex-shrink:0; position:fixed; top:0; left:0; height:100vh; background:white; border-right:1px solid var(--gray-2); display:flex; flex-direction:column; overflow-y:auto; z-index:40; }
-        .sb-logo { padding:17px 14px 13px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--gray-2); flex-shrink:0; }
-        .sb-logo-icon { width:22px; height:22px; background:var(--blue); border-radius:5px; display:flex; align-items:center; justify-content:center; }
-        .sb-logo-icon svg { width:12px; height:12px; fill:white; }
-        .sb-logo-type { font-size:14px; font-weight:800; color:var(--navy); }
-        .sb-icons { display:flex; gap:4px; padding:10px 12px; border-bottom:1px solid var(--gray-2); }
-        .sb-icon-btn { flex:1; height:28px; border:1px solid var(--gray-2); border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; background:white; color:#7A8699; }
-        .sb-icon-btn svg { width:12px; height:12px; }
-        .sb-search { padding:9px 12px; border-bottom:1px solid var(--gray-2); }
-        .sb-search-wrap { display:flex; align-items:center; gap:5px; background:var(--gray-1); border-radius:6px; padding:5px 9px; border:1px solid var(--gray-2); }
-        .sb-search-wrap svg { width:11px; height:11px; color:#C8D0DC; flex-shrink:0; }
-        .sb-search-wrap input { border:none; background:transparent; font-size:11px; font-family:var(--font); width:100%; outline:none; }
-        .sb-nav { flex:1; padding:6px 0; }
-        .sb-menu-item { display:flex; align-items:center; gap:8px; padding:8px 14px; font-size:12px; font-weight:500; color:#7A8699; text-decoration:none; white-space:nowrap; }
-        .sb-menu-item:hover { background:var(--gray-1); color:var(--navy); }
-        .sb-menu-item.active { background:var(--blue-bg); color:var(--blue); font-weight:700; }
-        .sb-menu-item svg { width:14px; height:14px; flex-shrink:0; }
-        .sb-bottom { padding:12px 14px; border-top:1px solid var(--gray-2); }
-        .sb-month-badge { background:var(--blue-bg); border-radius:8px; padding:8px 10px; text-align:center; }
-        .sb-month-num { font-size:16px; font-weight:800; color:var(--blue); }
-        .sb-month-lbl { font-size:10px; color:var(--blue); opacity:.7; margin-top:1px; }
-        .content { margin-left:var(--sb); flex:1; min-width:0; display:flex; flex-direction:column; }
-        .content-inner { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; text-align:center; color:#7A8699; }
-        .placeholder-icon { margin-bottom:20px; }
-        .placeholder-title { font-size:20px; font-weight:800; color:#0D1B2A; margin-bottom:8px; }
-        .placeholder-desc { font-size:14px; line-height:1.7; margin-bottom:24px; }
-        .placeholder-back { display:inline-block; padding:11px 24px; background:var(--blue); color:white; border-radius:10px; font-size:14px; font-weight:700; text-decoration:none; }
-        footer { background:#0D1B2A; padding:14px 26px; text-align:center; }
-        footer p { font-size:12px; color:rgba(255,255,255,.4); }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --blue: #1A6BFF; --blue-dark: #0F4FCC; --blue-bg: #EFF5FF;
+            --navy: #0D1B2A;
+            --gray-1: #F5F7FA; --gray-2: #E8ECF2; --gray-3: #C8D0DC;
+            --gray-5: #7A8699; --gray-7: #3D4F63;
+            --green: #22C97A; --orange: #FF8C42; --red: #FF3B3B;
+            --purple: #8B5CF6;
+            --font: 'Pretendard', -apple-system, sans-serif;
+            --sb: 160px;
+        }
+        body { font-family: var(--font); color: var(--navy); background: var(--gray-1); min-height: 100vh; }
+        .layout { display: flex; min-height: 100vh; }
+        .content { margin-left: var(--sb); flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .page-body { flex: 1; padding: 28px 32px; }
+
+        .page-breadcrumb { font-size: 11px; color: var(--gray-5); margin-bottom: 6px; }
+        .page-breadcrumb a { color: var(--gray-5); text-decoration: none; }
+        .page-breadcrumb a:hover { color: var(--blue); }
+        .page-title-row { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .page-title { font-size: 20px; font-weight: 800; }
+        .page-subtitle { font-size: 12px; color: var(--gray-5); margin-top: 3px; }
+
+        /* Date filter */
+        .filter-bar { display: flex; align-items: center; gap: 8px; }
+        .filter-label { font-size: 12px; color: var(--gray-5); font-weight: 600; }
+        .filter-select { height: 34px; padding: 0 10px; border: 1px solid var(--gray-2); border-radius: 8px; font-size: 12px; font-family: var(--font); background: white; color: var(--navy); cursor: pointer; outline: none; }
+        .filter-select:focus { border-color: var(--blue); }
+        .filter-sep { color: var(--gray-3); font-size: 14px; }
+
+        /* KPI */
+        .kpi-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px; }
+        .kpi-card { background: white; border: 1px solid var(--gray-2); border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+        .kpi-label { font-size: 11px; font-weight: 700; color: var(--gray-5); letter-spacing: .5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+        .kpi-value { font-size: 20px; font-weight: 800; line-height: 1.2; margin-bottom: 3px; }
+        .kpi-sub { font-size: 11px; color: var(--gray-5); }
+        .kpi-badge { display: inline-block; margin-top: 5px; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+        .kpi-badge.pos  { background: rgba(34,201,122,.12); color: #15a05c; }
+        .kpi-badge.neg  { background: rgba(255,59,59,.12); color: var(--red); }
+        .kpi-badge.neu  { background: var(--gray-1); color: var(--gray-5); border: 1px solid var(--gray-2); }
+        .kpi-badge.warn { background: rgba(255,140,66,.12); color: #c96600; }
+        .kpi-badge.info { background: rgba(26,107,255,.12); color: var(--blue); }
+        .demo-label { font-size: 9px; color: var(--gray-5); display: block; margin-top: 4px; }
+
+        /* Section */
+        .section-card { background: white; border: 1px solid var(--gray-2); border-radius: 14px; padding: 22px 24px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+        .section-title { font-size: 14px; font-weight: 800; color: var(--navy); margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+        .section-title-sub { font-size: 10px; font-weight: 500; color: var(--gray-5); margin-left: auto; }
+
+        /* Two col */
+        .two-col { display: grid; grid-template-columns: 3fr 2fr; gap: 18px; margin-bottom: 18px; }
+        .two-col-half { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+
+        /* Chart */
+        .chart-wrap { position: relative; height: 240px; }
+        .chart-wrap-sm { position: relative; height: 200px; }
+
+        /* Donut center label */
+        .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+        .donut-center-num { font-size: 16px; font-weight: 800; color: var(--navy); line-height: 1.2; }
+        .donut-center-lbl { font-size: 10px; color: var(--gray-5); }
+
+        /* Donut legend */
+        .donut-legend { margin-top: 14px; display: flex; flex-direction: column; gap: 7px; }
+        .donut-legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .legend-name { flex: 1; color: var(--gray-7); }
+        .legend-val  { font-weight: 700; color: var(--navy); }
+        .legend-badge { padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+        .legend-badge.pos { background: rgba(34,201,122,.12); color: #15a05c; }
+        .legend-badge.neg { background: rgba(255,59,59,.12); color: var(--red); }
+        .legend-badge.neu { background: var(--gray-1); color: var(--gray-5); border: 1px solid var(--gray-2); }
+
+        /* Keyword table */
+        .keyword-table { width: 100%; border-collapse: collapse; }
+        .keyword-table th { font-size: 11px; font-weight: 700; color: var(--gray-5); letter-spacing: .4px; padding: 0 8px 10px; text-align: left; border-bottom: 1px solid var(--gray-2); }
+        .keyword-table th.right { text-align: right; }
+        .keyword-table td { padding: 11px 8px; border-bottom: 1px solid var(--gray-2); font-size: 13px; vertical-align: middle; }
+        .keyword-table tr:last-child td { border-bottom: none; }
+        .keyword-table tr:hover td { background: var(--gray-1); }
+        .kw-rank { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; background: var(--gray-1); color: var(--gray-5); border: 1px solid var(--gray-2); }
+        .kw-rank.r1 { background: #FFD700; color: #7a6200; border-color: #FFD700; }
+        .kw-rank.r2 { background: #C8D0DC; color: var(--gray-7); border-color: #C8D0DC; }
+        .kw-rank.r3 { background: #D4936A; color: #7a3200; border-color: #D4936A; }
+        .kw-tag { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; }
+        .kw-tag.pos { background: rgba(34,201,122,.12); color: #15a05c; }
+        .kw-tag.neg { background: rgba(255,59,59,.12); color: var(--red); }
+
+        /* Satisfaction progress */
+        .satis-list { display: flex; flex-direction: column; gap: 14px; }
+        .satis-item { display: flex; flex-direction: column; gap: 5px; }
+        .satis-row { display: flex; align-items: center; justify-content: space-between; }
+        .satis-name { font-size: 12px; font-weight: 700; color: var(--gray-7); }
+        .satis-right { display: flex; align-items: center; gap: 6px; }
+        .satis-score { font-size: 14px; font-weight: 800; color: var(--navy); }
+        .satis-bar-bg { background: var(--gray-2); border-radius: 4px; height: 7px; overflow: hidden; }
+        .satis-bar-fill { height: 7px; border-radius: 4px; transition: width .5s; }
+        .satis-bar-fill.good { background: var(--green); }
+        .satis-bar-fill.ok   { background: var(--blue); }
+        .satis-bar-fill.warn { background: var(--orange); }
+
+        /* Complaint table */
+        .complaint-table { width: 100%; border-collapse: collapse; }
+        .complaint-table th { font-size: 11px; font-weight: 700; color: var(--gray-5); letter-spacing: .4px; padding: 0 8px 10px; text-align: left; border-bottom: 1px solid var(--gray-2); }
+        .complaint-table td { padding: 10px 8px; border-bottom: 1px solid var(--gray-2); font-size: 12px; vertical-align: middle; }
+        .complaint-table tr:last-child td { border-bottom: none; }
+        .complaint-table tr:hover td { background: var(--gray-1); }
+        .risk-badge { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; }
+        .risk-badge.high { background: rgba(255,59,59,.12); color: var(--red); }
+        .risk-badge.mid  { background: rgba(255,140,66,.12); color: #c96600; }
+        .risk-badge.low  { background: rgba(34,201,122,.12); color: #15a05c; }
+
+        /* Comment card */
+        .comment-header { font-size: 15px; font-weight: 800; color: var(--navy); margin-bottom: 10px; }
+        .comment-body { font-size: 13px; color: var(--gray-7); line-height: 1.75; }
+        .improve-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+        .improve-item { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--blue-bg); border: 1px solid rgba(26,107,255,.15); }
+        .improve-icon { font-size: 14px; flex-shrink: 0; }
+        .improve-text { font-size: 12px; font-weight: 600; color: var(--blue); line-height: 1.5; }
+
+        /* Empty state */
+        .empty-state { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
+        .empty-title { font-size: 18px; font-weight: 800; color: var(--navy); margin: 16px 0 8px; }
+        .empty-desc  { font-size: 13px; color: var(--gray-5); line-height: 1.7; margin-bottom: 22px; }
+        .empty-btn   { display: inline-block; padding: 11px 24px; background: var(--blue); color: white; border-radius: 10px; font-size: 14px; font-weight: 700; text-decoration: none; }
+
+        footer { background: #0D1B2A; padding: 14px 26px; text-align: center; }
+        footer p { font-size: 12px; color: rgba(255,255,255,.4); }
+
+        @media (max-width: 1200px) { .kpi-grid-5 { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1100px) { .two-col, .two-col-half { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) { .kpi-grid-5 { grid-template-columns: repeat(2, 1fr); } }
     </style>
 </head>
 <body>
 <div class="layout">
     <div id="sidebar-root"></div>
     <div class="content">
-        <div class="content-inner">
-            <div class="placeholder-icon">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <div class="page-body">
+
+            <!-- 빈 상태 -->
+            <div class="empty-state" id="empty-state">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                 </svg>
+                <p class="empty-title">시뮬레이션 데이터가 없습니다</p>
+                <p class="empty-desc">시뮬레이션을 먼저 시작해 주세요.<br>월별 데이터가 쌓이면 평판 분석이 활성화됩니다.</p>
+                <a class="empty-btn" href="start/start1.html">← 시뮬레이션 시작하기</a>
             </div>
-            <p class="placeholder-title">평판 관리</p>
-            <p class="placeholder-desc">이 기능은 준비 중입니다.<br>더 나은 서비스로 곧 찾아뵙겠습니다.</p>
-            <a class="placeholder-back" href="dashboard.html">← 병원 현황으로</a>
-        </div>
+
+            <!-- 메인 콘텐츠 -->
+            <div id="main-content">
+
+                <div class="page-breadcrumb">
+                    <a href="dashboard.html">병원 현황</a> / 평판 관리
+                </div>
+
+                <div class="page-title-row">
+                    <div>
+                        <h1 class="page-title">평판 관리</h1>
+                        <p class="page-subtitle">리뷰 · 키워드 · 만족도 · 민원 분석</p>
+                    </div>
+                    <div class="filter-bar">
+                        <span class="filter-label">기간</span>
+                        <select class="filter-select" id="filter-start" onchange="applyFilter()"></select>
+                        <span class="filter-sep">~</span>
+                        <select class="filter-select" id="filter-end" onchange="applyFilter()"></select>
+                    </div>
+                </div>
+
+                <!-- KPI 5개 -->
+                <div class="kpi-grid-5" id="kpi-grid"></div>
+
+                <!-- 별점 추이 + 채널 도넛 -->
+                <div class="two-col" style="margin-bottom:18px;">
+                    <div class="section-card">
+                        <div class="section-title">
+                            별점 추이
+                            <span class="section-title-sub">※ reputationScore 직접 활용 / 리뷰 수 파생</span>
+                        </div>
+                        <div class="chart-wrap">
+                            <canvas id="trend-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-title">
+                            채널별 리뷰 분포
+                            <span class="section-title-sub">※ 데모 파생값</span>
+                        </div>
+                        <div style="position:relative;" class="chart-wrap-sm">
+                            <canvas id="channel-chart"></canvas>
+                            <div class="donut-center" id="donut-center">
+                                <div class="donut-center-num" id="donut-total">–</div>
+                                <div class="donut-center-lbl">총 리뷰</div>
+                            </div>
+                        </div>
+                        <div class="donut-legend" id="channel-legend"></div>
+                    </div>
+                </div>
+
+                <!-- 키워드 분석 + 만족도 -->
+                <div class="two-col-half" style="margin-bottom:18px;">
+                    <div class="section-card">
+                        <div class="section-title">
+                            리뷰 키워드 분석
+                            <span class="section-title-sub">※ 데모 파생값</span>
+                        </div>
+                        <table class="keyword-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:36px">순위</th>
+                                    <th>키워드</th>
+                                    <th class="right" style="width:70px">언급 비율</th>
+                                    <th class="right" style="width:60px">추이</th>
+                                </tr>
+                            </thead>
+                            <tbody id="keyword-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-title">
+                            만족도 항목별 분석
+                            <span class="section-title-sub">※ 데모 파생값</span>
+                        </div>
+                        <div class="satis-list" id="satis-list"></div>
+                    </div>
+                </div>
+
+                <!-- 민원/리스크 + 평판 코멘트 -->
+                <div class="two-col-half" style="margin-bottom:18px;">
+                    <div class="section-card">
+                        <div class="section-title">
+                            민원 / 리스크 요약
+                            <span class="section-title-sub">※ 데모 파생값</span>
+                        </div>
+                        <table class="complaint-table">
+                            <thead>
+                                <tr>
+                                    <th>이슈</th>
+                                    <th>내용</th>
+                                    <th class="right" style="width:60px">건수</th>
+                                    <th style="width:60px">위험도</th>
+                                    <th style="width:90px">최근 발생일</th>
+                                </tr>
+                            </thead>
+                            <tbody id="complaint-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="section-card">
+                        <div class="comment-header" id="comment-header">현재 평판 –점</div>
+                        <div class="comment-body" id="comment-body"></div>
+                        <div class="improve-list" id="improve-list"></div>
+                    </div>
+                </div>
+
+            </div><!-- /main-content -->
+
+        </div><!-- /page-body -->
         <footer><p>MEDSIM © 2026. All rights reserved.</p></footer>
     </div>
 </div>
+
 <script src="common.js"></script>
 <script>requireAuth(); renderSidebar('reputation');</script>
+<script>
+(function () {
+
+    // ── 파생 계산 상수 ────────────────────────────────────────────────────────────
+    var REVIEW_RATE_PER_PATIENT  = 0.35;   // 환자 3명 중 1명꼴로 리뷰
+    var CHANNEL_NAVER            = 0.50;   // 네이버 비중
+    var CHANNEL_KAKAO            = 0.25;   // 카카오 비중
+    var CHANNEL_GOOGLE           = 0.15;   // 구글 비중
+    var CHANNEL_ETC              = 0.10;   // 기타 비중
+    var KEYWORD_KIND_FACTOR      = 0.80;   // 친절해요 = patientSatisfaction/5 × 80
+    var KEYWORD_WAIT_FACTOR      = 0.60;   // 대기시간 = (1-staffMorale) × 60
+    var KEYWORD_EXPLAIN_FACTOR   = 0.50;   // 설명충분 = patientSatisfaction/5 × 50
+    var KEYWORD_CLEAN_BASE       = 25;     // 청결 = 25 + reputationScore × 2
+    var SATIS_DOCTOR_OFFSET      = 0.4;    // 의사 설명 = patientSatisfaction + 0.4
+    var SATIS_STAFF_OFFSET       = 0.3;    // 직원 친절 = staffMorale×5 + 0.3
+    var SATIS_WAIT_FACTOR        = 3;      // 대기시간 = 5 - (1-staffMorale) × 3
+    var SATIS_BOOK_BASE          = 4.0;    // 예약 편의성 = 4.0 + reputationScore × 0.2
+    var RESOLVE_MORALE_W         = 0.8;    // 민원 해결률 직원 사기 가중치
+    var RESOLVE_REP_W            = 0.2;    // 민원 해결률 평판 점수 가중치
+    var COMPLAINT_WAIT_BASE      = 15;     // 대기 민원 기본 건수
+    var COMPLAINT_STAFF_BASE     = 5;      // 직원 응대 기본 건수
+    var COMPLAINT_BOOK_BASE      = 5;      // 예약 오류 기본 건수
+
+    // ── 상태 ──────────────────────────────────────────────────────────────────────
+    var allData   = [];
+    var filtered  = [];
+    var trendChart = null;
+    var channelChart = null;
+
+    // ── 초기화 ────────────────────────────────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', function () {
+        allData = getAllMonthlyData();
+        if (!allData || allData.length === 0) {
+            document.getElementById('empty-state').style.display = 'flex';
+            document.getElementById('main-content').style.display = 'none';
+            return;
+        }
+        buildFilterOptions();
+        applyFilter();
+    });
+
+    // ── 필터 옵션 생성 ────────────────────────────────────────────────────────────
+    function buildFilterOptions() {
+        var startSel = document.getElementById('filter-start');
+        var endSel   = document.getElementById('filter-end');
+        startSel.innerHTML = '';
+        endSel.innerHTML   = '';
+        allData.forEach(function (d) {
+            var opt = '<option value="' + d.month + '">M' + d.month + '</option>';
+            startSel.innerHTML += opt;
+            endSel.innerHTML   += opt;
+        });
+        endSel.value = allData[allData.length - 1].month;
+    }
+
+    // ── 필터 적용 ─────────────────────────────────────────────────────────────────
+    window.applyFilter = function () {
+        var s = parseInt(document.getElementById('filter-start').value);
+        var e = parseInt(document.getElementById('filter-end').value);
+        if (s > e) { e = s; document.getElementById('filter-end').value = s; }
+
+        filtered = allData.filter(function (d) { return d.month >= s && d.month <= e; });
+        render();
+    };
+
+    // ── 메인 렌더 ─────────────────────────────────────────────────────────────────
+    function render() {
+        if (!filtered || filtered.length === 0) return;
+
+        var latest   = filtered[filtered.length - 1];
+        var prev     = filtered.length >= 2 ? filtered[filtered.length - 2] : null;
+        var repScore = latest.reputationScore   || 3.5;
+        var satScore = latest.patientSatisfaction || 0.75;
+        var morale   = latest.staffMorale        || 0.8;
+        var returnRate = latest.returnPatientRate || 0.6;
+
+        console.log('[평판 관리] 백엔드 필드 직접값:', {
+            reputationScore:    repScore,
+            patientSatisfaction: satScore,
+            staffMorale:        morale,
+            returnPatientRate:  returnRate
+        });
+
+        var totalPatients = filtered.reduce(function (s, d) { return s + (d.patientsCount || 0); }, 0);
+        var totalReviews  = Math.round(totalPatients * REVIEW_RATE_PER_PATIENT);
+
+        var posRatio = clamp(repScore / 5 * 100 - 10, 54, 85);
+        var negRatio = 100 - posRatio;
+
+        var resolveRate = clamp((morale * RESOLVE_MORALE_W + (repScore / 5) * RESOLVE_REP_W) * 100, 0, 100);
+
+        var periodMonths = filtered.length;
+
+        // 이전 대비 환자 변화율 활용 (마지막 월)
+        var patientChangePct = (latest.patientsChangeRate != null)
+            ? (latest.patientsChangeRate * 100).toFixed(1)
+            : null;
+
+        console.log('[평판 관리] 파생값:', {
+            totalPatients: totalPatients,
+            totalReviews:  totalReviews,
+            posRatio:      posRatio.toFixed(1) + '%',
+            negRatio:      negRatio.toFixed(1) + '%',
+            resolveRate:   resolveRate.toFixed(1) + '%',
+            periodMonths:  periodMonths
+        });
+
+        renderKPIs(repScore, totalReviews, posRatio, negRatio, resolveRate, periodMonths, patientChangePct);
+        renderTrendChart(repScore, totalReviews);
+        renderChannelChart(totalReviews);
+        renderKeywords(repScore, satScore, morale);
+        renderSatisfaction(repScore, satScore, morale);
+        renderComplaints(morale, repScore, latest.month);
+        renderComment(repScore, returnRate);
+    }
+
+    // ── KPI 카드 ──────────────────────────────────────────────────────────────────
+    function renderKPIs(repScore, totalReviews, posRatio, negRatio, resolveRate, periodMonths, patientChangePct) {
+        var grid = document.getElementById('kpi-grid');
+        if (!grid) return;
+
+        var repGrade   = repScore >= 4.5 ? 'pos' : repScore >= 3.5 ? 'info' : repScore >= 2.5 ? 'warn' : 'neg';
+        var reviewBadge = '';
+        if (patientChangePct !== null) {
+            var pv = parseFloat(patientChangePct);
+            reviewBadge = '<span class="kpi-badge ' + (pv >= 0 ? 'pos' : 'neg') + '">' + (pv >= 0 ? '+' : '') + pv + '%</span>';
+        }
+
+        grid.innerHTML = [
+            kpiCard('평균 별점', repScore.toFixed(1) + ' / 5.0', '평판 점수 기반',
+                '<span class="kpi-badge ' + repGrade + '">' + periodMonths + '개월</span>'),
+            kpiCard('총 리뷰 수', totalReviews.toLocaleString() + '건', '환자의 35% 리뷰 가정',
+                reviewBadge + '<span class="demo-label">※ 데모 파생값</span>'),
+            kpiCard('긍정 리뷰 비율', posRatio.toFixed(1) + '%', '평판 점수 기반 추산',
+                '<span class="kpi-badge pos">긍정</span><span class="demo-label">※ 데모 파생값</span>'),
+            kpiCard('부정 리뷰 비율', negRatio.toFixed(1) + '%', '100 – 긍정 비율',
+                '<span class="kpi-badge neg">부정</span><span class="demo-label">※ 데모 파생값</span>'),
+            kpiCard('민원 해결률', resolveRate.toFixed(0) + '%', '직원 사기·평판 가중 합산',
+                '<span class="kpi-badge ' + (resolveRate >= 80 ? 'pos' : resolveRate >= 60 ? 'warn' : 'neg') + '">' +
+                (resolveRate >= 80 ? '우수' : resolveRate >= 60 ? '보통' : '개선필요') + '</span>' +
+                '<span class="demo-label">※ 데모 파생값</span>')
+        ].join('');
+    }
+
+    function kpiCard(label, value, sub, extra) {
+        return '<div class="kpi-card">' +
+            '<div class="kpi-label">' + label + '</div>' +
+            '<div class="kpi-value">' + value + '</div>' +
+            '<div class="kpi-sub">' + sub + '</div>' +
+            (extra || '') +
+            '</div>';
+    }
+
+    // ── 별점 추이 차트 ────────────────────────────────────────────────────────────
+    function renderTrendChart(latestRepScore, totalReviews) {
+        var canvas = document.getElementById('trend-chart');
+        if (!canvas) return;
+        if (trendChart) { trendChart.destroy(); trendChart = null; }
+
+        var labels    = filtered.map(function (d) { return 'M' + d.month; });
+        var repScores = filtered.map(function (d) { return +(d.reputationScore || 3.5).toFixed(2); });
+
+        // 누적 리뷰 수 (월별 환자 × 0.35)
+        var reviewCounts = filtered.map(function (d) {
+            return Math.round((d.patientsCount || 0) * REVIEW_RATE_PER_PATIENT);
+        });
+
+        console.log('[별점 추이] labels:', labels, 'repScores:', repScores, 'reviewCounts:', reviewCounts);
+
+        trendChart = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '평균 별점',
+                        data: repScores,
+                        borderColor: '#1A6BFF',
+                        backgroundColor: 'rgba(26,107,255,.07)',
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#1A6BFF',
+                        fill: false,
+                        tension: 0.35,
+                        yAxisID: 'yRep'
+                    },
+                    {
+                        label: '월 리뷰 수',
+                        data: reviewCounts,
+                        borderColor: '#C8D0DC',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [5, 4],
+                        pointRadius: 3,
+                        pointBackgroundColor: '#C8D0DC',
+                        fill: false,
+                        tension: 0.35,
+                        yAxisID: 'yReview'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { family: 'Pretendard', size: 11 }, usePointStyle: true, padding: 14 }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Pretendard', size: 11 }, color: '#7A8699' }
+                    },
+                    yRep: {
+                        position: 'left',
+                        min: 0,
+                        max: 5,
+                        grid: { color: '#E8ECF2' },
+                        ticks: {
+                            stepSize: 1,
+                            font: { family: 'Pretendard', size: 11 },
+                            color: '#1A6BFF',
+                            callback: function (v) { return v.toFixed(1); }
+                        }
+                    },
+                    yReview: {
+                        position: 'right',
+                        beginAtZero: false,
+                        grid: { display: false },
+                        ticks: { font: { family: 'Pretendard', size: 11 }, color: '#7A8699' }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── 채널 도넛 차트 ────────────────────────────────────────────────────────────
+    function renderChannelChart(totalReviews) {
+        var canvas = document.getElementById('channel-chart');
+        if (!canvas) return;
+        if (channelChart) { channelChart.destroy(); channelChart = null; }
+
+        var channels = [
+            { name: '네이버',       ratio: CHANNEL_NAVER,  color: '#03C75A' },
+            { name: '카카오',       ratio: CHANNEL_KAKAO,  color: '#FEE500' },
+            { name: '구글',         ratio: CHANNEL_GOOGLE, color: '#EA4335' },
+            { name: '기타 커뮤니티', ratio: CHANNEL_ETC,    color: '#C8D0DC' }
+        ];
+        var counts = channels.map(function (c) { return Math.round(totalReviews * c.ratio); });
+        var pcts   = [
+            Math.round(CHANNEL_NAVER  * 100),
+            Math.round(CHANNEL_KAKAO  * 100),
+            Math.round(CHANNEL_GOOGLE * 100),
+            Math.round(CHANNEL_ETC    * 100)
+        ];
+
+        console.log('[채널 도넛] 채널별 리뷰 수:', channels.map(function (c, i) { return c.name + ': ' + counts[i]; }));
+
+        channelChart = new Chart(canvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: channels.map(function (c) { return c.name; }),
+                datasets: [{
+                    data: pcts,
+                    backgroundColor: channels.map(function (c) { return c.color; }),
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: { label: function (ctx) { return ' ' + ctx.label + ': ' + ctx.parsed + '%'; } }
+                    }
+                }
+            }
+        });
+
+        // 중앙 총 리뷰 수
+        var centerEl = document.getElementById('donut-total');
+        if (centerEl) centerEl.textContent = totalReviews.toLocaleString() + '건';
+
+        // 범례
+        var legendEl = document.getElementById('channel-legend');
+        if (legendEl) {
+            legendEl.innerHTML = channels.map(function (c, i) {
+                var delta = (+(seededRand(c.name) * 6 - 2).toFixed(1));
+                var bCls  = delta >= 0 ? 'pos' : 'neg';
+                return '<div class="donut-legend-item">' +
+                    '<span class="legend-dot" style="background:' + c.color + '"></span>' +
+                    '<span class="legend-name">' + c.name + '</span>' +
+                    '<span class="legend-val">' + counts[i].toLocaleString() + '건 (' + pcts[i] + '%)</span>' +
+                    '<span class="legend-badge ' + bCls + '">' + (delta >= 0 ? '+' : '') + delta + '%</span>' +
+                    '</div>';
+            }).join('');
+        }
+    }
+
+    // ── 키워드 분석 ───────────────────────────────────────────────────────────────
+    function renderKeywords(repScore, satScore, morale) {
+        var tbody = document.getElementById('keyword-tbody');
+        if (!tbody) return;
+
+        var kindPct    = clamp(satScore / 1 * KEYWORD_KIND_FACTOR,    0, 95);
+        var waitPct    = clamp((1 - morale) * KEYWORD_WAIT_FACTOR * 100, 0, 95);
+        var explainPct = clamp(satScore / 1 * KEYWORD_EXPLAIN_FACTOR * 100, 0, 95);
+        var cleanPct   = clamp(KEYWORD_CLEAN_BASE + repScore * 2,        0, 95);
+
+        // satScore는 0~1 비율일 수 있으므로 방어
+        if (satScore <= 1) {
+            kindPct    = clamp(satScore * KEYWORD_KIND_FACTOR * 100, 0, 95);
+            explainPct = clamp(satScore * KEYWORD_EXPLAIN_FACTOR * 100, 0, 95);
+        }
+
+        var keywords = [
+            { kw: '친절해요',  pct: kindPct,    trend: +2.5, type: 'pos' },
+            { kw: '대기시간',  pct: waitPct,    trend: -2.5, type: 'neg' },
+            { kw: '설명충분',  pct: explainPct, trend: +2.5, type: 'pos' },
+            { kw: '청결',      pct: cleanPct,   trend: +1.5, type: 'pos' }
+        ];
+
+        console.log('[키워드 분석] 파생값:', keywords.map(function (k) {
+            return k.kw + ': ' + k.pct.toFixed(1) + '%';
+        }));
+
+        var rankCls = ['r1', 'r2', 'r3', ''];
+        tbody.innerHTML = keywords.map(function (k, i) {
+            var trendHtml = '<span style="color:' + (k.trend >= 0 ? 'var(--green)' : 'var(--red)') + ';font-weight:700;">' +
+                (k.trend >= 0 ? '+' : '') + k.trend + '%</span>';
+            return '<tr>' +
+                '<td><span class="kw-rank ' + (rankCls[i] || '') + '">' + (i + 1) + '</span></td>' +
+                '<td><span class="kw-tag ' + k.type + '">' + k.kw + '</span></td>' +
+                '<td style="text-align:right;font-weight:700;">' + k.pct.toFixed(1) + '%</td>' +
+                '<td style="text-align:right;">' + trendHtml + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    // ── 만족도 항목 ───────────────────────────────────────────────────────────────
+    function renderSatisfaction(repScore, satScore, morale) {
+        var el = document.getElementById('satis-list');
+        if (!el) return;
+
+        var rawSat = satScore <= 1 ? satScore * 5 : satScore;
+
+        var items = [
+            { name: '의사 설명',   score: clamp(rawSat + SATIS_DOCTOR_OFFSET, 0, 5) },
+            { name: '직원 친절',   score: clamp(morale * 5 + SATIS_STAFF_OFFSET, 0, 5) },
+            { name: '대기시간',    score: clamp(5 - (1 - morale) * SATIS_WAIT_FACTOR, 0, 5) },
+            { name: '예약 편의성', score: clamp(SATIS_BOOK_BASE + repScore * 0.2, 0, 5) }
+        ];
+
+        console.log('[만족도 항목] 파생값:', items.map(function (it) {
+            return it.name + ': ' + it.score.toFixed(2);
+        }));
+
+        el.innerHTML = items.map(function (it) {
+            var s      = it.score;
+            var barCls = s >= 4.5 ? 'good' : s >= 3.5 ? 'ok' : 'warn';
+            var pct    = (s / 5 * 100).toFixed(1);
+            var badge  = s >= 4.5 ? '<span class="kpi-badge pos">우수</span>'
+                       : s >= 3.5 ? '<span class="kpi-badge info">양호</span>'
+                       :            '<span class="kpi-badge warn">개선필요</span>';
+            return '<div class="satis-item">' +
+                '<div class="satis-row">' +
+                    '<span class="satis-name">' + it.name + '</span>' +
+                    '<div class="satis-right">' +
+                        '<span class="satis-score">' + s.toFixed(1) + '</span>' +
+                        badge +
+                    '</div>' +
+                '</div>' +
+                '<div class="satis-bar-bg"><div class="satis-bar-fill ' + barCls + '" style="width:' + pct + '%"></div></div>' +
+                '</div>';
+        }).join('');
+    }
+
+    // ── 민원/리스크 테이블 ────────────────────────────────────────────────────────
+    function renderComplaints(morale, repScore, currentMonth) {
+        var tbody = document.getElementById('complaint-tbody');
+        if (!tbody) return;
+
+        var waitCount  = Math.round(COMPLAINT_WAIT_BASE + (1 - morale) * 15);
+        var staffCount = Math.round(COMPLAINT_STAFF_BASE + (1 - morale) * 10);
+        var bookCount  = Math.round(COMPLAINT_BOOK_BASE + (1 - repScore / 5) * 10);
+
+        var waitRisk  = morale < 0.6 ? 'high' : morale < 0.8 ? 'mid' : 'low';
+        var staffRisk = morale < 0.5 ? 'high' : morale < 0.75 ? 'mid' : 'low';
+        var bookRisk  = repScore < 3.0 ? 'high' : repScore < 4.0 ? 'mid' : 'low';
+
+        var riskLabel = { high: '높음', mid: '보통', low: '낮음' };
+
+        function randomDay(month) {
+            var seed = month * 17 + 3;
+            var day  = (seed % 25) + 3;
+            return '2026-' + String(month > 9 ? month : '0' + month) + '-' + String(day > 9 ? day : '0' + day);
+        }
+
+        var rows = [
+            { issue: '대기시간',   desc: '접수 후 진료 대기 불만',     count: waitCount,  risk: waitRisk },
+            { issue: '직원 응대',  desc: '안내 불친절·응대 미숙',      count: staffCount, risk: staffRisk },
+            { issue: '예약 오류',  desc: '온라인 예약 중복·누락',       count: bookCount,  risk: bookRisk }
+        ];
+
+        console.log('[민원 리스크] 파생값:', rows.map(function (r) {
+            return r.issue + ': ' + r.count + '건 위험도=' + r.risk;
+        }));
+
+        tbody.innerHTML = rows.map(function (r) {
+            var badgeCls = r.risk === 'high' ? 'high' : r.risk === 'mid' ? 'mid' : 'low';
+            return '<tr>' +
+                '<td style="font-weight:700;">' + r.issue + '</td>' +
+                '<td style="color:var(--gray-7);">' + r.desc + '</td>' +
+                '<td style="text-align:right;font-weight:700;">' + r.count + '</td>' +
+                '<td><span class="risk-badge ' + badgeCls + '">' + riskLabel[r.risk] + '</span></td>' +
+                '<td style="color:var(--gray-5);font-size:11px;">' + randomDay(currentMonth) + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    // ── 평판 종합 코멘트 ──────────────────────────────────────────────────────────
+    function renderComment(repScore, returnRate) {
+        var header = document.getElementById('comment-header');
+        var body   = document.getElementById('comment-body');
+        var list   = document.getElementById('improve-list');
+        if (!header || !body || !list) return;
+
+        header.textContent = '현재 평판 ' + repScore.toFixed(1) + '점';
+
+        var summary;
+        if (repScore >= 4.0) {
+            summary = '높은 평판을 유지 중입니다. 환자들의 긍정적인 경험이 온라인 리뷰에 잘 반영되고 있습니다. 현재 수준을 꾸준히 유지하면서 세부 만족도 항목을 지속 모니터링하는 것이 중요합니다.';
+        } else if (repScore >= 3.0) {
+            summary = '평판이 안정적입니다. 지속적인 관리가 필요합니다. 주요 키워드 추이를 기반으로 환자 경험 개선 포인트를 파악하고, 부정 리뷰 대응 속도를 높이면 평판 점수를 더욱 끌어올릴 수 있습니다.';
+        } else {
+            summary = '평판 개선이 시급합니다. 부정 리뷰 비율이 높고 민원 건수도 증가 추세입니다. 직원 응대 교육, 대기 시간 단축, 예약 시스템 점검을 최우선으로 진행하세요.';
+        }
+        body.textContent = summary;
+
+        var improves = [];
+        improves.push({ icon: '⏱', text: '대기시간 단축: 예약제 정착 및 진료 흐름 최적화로 평균 대기를 20분 이내로 줄이세요.' });
+        if (returnRate < 0.7) {
+            improves.push({ icon: '↩', text: '재진율 향상: 재진율이 ' + (returnRate * 100).toFixed(0) + '%로 목표(70%) 미달입니다. 정기 검진 프로그램을 도입하세요.' });
+        } else {
+            improves.push({ icon: '↩', text: '재진율 유지: 현재 재진율 ' + (returnRate * 100).toFixed(0) + '%를 유지하면서 신규 환자 만족도를 높이세요.' });
+        }
+        improves.push({ icon: '📣', text: '신규 유입 확대: 네이버·카카오 채널 리뷰 관리 강화 및 온라인 예약 편의성 개선으로 신규 환자 유입을 늘리세요.' });
+
+        list.innerHTML = improves.map(function (imp) {
+            return '<div class="improve-item">' +
+                '<span class="improve-icon">' + imp.icon + '</span>' +
+                '<span class="improve-text">' + imp.text + '</span>' +
+                '</div>';
+        }).join('');
+    }
+
+    // ── 유틸 ──────────────────────────────────────────────────────────────────────
+    function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+    function seededRand(str) {
+        var seed = Array.from(str).reduce(function (a, c) { return a + c.charCodeAt(0); }, 0);
+        seed = (seed * 1664525 + 1013904223) & 0x7fffffff;
+        return seed / 0x7fffffff;
+    }
+
+})();
+</script>
 </body>
 </html>
