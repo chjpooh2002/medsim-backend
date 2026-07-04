@@ -250,7 +250,7 @@
                                     <th>내용</th>
                                     <th class="right" style="width:60px">건수</th>
                                     <th style="width:60px">위험도</th>
-                                    <th style="width:90px">최근 발생일</th>
+                                    <th style="width:90px">발생 시점</th>
                                 </tr>
                             </thead>
                             <tbody id="complaint-tbody"></tbody>
@@ -276,29 +276,30 @@
 (function () {
 
     // ── 파생 계산 상수 ────────────────────────────────────────────────────────────
-    var REVIEW_RATE_PER_PATIENT  = 0.35;   // 환자 3명 중 1명꼴로 리뷰
-    var CHANNEL_NAVER            = 0.50;   // 네이버 비중
-    var CHANNEL_KAKAO            = 0.25;   // 카카오 비중
-    var CHANNEL_GOOGLE           = 0.15;   // 구글 비중
-    var CHANNEL_ETC              = 0.10;   // 기타 비중
-    var KEYWORD_KIND_FACTOR      = 0.80;   // 친절해요 = patientSatisfaction/5 × 80
-    var KEYWORD_WAIT_FACTOR      = 0.60;   // 대기시간 = (1-staffMorale) × 60
-    var KEYWORD_EXPLAIN_FACTOR   = 0.50;   // 설명충분 = patientSatisfaction/5 × 50
-    var KEYWORD_CLEAN_BASE       = 25;     // 청결 = 25 + reputationScore × 2
-    var SATIS_DOCTOR_OFFSET      = 0.4;    // 의사 설명 = patientSatisfaction + 0.4
-    var SATIS_STAFF_OFFSET       = 0.3;    // 직원 친절 = staffMorale×5 + 0.3
-    var SATIS_WAIT_FACTOR        = 3;      // 대기시간 = 5 - (1-staffMorale) × 3
-    var SATIS_BOOK_BASE          = 4.0;    // 예약 편의성 = 4.0 + reputationScore × 0.2
-    var RESOLVE_MORALE_W         = 0.8;    // 민원 해결률 직원 사기 가중치
-    var RESOLVE_REP_W            = 0.2;    // 민원 해결률 평판 점수 가중치
-    var COMPLAINT_WAIT_BASE      = 15;     // 대기 민원 기본 건수
-    var COMPLAINT_STAFF_BASE     = 5;      // 직원 응대 기본 건수
-    var COMPLAINT_BOOK_BASE      = 5;      // 예약 오류 기본 건수
+    // 리뷰 작성률: 신규 환자 × (평판 4.0↑: 10% / 3.0~4.0: 7% / 3.0↓: 5%)
+    var CHANNEL_NAVER        = 0.50;  // 네이버 비중
+    var CHANNEL_KAKAO        = 0.25;  // 카카오 비중
+    var CHANNEL_GOOGLE       = 0.15;  // 구글 비중
+    var CHANNEL_ETC          = 0.10;  // 기타 비중
+    // 키워드 언급 비율 공식 (satScore 0~1 기준)
+    // 친절해요 = 40 + satScore×40  (40~80%)
+    // 대기시간 = 20 + (1-morale)×40 (20~60%, 부정)
+    // 설명충분 = 30 + satScore×40  (30~70%)
+    // 청결     = 40 + (repScore/5)×30 (40~70%)
+    var SATIS_DOCTOR_OFFSET  = 0.4;   // 의사 설명 = patientSatisfaction×5 + 0.4
+    var SATIS_STAFF_OFFSET   = 0.3;   // 직원 친절 = staffMorale×5 + 0.3
+    var SATIS_WAIT_FACTOR    = 3;     // 대기시간 = 5 - (1-staffMorale) × 3
+    var SATIS_BOOK_BASE      = 4.0;   // 예약 편의성 = 4.0 + reputationScore × 0.2
+    var RESOLVE_MORALE_W     = 0.8;   // 민원 해결률 직원 사기 가중치
+    var RESOLVE_REP_W        = 0.2;   // 민원 해결률 평판 점수 가중치
+    var COMPLAINT_WAIT_BASE  = 15;    // 대기 민원 기본 건수
+    var COMPLAINT_STAFF_BASE = 5;     // 직원 응대 기본 건수
+    var COMPLAINT_BOOK_BASE  = 5;     // 예약 오류 기본 건수
 
     // ── 상태 ──────────────────────────────────────────────────────────────────────
-    var allData   = [];
-    var filtered  = [];
-    var trendChart = null;
+    var allData    = [];
+    var filtered   = [];
+    var trendChart   = null;
     var channelChart = null;
 
     // ── 초기화 ────────────────────────────────────────────────────────────────────
@@ -332,59 +333,64 @@
         var s = parseInt(document.getElementById('filter-start').value);
         var e = parseInt(document.getElementById('filter-end').value);
         if (s > e) { e = s; document.getElementById('filter-end').value = s; }
-
         filtered = allData.filter(function (d) { return d.month >= s && d.month <= e; });
         render();
     };
+
+    // ── 리뷰 작성률 (평판 기반) ──────────────────────────────────────────────────
+    function reviewRate(repScore) {
+        return repScore >= 4.0 ? 0.10 : repScore >= 3.0 ? 0.07 : 0.05;
+    }
 
     // ── 메인 렌더 ─────────────────────────────────────────────────────────────────
     function render() {
         if (!filtered || filtered.length === 0) return;
 
-        var latest   = filtered[filtered.length - 1];
-        var prev     = filtered.length >= 2 ? filtered[filtered.length - 2] : null;
-        var repScore = latest.reputationScore   || 3.5;
-        var satScore = latest.patientSatisfaction || 0.75;
-        var morale   = latest.staffMorale        || 0.8;
-        var returnRate = latest.returnPatientRate || 0.6;
+        var latest     = filtered[filtered.length - 1];
+        var prev       = filtered.length >= 2 ? filtered[filtered.length - 2] : null;
+        var repScore   = latest.reputationScore     || 3.5;
+        var satScore   = latest.patientSatisfaction || 0.75;
+        var morale     = latest.staffMorale         || 0.8;
+        var returnRate = latest.returnPatientRate   || 0.6;
 
         console.log('[평판 관리] 백엔드 필드 직접값:', {
-            reputationScore:    repScore,
+            reputationScore:     repScore,
             patientSatisfaction: satScore,
-            staffMorale:        morale,
-            returnPatientRate:  returnRate
+            staffMorale:         morale,
+            returnPatientRate:   returnRate
         });
 
-        var totalPatients = filtered.reduce(function (s, d) { return s + (d.patientsCount || 0); }, 0);
-        var totalReviews  = Math.round(totalPatients * REVIEW_RATE_PER_PATIENT);
+        // 신규 환자 합계 (전체 - 재진), 리뷰 수 = 신규 × 작성률
+        var REVIEW_RATE = reviewRate(repScore);
+        var newPatientTotal = filtered.reduce(function (sum, d) {
+            var ret = d.returnPatientRate != null ? d.returnPatientRate : returnRate;
+            return sum + Math.floor((d.patientsCount || 0) * (1 - ret));
+        }, 0);
+        var totalReviews = Math.floor(newPatientTotal * REVIEW_RATE);
 
-        var posRatio = clamp(repScore / 5 * 100 - 10, 54, 85);
-        var negRatio = 100 - posRatio;
-
+        var posRatio    = clamp(repScore / 5 * 100 - 10, 54, 85);
+        var negRatio    = 100 - posRatio;
         var resolveRate = clamp((morale * RESOLVE_MORALE_W + (repScore / 5) * RESOLVE_REP_W) * 100, 0, 100);
-
         var periodMonths = filtered.length;
 
-        // 이전 대비 환자 변화율 활용 (마지막 월)
         var patientChangePct = (latest.patientsChangeRate != null)
-            ? (latest.patientsChangeRate * 100).toFixed(1)
-            : null;
+            ? (latest.patientsChangeRate * 100).toFixed(1) : null;
 
-        console.log('[평판 관리] 파생값:', {
-            totalPatients: totalPatients,
-            totalReviews:  totalReviews,
-            posRatio:      posRatio.toFixed(1) + '%',
-            negRatio:      negRatio.toFixed(1) + '%',
-            resolveRate:   resolveRate.toFixed(1) + '%',
-            periodMonths:  periodMonths
+        var sortedKeywords = renderKeywords(repScore, satScore, morale, prev);
+
+        console.log('[평판 관리]', {
+            신규환자합계: newPatientTotal,
+            리뷰작성률:   REVIEW_RATE,
+            총리뷰수:     totalReviews,
+            평판점수:     repScore,
+            키워드순위:   sortedKeywords.map(function (k) { return k.kw + ':' + k.pct.toFixed(1) + '%'; })
         });
 
         renderKPIs(repScore, totalReviews, posRatio, negRatio, resolveRate, periodMonths, patientChangePct);
-        renderTrendChart(repScore, totalReviews);
+        renderTrendChart(repScore);
         renderChannelChart(totalReviews);
-        renderKeywords(repScore, satScore, morale);
         renderSatisfaction(repScore, satScore, morale);
-        renderComplaints(morale, repScore, latest.month);
+        renderComplaints(morale, repScore);
         renderComment(repScore, returnRate);
     }
 
@@ -393,7 +399,7 @@
         var grid = document.getElementById('kpi-grid');
         if (!grid) return;
 
-        var repGrade   = repScore >= 4.5 ? 'pos' : repScore >= 3.5 ? 'info' : repScore >= 2.5 ? 'warn' : 'neg';
+        var repGrade = repScore >= 4.5 ? 'pos' : repScore >= 3.5 ? 'info' : repScore >= 2.5 ? 'warn' : 'neg';
         var reviewBadge = '';
         if (patientChangePct !== null) {
             var pv = parseFloat(patientChangePct);
@@ -403,7 +409,7 @@
         grid.innerHTML = [
             kpiCard('평균 별점', repScore.toFixed(1) + ' / 5.0', '평판 점수 기반',
                 '<span class="kpi-badge ' + repGrade + '">' + periodMonths + '개월</span>'),
-            kpiCard('총 리뷰 수', totalReviews.toLocaleString() + '건', '환자의 35% 리뷰 가정',
+            kpiCard('총 리뷰 수', totalReviews.toLocaleString() + '건', '신규 환자의 5~10% 리뷰 (평판 기반)',
                 reviewBadge + '<span class="demo-label">※ 데모 파생값</span>'),
             kpiCard('긍정 리뷰 비율', posRatio.toFixed(1) + '%', '평판 점수 기반 추산',
                 '<span class="kpi-badge pos">긍정</span><span class="demo-label">※ 데모 파생값</span>'),
@@ -426,7 +432,7 @@
     }
 
     // ── 별점 추이 차트 ────────────────────────────────────────────────────────────
-    function renderTrendChart(latestRepScore, totalReviews) {
+    function renderTrendChart(latestRepScore) {
         var canvas = document.getElementById('trend-chart');
         if (!canvas) return;
         if (trendChart) { trendChart.destroy(); trendChart = null; }
@@ -434,9 +440,12 @@
         var labels    = filtered.map(function (d) { return 'M' + d.month; });
         var repScores = filtered.map(function (d) { return +(d.reputationScore || 3.5).toFixed(2); });
 
-        // 누적 리뷰 수 (월별 환자 × 0.35)
+        // 월별 신규 환자 × 해당 월 리뷰 작성률
         var reviewCounts = filtered.map(function (d) {
-            return Math.round((d.patientsCount || 0) * REVIEW_RATE_PER_PATIENT);
+            var rep  = d.reputationScore || 3.5;
+            var ret  = d.returnPatientRate != null ? d.returnPatientRate : 0.6;
+            var newP = Math.floor((d.patientsCount || 0) * (1 - ret));
+            return Math.floor(newP * reviewRate(rep));
         });
 
         console.log('[별점 추이] labels:', labels, 'repScores:', repScores, 'reviewCounts:', reviewCounts);
@@ -502,7 +511,7 @@
                     },
                     yReview: {
                         position: 'right',
-                        beginAtZero: false,
+                        beginAtZero: true,
                         grid: { display: false },
                         ticks: { font: { family: 'Pretendard', size: 11 }, color: '#7A8699' }
                     }
@@ -518,9 +527,9 @@
         if (channelChart) { channelChart.destroy(); channelChart = null; }
 
         var channels = [
-            { name: '네이버',       ratio: CHANNEL_NAVER,  color: '#03C75A' },
-            { name: '카카오',       ratio: CHANNEL_KAKAO,  color: '#FEE500' },
-            { name: '구글',         ratio: CHANNEL_GOOGLE, color: '#EA4335' },
+            { name: '네이버',        ratio: CHANNEL_NAVER,  color: '#03C75A' },
+            { name: '카카오',        ratio: CHANNEL_KAKAO,  color: '#FEE500' },
+            { name: '구글',          ratio: CHANNEL_GOOGLE, color: '#EA4335' },
             { name: '기타 커뮤니티', ratio: CHANNEL_ETC,    color: '#C8D0DC' }
         ];
         var counts = channels.map(function (c) { return Math.round(totalReviews * c.ratio); });
@@ -557,15 +566,13 @@
             }
         });
 
-        // 중앙 총 리뷰 수
         var centerEl = document.getElementById('donut-total');
         if (centerEl) centerEl.textContent = totalReviews.toLocaleString() + '건';
 
-        // 범례
         var legendEl = document.getElementById('channel-legend');
         if (legendEl) {
             legendEl.innerHTML = channels.map(function (c, i) {
-                var delta = (+(seededRand(c.name) * 6 - 2).toFixed(1));
+                var delta = +(seededRand(c.name) * 6 - 2).toFixed(1);
                 var bCls  = delta >= 0 ? 'pos' : 'neg';
                 return '<div class="donut-legend-item">' +
                     '<span class="legend-dot" style="background:' + c.color + '"></span>' +
@@ -578,31 +585,46 @@
     }
 
     // ── 키워드 분석 ───────────────────────────────────────────────────────────────
-    function renderKeywords(repScore, satScore, morale) {
+    function renderKeywords(repScore, satScore, morale, prev) {
         var tbody = document.getElementById('keyword-tbody');
-        if (!tbody) return;
+        if (!tbody) return [];
 
-        var kindPct    = clamp(satScore / 1 * KEYWORD_KIND_FACTOR,    0, 95);
-        var waitPct    = clamp((1 - morale) * KEYWORD_WAIT_FACTOR * 100, 0, 95);
-        var explainPct = clamp(satScore / 1 * KEYWORD_EXPLAIN_FACTOR * 100, 0, 95);
-        var cleanPct   = clamp(KEYWORD_CLEAN_BASE + repScore * 2,        0, 95);
+        var normSat = satScore <= 1 ? satScore : satScore / 5;
 
-        // satScore는 0~1 비율일 수 있으므로 방어
-        if (satScore <= 1) {
-            kindPct    = clamp(satScore * KEYWORD_KIND_FACTOR * 100, 0, 95);
-            explainPct = clamp(satScore * KEYWORD_EXPLAIN_FACTOR * 100, 0, 95);
+        function calcKwPcts(sat, mor, rep) {
+            return {
+                '친절해요': clamp(40 + sat * 40, 0, 95),
+                '대기시간': clamp(20 + (1 - mor) * 40, 0, 95),
+                '설명충분': clamp(30 + sat * 40, 0, 95),
+                '청결':     clamp(40 + (rep / 5) * 30, 0, 95)
+            };
+        }
+
+        var curPcts  = calcKwPcts(normSat, morale, repScore);
+        var prevPcts = null;
+        if (prev) {
+            var pSat    = prev.patientSatisfaction || 0.75;
+            var pMorale = prev.staffMorale         || 0.8;
+            var pRep    = prev.reputationScore     || 3.5;
+            prevPcts = calcKwPcts(pSat <= 1 ? pSat : pSat / 5, pMorale, pRep);
         }
 
         var keywords = [
-            { kw: '친절해요',  pct: kindPct,    trend: +2.5, type: 'pos' },
-            { kw: '대기시간',  pct: waitPct,    trend: -2.5, type: 'neg' },
-            { kw: '설명충분',  pct: explainPct, trend: +2.5, type: 'pos' },
-            { kw: '청결',      pct: cleanPct,   trend: +1.5, type: 'pos' }
+            { kw: '친절해요', pct: curPcts['친절해요'], type: 'pos' },
+            { kw: '대기시간', pct: curPcts['대기시간'], type: 'neg' },
+            { kw: '설명충분', pct: curPcts['설명충분'], type: 'pos' },
+            { kw: '청결',     pct: curPcts['청결'],     type: 'pos' }
         ];
 
-        console.log('[키워드 분석] 파생값:', keywords.map(function (k) {
-            return k.kw + ': ' + k.pct.toFixed(1) + '%';
-        }));
+        // 언급 비율 내림차순 정렬 후 순위 부여
+        keywords.sort(function (a, b) { return b.pct - a.pct; });
+
+        // 이전 월 대비 추이 (없으면 시드 기반 ±3%)
+        keywords.forEach(function (k) {
+            k.trend = prevPcts
+                ? +(k.pct - prevPcts[k.kw]).toFixed(1)
+                : +(seededRand(k.kw) * 6 - 3).toFixed(1);
+        });
 
         var rankCls = ['r1', 'r2', 'r3', ''];
         tbody.innerHTML = keywords.map(function (k, i) {
@@ -615,6 +637,8 @@
                 '<td style="text-align:right;">' + trendHtml + '</td>' +
                 '</tr>';
         }).join('');
+
+        return keywords;
     }
 
     // ── 만족도 항목 ───────────────────────────────────────────────────────────────
@@ -656,7 +680,7 @@
     }
 
     // ── 민원/리스크 테이블 ────────────────────────────────────────────────────────
-    function renderComplaints(morale, repScore, currentMonth) {
+    function renderComplaints(morale, repScore) {
         var tbody = document.getElementById('complaint-tbody');
         if (!tbody) return;
 
@@ -670,16 +694,15 @@
 
         var riskLabel = { high: '높음', mid: '보통', low: '낮음' };
 
-        function randomDay(month) {
-            var seed = month * 17 + 3;
-            var day  = (seed % 25) + 3;
-            return '2026-' + String(month > 9 ? month : '0' + month) + '-' + String(day > 9 ? day : '0' + day);
-        }
+        // 발생 시점: 필터 범위에 따라 "M{n} · 최근" 또는 "M{s}~M{e} 누적"
+        var timeLbl = filtered.length === 1
+            ? 'M' + filtered[0].month + ' · 최근'
+            : 'M' + filtered[0].month + '~M' + filtered[filtered.length - 1].month + ' 누적';
 
         var rows = [
-            { issue: '대기시간',   desc: '접수 후 진료 대기 불만',     count: waitCount,  risk: waitRisk },
-            { issue: '직원 응대',  desc: '안내 불친절·응대 미숙',      count: staffCount, risk: staffRisk },
-            { issue: '예약 오류',  desc: '온라인 예약 중복·누락',       count: bookCount,  risk: bookRisk }
+            { issue: '대기시간',  desc: '접수 후 진료 대기 불만', count: waitCount,  risk: waitRisk },
+            { issue: '직원 응대', desc: '안내 불친절·응대 미숙',  count: staffCount, risk: staffRisk },
+            { issue: '예약 오류', desc: '온라인 예약 중복·누락',   count: bookCount,  risk: bookRisk }
         ];
 
         console.log('[민원 리스크] 파생값:', rows.map(function (r) {
@@ -693,7 +716,7 @@
                 '<td style="color:var(--gray-7);">' + r.desc + '</td>' +
                 '<td style="text-align:right;font-weight:700;">' + r.count + '</td>' +
                 '<td><span class="risk-badge ' + badgeCls + '">' + riskLabel[r.risk] + '</span></td>' +
-                '<td style="color:var(--gray-5);font-size:11px;">' + randomDay(currentMonth) + '</td>' +
+                '<td style="color:var(--gray-5);font-size:11px;">' + timeLbl + '</td>' +
                 '</tr>';
         }).join('');
     }
