@@ -45,13 +45,15 @@
         .kpi-unit { font-size: 14px; font-weight: 600; color: var(--gray-5); margin-left: 2px; }
         .kpi-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
         .kpi-sub { font-size: 11px; color: var(--gray-5); }
+        .kpi-sub-warn { font-size: 11px; color: #D98200; }
+        .kpi-sub-info { font-size: 11px; color: var(--blue); }
         .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
         .badge-pos  { background: #E6FBF0; color: #0FA958; }
         .badge-neg  { background: #FFEDED; color: var(--red); }
         .badge-warn { background: #FFF6E6; color: #D98200; }
         .badge-info { background: var(--blue-bg); color: var(--blue); }
 
-        /* Layout rows */
+        /* Layout */
         .section { padding: 0 28px 18px; }
         .row-two   { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
         .row-three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
@@ -78,10 +80,10 @@
         .tbl-link:hover { text-decoration: underline; }
 
         /* Donut */
-        .donut-wrap { position: relative; display: flex; justify-content: center; margin: 10px 0; }
+        .donut-wrap { position: relative; display: flex; justify-content: center; align-items: center; margin: 10px auto; max-width: 200px; }
         .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; pointer-events: none; }
-        .donut-center-num { font-size: 20px; font-weight: 800; color: var(--navy); line-height: 1; }
-        .donut-center-lbl { font-size: 11px; color: var(--gray-5); margin-top: 2px; }
+        .donut-center-num { font-size: 18px; font-weight: 800; color: var(--navy); line-height: 1; }
+        .donut-center-lbl { font-size: 10px; color: var(--gray-5); margin-top: 2px; }
         .legend-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
         .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--gray-7); }
         .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
@@ -92,8 +94,8 @@
         .salary-item { display: flex; align-items: center; gap: 8px; font-size: 11px; }
         .salary-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
         .salary-name { flex: 1; color: var(--gray-7); }
-        .salary-pct  { color: var(--gray-5); }
-        .salary-amt  { font-weight: 700; color: var(--navy); white-space: nowrap; }
+        .salary-pct  { color: var(--gray-5); min-width: 38px; text-align: right; }
+        .salary-amt  { font-weight: 700; color: var(--navy); white-space: nowrap; min-width: 60px; text-align: right; }
 
         /* Risk table */
         .risk-table { width: 100%; border-collapse: collapse; }
@@ -102,8 +104,8 @@
         .risk-table tr:last-child td { border-bottom: none; }
 
         /* Alert */
-        .alert-box      { background: #FFF6E6; border: 1px solid #FFD580; border-radius: 8px; padding: 8px 12px; font-size: 11px; color: #A06000; margin-top: 10px; }
-        .alert-box-red  { background: #FFEDED; border-color: #FFB0B0; color: #C00000; }
+        .alert-box     { background: #FFF6E6; border: 1px solid #FFD580; border-radius: 8px; padding: 8px 12px; font-size: 11px; color: #A06000; margin-top: 10px; }
+        .alert-box-red { background: #FFEDED; border-color: #FFB0B0; color: #C00000; }
 
         footer { background: #0D1B2A; padding: 14px 26px; text-align: center; margin-top: 8px; }
         footer p { font-size: 12px; color: rgba(255,255,255,.4); }
@@ -114,7 +116,6 @@
     <div id="sidebar-root"></div>
     <div class="content">
 
-        <!-- Loading state -->
         <div id="loading-state-wrap" class="loading-state" style="display:none;">
             <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
@@ -124,7 +125,6 @@
             <a href="dashboard.html" style="margin-top:18px;padding:10px 22px;background:var(--blue);color:white;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">← 병원 현황으로</a>
         </div>
 
-        <!-- Main view -->
         <div id="main-view">
             <div class="page-header">
                 <h1 class="page-title">직원 관리</h1>
@@ -139,17 +139,15 @@
                 <button class="filter-btn" id="apply-btn">적용</button>
             </div>
 
-            <!-- KPI -->
             <div class="kpi-grid" id="kpi-grid"></div>
 
-            <!-- Row 1: Staff table + Donut -->
             <div class="section">
                 <div class="row-two">
                     <div class="card">
                         <div class="card-header">
                             <div>
                                 <span class="card-title">직원 현황</span>
-                                <span class="card-subtitle">6명 표시</span>
+                                <span id="staff-table-subtitle" class="card-subtitle"></span>
                             </div>
                             <a href="#" class="tbl-link">전체 직원 보기 →</a>
                         </div>
@@ -162,14 +160,14 @@
                             </thead>
                             <tbody id="staff-tbody"></tbody>
                         </table>
-                        <p class="derived-note">※ 데모 파생값 — 백엔드 확장 시 직원 개별 관리 API 연동 예정</p>
+                        <p class="derived-note">※ 데모 파생값 — 개별 만족도·피로도는 팀 전체 staffMorale 기반 랜덤 편차 부여. 백엔드 확장 시 직원 개별 API 연동 예정</p>
                     </div>
                     <div class="card">
-                        <div class="card-title">직원 구성 <span class="card-subtitle">총 12명</span></div>
+                        <div class="card-title">직원 구성 <span id="donut-total-lbl" class="card-subtitle"></span></div>
                         <div class="donut-wrap" style="margin-top:14px;">
-                            <canvas id="staff-donut" width="180" height="180"></canvas>
+                            <canvas id="staff-donut" width="160" height="160"></canvas>
                             <div class="donut-center">
-                                <div class="donut-center-num">12</div>
+                                <div id="donut-center-num" class="donut-center-num">-</div>
                                 <div class="donut-center-lbl">명</div>
                             </div>
                         </div>
@@ -178,7 +176,6 @@
                 </div>
             </div>
 
-            <!-- Row 2: Workload / Salary / Risk -->
             <div class="section">
                 <div class="row-three">
                     <div class="card">
@@ -192,13 +189,13 @@
                         <div class="donut-wrap">
                             <canvas id="salary-donut" width="160" height="160"></canvas>
                             <div class="donut-center">
-                                <div class="donut-center-num" id="salary-total" style="font-size:14px;">-</div>
-                                <div class="donut-center-lbl">총액</div>
+                                <div id="salary-total" class="donut-center-num" style="font-size:13px;line-height:1.2;">-</div>
+                                <div class="donut-center-lbl">총 인건비용</div>
                             </div>
                         </div>
                         <div class="salary-list" id="salary-list"></div>
                         <div id="salary-delta" style="font-size:11px;color:var(--gray-5);margin-top:10px;border-top:1px solid var(--gray-2);padding-top:8px;"></div>
-                        <p class="derived-note">※ 데모 파생값 (세부 분할은 백엔드 미제공)</p>
+                        <p class="derived-note">※ 데모 파생값 (세부 분할은 laborCost 기반 추산)</p>
                     </div>
                     <div class="card">
                         <div class="card-header">
@@ -216,7 +213,7 @@
                     </div>
                 </div>
             </div>
-        </div><!-- /main-view -->
+        </div>
 
         <footer><p>MEDSIM © 2026. All rights reserved.</p></footer>
     </div>
@@ -231,43 +228,42 @@ renderSidebar('staff');
     // ═══════════════════════════════════════════════
     //  상수
     // ═══════════════════════════════════════════════
-    var TOTAL_STAFF          = 12;
     var ADEQUATE_RATIO       = 25;      // 환자 1인당 담당 직원 기준
     var ADEQUATE_THRESHOLD   = 0.20;    // ±20% 이내 = 적정
-    var MORALE_TURNOVER_HIGH = 0.50;    // < 0.5 → 이직 높음
-    var MORALE_TURNOVER_MID  = 0.70;    // 0.5~0.7 → 중간
+    var MORALE_TURNOVER_MID  = 0.70;    // > 0.7 → 이직 낮음
+    var MORALE_TURNOVER_LOW  = 0.50;    // > 0.5 → 중간
     var MORALE_GRADE_GOOD    = 0.80;    // ≥ 0.8 → 우수
-    var MORALE_GRADE_OK      = 0.60;    // 0.6~0.8 → 보통
+    var MORALE_GRADE_OK      = 0.60;    // ≥ 0.6 → 보통
+    var INTENSITY_LOW_THRESH = 60;      // 환자/직원 < 60 → 부담 낮음
+    var INTENSITY_MID_THRESH = 100;     // 환자/직원 < 100 → 중간
     var RISK_MORALE_THRESH   = 0.60;    // < 0.6 → 간호팀 위험
     var RISK_PATIENTS_THRESH = 400;     // > 400명 → 원무 대기 집중
     var RISK_SAT_THRESH      = 0.70;    // < 0.7 → 코디 만족도 하락
-    var LABOR_BASE_PCT       = 0.653;   // 인건비(순) 비율
-    var INSURANCE_PCT        = 0.124;   // 4대보험 fallback 비율
-    var NIGHT_PAY_PCT        = 0.093;   // 야간수당 비율
-    var TRAINING_AMT         = 120;     // 교육비 고정 (만원)
-    var WELFARE_AMT          = 130;     // 복리후생 고정 (만원)
+    var LABOR_RATIO_GOOD     = 40;      // < 40% 우수
+    var LABOR_RATIO_OK       = 60;      // 40~60% 적정
+    var LABOR_RATIO_HIGH     = 100;     // 60~100% 부담
+    var NIGHT_PAY_PCT        = 0.096;   // 야간수당 비율
+    var TRAINING_PCT         = 0.059;   // 교육비 비율
+    var WELFARE_PCT          = 0.067;   // 복리후생 비율
+    // 인건비(순) = laborCost - nightPay - training - welfare (잔여 ~77.8%)
+    // 보장: 위 4항목 합 = laborCost, 전체 도넛 = laborCost + insuranceCost
 
     var WEEK_HOURS_BASE   = [72, 80, 68, 76, 80, 44, 16];
     var WEEK_FATIGUE_BASE = [45, 62, 55, 68, 75, 38, 20];
 
-    var STAFF_LIST = [
-        { name: '김OO', role: '간호사',      shift: '3교대', salary: 320 },
-        { name: '김OO', role: '원무',        shift: '주간',  salary: 260 },
-        { name: '고OO', role: '방사선사',    shift: '주간',  salary: 280 },
-        { name: '정OO', role: '간호사',      shift: '3교대', salary: 320 },
-        { name: '허OO', role: '간호 조무사', shift: '주간',  salary: 230 },
-        { name: '백OO', role: '원무',        shift: '주간',  salary: 260 },
-    ];
-
-    var STAFF_COMPOSITION = [
-        { label: '간호사',      count: 5, color: '#1A6BFF' },
-        { label: '원무',        count: 2, color: '#22C97A' },
-        { label: '간호 조무사', count: 2, color: '#FF8C42' },
-        { label: '검사인력',    count: 2, color: '#C8D0DC' },
-        { label: '기타',        count: 1, color: '#9B59B6' },
-    ];
-
+    var ROLE_SHIFT = { '의사': '주간', '간호사': '3교대', '원무행정': '주간', '방사선사': '주간' };
+    var ROLE_COLORS = {
+        '의사': '#1A6BFF', '간호사': '#22C97A', '원무행정': '#FF8C42',
+        '방사선사': '#C8D0DC', '기타': '#9B59B6'
+    };
     var SALARY_COLORS = ['#1A6BFF', '#4D8EFF', '#FF8C42', '#22C97A', '#C8D0DC'];
+
+    // BALANCED 기본값 (dashboard.html의 STAFF_DEFAULTS와 동일)
+    var STAFF_DEFAULTS = {
+        MIN_STAFF:        { nurse: 1, admin: 1, radiol: 1 },
+        BALANCED:         { nurse: 2, admin: 2, radiol: 0 },
+        SERVICE_ENHANCED: { nurse: 4, admin: 3, radiol: 1 }
+    };
 
     // ═══════════════════════════════════════════════
     //  유틸
@@ -290,6 +286,44 @@ renderSidebar('staff');
     function destroyChart(id) {
         var c = Chart.getChart(id);
         if (c) c.destroy();
+    }
+
+    // ═══════════════════════════════════════════════
+    //  직원 데이터 조회 (localStorage 기반)
+    //  포맷: medsim_staff_counts = { nurse:N, admin:N, radiol:N }
+    //  start5.html의 staffList 조립 로직과 동일
+    // ═══════════════════════════════════════════════
+    function getStaffTypeList() {
+        var raw = localStorage.getItem('medsim_staff_counts');
+        var sc = raw ? JSON.parse(raw) : null;
+        if (!sc || Object.keys(sc).length === 0) {
+            var os = localStorage.getItem('medsim_operation_style') || 'BALANCED';
+            sc = STAFF_DEFAULTS[os] || STAFF_DEFAULTS.BALANCED;
+        }
+        var list = [{ role: '의사', salary: 1000, count: 1 }];
+        if ((sc.nurse  || 0) > 0) list.push({ role: '간호사',   salary: 300, count: sc.nurse  });
+        if ((sc.admin  || 0) > 0) list.push({ role: '원무행정', salary: 250, count: sc.admin  });
+        if ((sc.radiol || 0) > 0) list.push({ role: '방사선사', salary: 350, count: sc.radiol });
+        if (list.length === 1) list.push({ role: '간호사', salary: 300, count: 1 });
+        return list;
+    }
+
+    function expandStaffList(typeList) {
+        var expanded = [];
+        var idx = 1;
+        for (var ti = 0; ti < typeList.length; ti++) {
+            var type = typeList[ti];
+            for (var i = 0; i < type.count; i++) {
+                expanded.push({
+                    name: '직원 ' + idx,
+                    role: type.role,
+                    salary: type.salary,
+                    shift: ROLE_SHIFT[type.role] || '주간'
+                });
+                idx++;
+            }
+        }
+        return expanded;
     }
 
     // ═══════════════════════════════════════════════
@@ -334,41 +368,67 @@ renderSidebar('staff');
         var filtered = allData.filter(function (d) { return d.month >= startM && d.month <= endM; });
         var latest   = filtered.length > 0 ? filtered[filtered.length - 1] : allData[allData.length - 1];
         var prev     = filtered.length > 1 ? filtered[filtered.length - 2] : null;
-
         if (!latest) return;
 
-        var morale       = latest.staffMorale          != null ? latest.staffMorale          : 0.75;
-        var laborCost    = latest.laborCost             != null ? latest.laborCost             : 0;
-        var insuranceCost= latest.insuranceCost         != null ? latest.insuranceCost         : Math.round(laborCost * INSURANCE_PCT);
-        var patients     = latest.patientsCount         != null ? latest.patientsCount         : 0;
-        var satisfaction = latest.patientSatisfaction   != null ? latest.patientSatisfaction   : morale * 0.9;
-        var revenue      = latest.revenue               != null ? latest.revenue               : 0;
+        var morale        = latest.staffMorale          != null ? latest.staffMorale          : 0.75;
+        var laborCost     = latest.laborCost            != null ? latest.laborCost            : 0;
+        var insuranceCost = latest.insuranceCost        != null ? latest.insuranceCost        : Math.round(laborCost * 0.106);
+        var patients      = latest.patientsCount        != null ? latest.patientsCount        : 0;
+        var satisfaction  = latest.patientSatisfaction  != null ? latest.patientSatisfaction  : morale * 0.9;
+        var revenue       = latest.revenue              != null ? latest.revenue              : 0;
 
-        console.log('=== [직원 관리] M' + startM + '~M' + endM + ' ===');
-        console.log('morale:', morale, '| laborCost:', laborCost, '만원', '| insuranceCost:', insuranceCost, '만원');
-        console.log('patients:', patients, '| satisfaction:', satisfaction, '| revenue:', revenue);
+        var staffTypeList = getStaffTypeList();
+        var totalStaff    = staffTypeList.reduce(function (s, t) { return s + t.count; }, 0);
 
-        renderKPI(morale, laborCost, patients, revenue, latest, prev);
-        renderStaffTable(morale);
-        renderStaffDonut();
+        // laborCost fallback: 백엔드 데이터 없을 때 역산
+        if (laborCost === 0 && totalStaff > 0) {
+            laborCost = staffTypeList.reduce(function (s, t) { return s + t.salary * t.count; }, 0);
+        }
+
+        // 이직 위험도: 사기 + 근무 강도 종합
+        var intensity = totalStaff > 0 ? patients / totalStaff : 0;
+        var turnoverRisk;
+        if (morale > MORALE_TURNOVER_MID && intensity < INTENSITY_LOW_THRESH) {
+            turnoverRisk = '낮음';
+        } else if (morale > MORALE_TURNOVER_LOW && intensity < INTENSITY_MID_THRESH) {
+            turnoverRisk = '중간';
+        } else {
+            turnoverRisk = '높음';
+        }
+
+        console.log('[직원 관리]', {
+            실제직원수: totalStaff,
+            staffList: staffTypeList,
+            인건비: laborCost,
+            '4대보험': insuranceCost,
+            총인건비용: laborCost + insuranceCost,
+            직원사기: morale,
+            환자당직원: totalStaff > 0 ? (patients / totalStaff).toFixed(1) : '-',
+            이직위험도: turnoverRisk
+        });
+
+        renderKPI(morale, laborCost, insuranceCost, patients, revenue, totalStaff, turnoverRisk, latest, prev);
+        renderStaffTable(morale, staffTypeList);
+        renderStaffDonut(staffTypeList, totalStaff);
         renderWorkload(morale);
         renderSalary(laborCost, insuranceCost, prev);
-        renderRisk(morale, patients, satisfaction);
+        renderRisk(morale, patients, satisfaction, totalStaff);
     }
 
     // ═══════════════════════════════════════════════
     //  KPI 카드
     // ═══════════════════════════════════════════════
-    function renderKPI(morale, laborCost, patients, revenue, latest, prev) {
-        // A. 총 직원 수
-        var ideal = patients > 0 ? patients / ADEQUATE_RATIO : TOTAL_STAFF;
-        var devRatio = ideal > 0 ? (TOTAL_STAFF - ideal) / ideal : 0;
+    function renderKPI(morale, laborCost, insuranceCost, patients, revenue, totalStaff, turnoverRisk, latest, prev) {
+
+        // A. 총 직원 수 판정
+        var ideal = patients > 0 ? patients / ADEQUATE_RATIO : totalStaff;
+        var devRatio = ideal > 0 ? (totalStaff - ideal) / ideal : 0;
         var staffBadgeTxt, staffBadgeCls;
         if (Math.abs(devRatio) <= ADEQUATE_THRESHOLD) { staffBadgeTxt = '적정'; staffBadgeCls = 'pos'; }
         else if (devRatio < 0)                        { staffBadgeTxt = '부족'; staffBadgeCls = 'neg'; }
         else                                          { staffBadgeTxt = '과다'; staffBadgeCls = 'warn'; }
 
-        // B. 월 인건비
+        // B. 월 인건비 (laborCost 순수, 4대보험 제외)
         var laborDisp = laborCost > 0 ? laborCost.toLocaleString() + '만원' : '-';
         var prevLabor = prev && prev.laborCost != null ? prev.laborCost : null;
         var laborDeltaHtml = '';
@@ -376,89 +436,109 @@ renderSidebar('staff');
             var dPct = ((laborCost - prevLabor) / prevLabor * 100).toFixed(1);
             laborDeltaHtml = badge(parseFloat(dPct) >= 0 ? 'neg' : 'pos', (parseFloat(dPct) >= 0 ? '+' : '') + dPct + '%');
         }
-        var laborRevSub = (revenue > 0 && laborCost > 0)
-            ? '매출 대비 ' + ((laborCost / revenue) * 100).toFixed(1) + '%'
-            : '직원 사기 기반';
+        var laborRevSub, laborRevSubCls;
+        if (revenue > 0 && laborCost > 0) {
+            var ratPct = (laborCost / revenue * 100).toFixed(1);
+            if (parseFloat(ratPct) < LABOR_RATIO_GOOD) {
+                laborRevSub = '매출 대비 ' + ratPct + '% 우수'; laborRevSubCls = 'kpi-sub';
+            } else if (parseFloat(ratPct) < LABOR_RATIO_OK) {
+                laborRevSub = '매출 대비 ' + ratPct + '% 적정'; laborRevSubCls = 'kpi-sub';
+            } else if (parseFloat(ratPct) < LABOR_RATIO_HIGH) {
+                laborRevSub = '매출 대비 ' + ratPct + '% — 부담'; laborRevSubCls = 'kpi-sub-warn';
+            } else {
+                laborRevSub = '초기 단계 · 3~6개월 내 개선 예상'; laborRevSubCls = 'kpi-sub-info';
+            }
+        } else {
+            laborRevSub = '4대보험 제외'; laborRevSubCls = 'kpi-sub';
+        }
 
         // C. 직원 만족도
         var mScore = (morale * 5).toFixed(1);
         var mGrade, mCls;
-        if (morale >= MORALE_GRADE_GOOD)     { mGrade = '우수'; mCls = 'pos'; }
-        else if (morale >= MORALE_GRADE_OK)  { mGrade = '보통'; mCls = 'warn'; }
-        else                                  { mGrade = '주의'; mCls = 'neg'; }
+        if (morale >= MORALE_GRADE_GOOD)    { mGrade = '우수'; mCls = 'pos'; }
+        else if (morale >= MORALE_GRADE_OK) { mGrade = '보통'; mCls = 'warn'; }
+        else                                 { mGrade = '주의'; mCls = 'neg'; }
 
         // D. 이직 위험도
-        var trTxt, trCls, trColor;
-        if (morale > MORALE_TURNOVER_MID)          { trTxt = '낮음'; trCls = 'pos'; trColor = 'var(--green)'; }
-        else if (morale >= MORALE_TURNOVER_HIGH)   { trTxt = '중간'; trCls = 'warn'; trColor = '#D98200'; }
-        else                                        { trTxt = '높음'; trCls = 'neg'; trColor = 'var(--red)'; }
-
-        console.log('KPI 직원 판정:', staffBadgeTxt, '| 인건비:', laborDisp, '| 만족도:', mScore, mGrade, '| 이직:', trTxt);
+        var trColor = turnoverRisk === '낮음' ? 'var(--green)' : turnoverRisk === '중간' ? '#D98200' : 'var(--red)';
 
         document.getElementById('kpi-grid').innerHTML =
             kpiCard('총 직원 수',
-                '<span class="kpi-main">' + TOTAL_STAFF + '</span><span class="kpi-unit">명</span>',
-                badge(staffBadgeCls, staffBadgeTxt), '환자 대비 적정 수준') +
+                '<span class="kpi-main">' + totalStaff + '</span><span class="kpi-unit">명</span>',
+                badge(staffBadgeCls, staffBadgeTxt), 'kpi-sub', '환자 대비 적정 수준') +
             kpiCard('월 인건비',
                 '<span class="kpi-main" style="font-size:20px">' + laborDisp + '</span>',
-                laborDeltaHtml, laborRevSub) +
+                laborDeltaHtml, laborRevSubCls, laborRevSub) +
             kpiCard('직원 만족도',
                 '<span class="kpi-main">' + mScore + '</span><span class="kpi-unit">/5.0</span>',
-                badge(mCls, mGrade), '직원 사기 기반') +
+                badge(mCls, mGrade), 'kpi-sub', '직원 사기 기반') +
             kpiCard('이직 위험도',
-                '<span class="kpi-main" style="font-size:20px;color:' + trColor + '">' + trTxt + '</span>',
-                '', '※ 데모 파생값');
+                '<span class="kpi-main" style="font-size:20px;color:' + trColor + '">' + turnoverRisk + '</span>',
+                '', 'kpi-sub', '※ 데모 파생값');
     }
 
-    function kpiCard(label, mainHtml, badgeHtml, sub) {
+    function kpiCard(label, mainHtml, badgeHtml, subCls, sub) {
         return '<div class="kpi-card">' +
             '<div class="kpi-label">' + label + '</div>' +
             mainHtml +
-            '<div class="kpi-row">' + (badgeHtml || '') + '<span class="kpi-sub">' + sub + '</span></div>' +
+            '<div class="kpi-row">' + (badgeHtml || '') +
+            '<span class="' + subCls + '">' + sub + '</span></div>' +
             '</div>';
     }
 
     // ═══════════════════════════════════════════════
-    //  직원 현황 테이블
+    //  직원 현황 테이블 (실제 staffTypeList 기반 전개)
+    //  이름: "직원 N" 번호 표기 (시뮬레이션 데모용)
+    //  편차: seeded RNG 고정 → 동일 morale 값에서 항상 같은 편차
     // ═══════════════════════════════════════════════
-    function renderStaffTable(morale) {
-        var rng = seededRng('staff-tbl-seed-medsim-26');
-        var html = STAFF_LIST.map(function (s) {
+    function renderStaffTable(morale, staffTypeList) {
+        var expanded = expandStaffList(staffTypeList);
+        var rng = seededRng('staff-tbl-v2-medsim');
+
+        document.getElementById('staff-table-subtitle').textContent = expanded.length + '명 표시';
+
+        var html = expanded.map(function (s) {
             var rFat = rng(), rSat = rng();
-            // 피로도: morale 높을수록 낮음
-            var fatigue = clamp((1 - morale) + (rFat - 0.5) * 0.4, 0.10, 0.95);
-            // 만족도: morale 기반 ± 0.5
+            // 개별 만족도: staffMorale×5 ± 0.5 범위 랜덤
             var sat = clamp(morale * 5 + (rSat - 0.5), 2.0, 5.0).toFixed(1);
-            var fatPct = Math.round(fatigue * 100);
+            // 개별 피로도: (1-staffMorale)×100 ± 15 범위 랜덤
+            var fatPct = clamp(Math.round((1 - morale) * 100 + (rFat - 0.5) * 30), 5, 95);
+            var fatigue = fatPct / 100;
             var fatCls = fatigue < 0.40 ? 'green' : fatigue < 0.70 ? 'yellow' : 'red';
             var stLbl, stCls;
-            if (fatigue >= 0.70)       { stLbl = '위험'; stCls = 'neg'; }
-            else if (fatigue >= 0.45)  { stLbl = '주의'; stCls = 'warn'; }
-            else                        { stLbl = '안정'; stCls = 'pos'; }
+            if (fatigue >= 0.70)      { stLbl = '위험'; stCls = 'neg'; }
+            else if (fatigue >= 0.45) { stLbl = '주의'; stCls = 'warn'; }
+            else                       { stLbl = '안정'; stCls = 'pos'; }
             return '<tr>' +
-                '<td style="font-weight:600">' + s.name + '</td>' +
+                '<td style="font-weight:600;color:var(--gray-7)">' + s.name + '</td>' +
                 '<td>' + s.role + '</td>' +
                 '<td style="color:var(--gray-5)">' + s.shift + '</td>' +
-                '<td style="font-weight:700">' + s.salary + '만원</td>' +
+                '<td style="font-weight:700">' + s.salary.toLocaleString() + '만원</td>' +
                 '<td><span class="star">★</span> ' + sat + '</td>' +
                 '<td><div class="fat-bar-wrap"><div class="fat-bar fat-' + fatCls + '" style="width:' + fatPct + '%"></div></div>' +
                 ' <span style="font-size:10px;color:var(--gray-5)">' + fatPct + '%</span></td>' +
                 '<td>' + badge(stCls, stLbl) + '</td>' +
                 '</tr>';
         }).join('');
+
         document.getElementById('staff-tbody').innerHTML = html;
-        console.log('직원 테이블 렌더 (' + STAFF_LIST.length + '명, morale=' + morale + ')');
     }
 
     // ═══════════════════════════════════════════════
-    //  직원 구성 도넛
+    //  직원 구성 도넛 (동적 staffTypeList 기반)
     // ═══════════════════════════════════════════════
-    function renderStaffDonut() {
+    function renderStaffDonut(staffTypeList, totalStaff) {
         destroyChart('staff-donut');
-        var total = STAFF_COMPOSITION.reduce(function (s, d) { return s + d.count; }, 0);
 
-        document.getElementById('staff-legend').innerHTML = STAFF_COMPOSITION.map(function (d) {
-            var pct = ((d.count / total) * 100).toFixed(1);
+        var composition = staffTypeList.map(function (t) {
+            return { label: t.role, count: t.count, color: ROLE_COLORS[t.role] || '#9B59B6' };
+        });
+
+        document.getElementById('donut-total-lbl').textContent = '총 ' + totalStaff + '명';
+        document.getElementById('donut-center-num').textContent = totalStaff;
+
+        document.getElementById('staff-legend').innerHTML = composition.map(function (d) {
+            var pct = totalStaff > 0 ? ((d.count / totalStaff) * 100).toFixed(1) : '0.0';
             return '<div class="legend-item">' +
                 '<div class="legend-dot" style="background:' + d.color + '"></div>' +
                 '<span>' + d.label + '</span>' +
@@ -469,10 +549,10 @@ renderSidebar('staff');
         new Chart(document.getElementById('staff-donut'), {
             type: 'doughnut',
             data: {
-                labels: STAFF_COMPOSITION.map(function (d) { return d.label; }),
+                labels: composition.map(function (d) { return d.label; }),
                 datasets: [{
-                    data: STAFF_COMPOSITION.map(function (d) { return d.count; }),
-                    backgroundColor: STAFF_COMPOSITION.map(function (d) { return d.color; }),
+                    data: composition.map(function (d) { return d.count; }),
+                    backgroundColor: composition.map(function (d) { return d.color; }),
                     borderWidth: 2, borderColor: 'white', hoverOffset: 4
                 }]
             },
@@ -483,7 +563,7 @@ renderSidebar('staff');
                     tooltip: {
                         callbacks: {
                             label: function (ctx) {
-                                var pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                var pct = totalStaff > 0 ? ((ctx.parsed / totalStaff) * 100).toFixed(1) : '0';
                                 return ctx.label + ': ' + ctx.parsed + '명 (' + pct + '%)';
                             }
                         },
@@ -499,8 +579,8 @@ renderSidebar('staff');
     // ═══════════════════════════════════════════════
     function renderWorkload(morale) {
         destroyChart('workload-chart');
-        var rng = seededRng('workload-' + Math.round(morale * 1000));
-        var moraleAdj = (1 - morale) * 20; // 사기 낮을수록 피로 +
+        var rng = seededRng('workload-rng-' + Math.round(morale * 1000));
+        var moraleAdj = (1 - morale) * 20;
 
         var hours = WEEK_HOURS_BASE.map(function (h) {
             return Math.round(h * (0.92 + rng() * 0.16));
@@ -515,25 +595,13 @@ renderSidebar('staff');
                 labels: ['월', '화', '수', '목', '금', '토', '일'],
                 datasets: [
                     {
-                        type: 'bar',
-                        label: '총 근무시간(h)',
-                        data: hours,
-                        backgroundColor: 'rgba(26,107,255,0.15)',
-                        borderColor: '#1A6BFF',
-                        borderWidth: 1,
-                        yAxisID: 'yHours'
+                        type: 'bar', label: '총 근무시간(h)', data: hours,
+                        backgroundColor: 'rgba(26,107,255,0.15)', borderColor: '#1A6BFF', borderWidth: 1, yAxisID: 'yHours'
                     },
                     {
-                        type: 'line',
-                        label: '팀 평균 피로도(%)',
-                        data: fatigue,
-                        borderColor: '#FF3B3B',
-                        backgroundColor: 'rgba(255,59,59,0.07)',
-                        borderWidth: 2,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#FF3B3B',
-                        tension: 0.3,
-                        yAxisID: 'yFatigue'
+                        type: 'line', label: '팀 평균 피로도(%)', data: fatigue,
+                        borderColor: '#FF3B3B', backgroundColor: 'rgba(255,59,59,0.07)',
+                        borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#FF3B3B', tension: 0.3, yAxisID: 'yFatigue'
                     }
                 ]
             },
@@ -561,8 +629,8 @@ renderSidebar('staff');
             }
         });
 
-        var alertEl = document.getElementById('workload-alert');
         var avgFat = Math.round(fatigue.reduce(function (a, b) { return a + b; }, 0) / fatigue.length);
+        var alertEl = document.getElementById('workload-alert');
         if (morale < RISK_MORALE_THRESH) {
             alertEl.innerHTML = '<div class="alert-box alert-box-red">⚠ 간호팀 피로도 상승 — 직원 사기 저하로 과로 위험이 감지됩니다.</div>';
         } else if (avgFat > 55) {
@@ -570,30 +638,37 @@ renderSidebar('staff');
         } else {
             alertEl.innerHTML = '';
         }
-
-        console.log('근무량 차트: hours=', hours, '| fatigue=', fatigue, '| avgFat=' + avgFat + '%');
     }
 
     // ═══════════════════════════════════════════════
     //  급여 & 복리후생 도넛
+    //  totalSalary = laborCost + insuranceCost (정합성 보장)
+    //  laborNet = laborCost - nightPay - training - welfare (잔여)
+    //  → 5항목 합 = laborCost + insuranceCost ✓
     // ═══════════════════════════════════════════════
     function renderSalary(laborCost, insuranceCost, prev) {
         destroyChart('salary-donut');
+        if (laborCost === 0) {
+            document.getElementById('salary-total').textContent = '-';
+            return;
+        }
 
-        var laborNet = Math.round(laborCost * LABOR_BASE_PCT);
         var nightPay = Math.round(laborCost * NIGHT_PAY_PCT);
-        var totalAmt = laborNet + insuranceCost + nightPay + TRAINING_AMT + WELFARE_AMT;
+        var training = Math.round(laborCost * TRAINING_PCT);
+        var welfare  = Math.round(laborCost * WELFARE_PCT);
+        var laborNet = laborCost - nightPay - training - welfare;  // 잔여 (합산 보장)
+        var totalAmt = laborCost + insuranceCost;                  // = 위 5항목 합
 
         var items = [
             { name: '인건비(순)',  amount: laborNet,      color: SALARY_COLORS[0] },
             { name: '4대보험',    amount: insuranceCost, color: SALARY_COLORS[1] },
             { name: '야간수당',   amount: nightPay,      color: SALARY_COLORS[2] },
-            { name: '교육비',     amount: TRAINING_AMT,  color: SALARY_COLORS[3] },
-            { name: '복리후생',   amount: WELFARE_AMT,   color: SALARY_COLORS[4] },
+            { name: '교육비',     amount: training,      color: SALARY_COLORS[3] },
+            { name: '복리후생',   amount: welfare,       color: SALARY_COLORS[4] },
         ];
 
         document.getElementById('salary-total').textContent =
-            totalAmt > 0 ? totalAmt.toLocaleString() + '만원' : '-';
+            totalAmt.toLocaleString() + '만원';
 
         document.getElementById('salary-list').innerHTML = items.map(function (it) {
             var pct = totalAmt > 0 ? ((it.amount / totalAmt) * 100).toFixed(1) : '0.0';
@@ -607,64 +682,57 @@ renderSidebar('staff');
 
         // 전월 대비
         var deltaEl = document.getElementById('salary-delta');
-        if (prev && prev.laborCost != null && prev.laborCost > 0 && laborCost > 0) {
-            var prevIns = prev.insuranceCost != null ? prev.insuranceCost : Math.round(prev.laborCost * INSURANCE_PCT);
-            var prevNet = Math.round(prev.laborCost * LABOR_BASE_PCT);
-            var prevNight = Math.round(prev.laborCost * NIGHT_PAY_PCT);
-            var prevTotal = prevNet + prevIns + prevNight + TRAINING_AMT + WELFARE_AMT;
-            var diff = totalAmt - prevTotal;
-            var diffPct = ((diff / prevTotal) * 100).toFixed(1);
-            var sign = diff >= 0 ? '+' : '';
-            var col = diff >= 0 ? 'var(--red)' : 'var(--green)';
+        if (prev && prev.laborCost != null && prev.laborCost > 0) {
+            var prevIns   = prev.insuranceCost != null ? prev.insuranceCost : Math.round(prev.laborCost * 0.106);
+            var prevTotal = prev.laborCost + prevIns;
+            var diff      = totalAmt - prevTotal;
+            var diffPct   = ((diff / prevTotal) * 100).toFixed(1);
+            var sign      = diff >= 0 ? '+' : '';
+            var col       = diff >= 0 ? 'var(--red)' : 'var(--green)';
             deltaEl.innerHTML = '전월 대비 <span style="color:' + col + ';font-weight:700">' +
-                sign + diffPct + '% (' + Math.abs(diff).toLocaleString() + '만원 ' + (diff >= 0 ? '증가' : '감소') + ')</span>';
+                sign + diffPct + '% (' + Math.abs(diff).toLocaleString() + '만원 ' +
+                (diff >= 0 ? '증가' : '감소') + ')</span>';
         } else {
             deltaEl.textContent = '';
         }
 
-        if (totalAmt > 0) {
-            new Chart(document.getElementById('salary-donut'), {
-                type: 'doughnut',
-                data: {
-                    labels: items.map(function (it) { return it.name; }),
-                    datasets: [{
-                        data: items.map(function (it) { return it.amount; }),
-                        backgroundColor: items.map(function (it) { return it.color; }),
-                        borderWidth: 2, borderColor: 'white', hoverOffset: 4
-                    }]
-                },
-                options: {
-                    cutout: '65%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function (ctx) {
-                                    var pct = totalAmt > 0 ? ((ctx.parsed / totalAmt) * 100).toFixed(1) : '0';
-                                    return ctx.label + ': ' + ctx.parsed.toLocaleString() + '만원 (' + pct + '%)';
-                                }
-                            },
-                            bodyFont: { family: 'Pretendard', size: 12 }
-                        }
+        new Chart(document.getElementById('salary-donut'), {
+            type: 'doughnut',
+            data: {
+                labels: items.map(function (it) { return it.name; }),
+                datasets: [{
+                    data: items.map(function (it) { return it.amount; }),
+                    backgroundColor: items.map(function (it) { return it.color; }),
+                    borderWidth: 2, borderColor: 'white', hoverOffset: 4
+                }]
+            },
+            options: {
+                cutout: '65%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                var pct = totalAmt > 0 ? ((ctx.parsed / totalAmt) * 100).toFixed(1) : '0';
+                                return ctx.label + ': ' + ctx.parsed.toLocaleString() + '만원 (' + pct + '%)';
+                            }
+                        },
+                        bodyFont: { family: 'Pretendard', size: 12 }
                     }
                 }
-            });
-        }
-
-        console.log('급여 도넛: 순인건비=' + laborNet + ', 4대보험=' + insuranceCost +
-            ', 야간=' + nightPay + ', 교육=' + TRAINING_AMT + ', 복리=' + WELFARE_AMT +
-            ' | total=' + totalAmt + '만원');
+            }
+        });
     }
 
     // ═══════════════════════════════════════════════
-    //  직원 리스크 테이블
+    //  직원 리스크 (실제 직원 수 기반, 인원수 가변)
     // ═══════════════════════════════════════════════
-    function renderRisk(morale, patients, satisfaction) {
+    function renderRisk(morale, patients, satisfaction, totalStaff) {
         var risks = [];
 
         if (morale < RISK_MORALE_THRESH) {
             var fatPct = Math.round((1 - morale) * 100);
-            risks.push({ item: '간호사 A', desc: '피로도 높음 (평균 ' + fatPct + '%)', grade: '위험', cls: 'neg' });
+            risks.push({ item: '간호팀', desc: '피로도 높음 (평균 ' + fatPct + '%)', grade: '위험', cls: 'neg' });
         } else {
             risks.push({ item: '간호팀', desc: '피로도 정상 (평균 ' + Math.round((1 - morale) * 75) + '%)', grade: '양호', cls: 'pos' });
         }
@@ -679,7 +747,9 @@ renderSidebar('staff');
             risks.push({ item: '코디네이터', desc: '만족도 하락 (' + (satisfaction * 5).toFixed(1) + '/5.0)', grade: '보통', cls: 'warn' });
         }
 
-        risks.push({ item: '주말 근무', desc: '인력 부족 (필요 2명 추가)', grade: '위험', cls: 'neg' });
+        // 주말 근무 인력 부족: 총 직원 수 기준 판단
+        var weekendNeeded = Math.max(1, Math.ceil(totalStaff * 0.2));
+        risks.push({ item: '주말 근무', desc: '인력 부족 (필요 ' + weekendNeeded + '명 추가)', grade: '위험', cls: 'neg' });
 
         document.getElementById('risk-tbody').innerHTML = risks.map(function (r) {
             return '<tr>' +
@@ -688,9 +758,6 @@ renderSidebar('staff');
                 '<td>' + badge(r.cls, r.grade) + '</td>' +
                 '</tr>';
         }).join('');
-
-        console.log('직원 리스크: ' + risks.length + '개 (morale=' + morale +
-            ', patients=' + patients + ', sat=' + satisfaction + ')');
     }
 
 })();
