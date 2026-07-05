@@ -1003,6 +1003,16 @@
     const deprMan = Math.round((data.interiorCost + data.equipTotal) / 60);
     localStorage.setItem('medsim_fixed_cost', String(data.monthlyRent + staffWithIns + deprMan + data.marketingCost));
 
+    const staffCounts = { nurse: 0, admin: 0, radiol: 0, assistant: 0 };
+    (data.staff || []).forEach(({ role, count }) => {
+      if (role === '간호사')                 staffCounts.nurse     += count;
+      else if (role.includes('원무'))        staffCounts.admin     += count;
+      else if (role === '방사선사')          staffCounts.radiol    += count;
+      else if (role.includes('조무'))        staffCounts.assistant += count;
+    });
+    localStorage.setItem('medsim_staff_counts',         JSON.stringify(staffCounts));
+    localStorage.setItem('medsim_initial_staff_counts', JSON.stringify(staffCounts));
+
     window.location.href = 'start5.html';
   }
 

@@ -674,9 +674,12 @@ const STAFF_DEFAULTS = {
 
 function initStratState() {
     const os = LS('medsim_operation_style') || 'BALANCED';
+    const currentStaff = JSON.parse(LS('medsim_staff_counts')         || 'null');
+    const initialStaff = JSON.parse(LS('medsim_initial_staff_counts') || 'null');
+    const staffCounts  = currentStaff || initialStaff || { ...STAFF_DEFAULTS[os] };
     stratState = {
         operationStyle:     os,
-        staffCounts:        JSON.parse(LS('medsim_staff_counts') || 'null') || { ...STAFF_DEFAULTS[os] },
+        staffCounts,
         clinicStyle:        LS('medsim_clinic_style')     || 'FAST_TURNOVER',
         operationHours:     LS('medsim_operation_hours')  || 'STANDARD',
         services:           JSON.parse(LS('medsim_services')     || '["endoscope_upper"]'),
@@ -684,11 +687,18 @@ function initStratState() {
         repaymentStyle:     LS('medsim_repayment_style')  || 'BALANCED',
         reputationPrograms: JSON.parse(LS('medsim_rep_programs')  || '["revisit_sms"]'),
     };
+    console.log('[운영 전략 탭 로드]', {
+        현재_staff_counts: LS('medsim_staff_counts'),
+        초기_staff_counts: LS('medsim_initial_staff_counts'),
+        화면_표시값: stratState.staffCounts,
+    });
 }
 
 function selectOpStyle(v) {
+    if (stratState.operationStyle !== v) {
+        stratState.staffCounts = { ...STAFF_DEFAULTS[v] };
+    }
     stratState.operationStyle = v;
-    stratState.staffCounts = { ...STAFF_DEFAULTS[v] };
     renderStrategyTab();
 }
 function selectClinicStyle(v) { stratState.clinicStyle    = v; renderStrategyTab(); }

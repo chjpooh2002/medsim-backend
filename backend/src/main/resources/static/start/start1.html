@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>시작하기 – MEDSIM</title>
+    <title>진료 유형 선택 – MEDSIM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-          --blue: #1A6BFF; --blue-dark: #0F4FCC; --navy: #0D1B2A;
+          --blue: #1A6BFF; --blue-dark: #0F4FCC; --blue-bg: #EFF5FF;
+          --navy: #0D1B2A;
           --gray-1: #F5F7FA; --gray-2: #E8ECF2; --gray-3: #C8D0DC;
           --gray-5: #7A8699; --gray-7: #3D4F63; --white: #FFFFFF;
-          --font: 'Pretendard', -apple-system, sans-serif;
+          --green: #00C48C; --amber: #F59E0B;
+          --font: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
-        html, body { height: 100%; }
-        body { font-family: var(--font); color: var(--navy); background: var(--gray-1); -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; }
+        body { font-family: var(--font); color: var(--navy); background: var(--gray-1); -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column; }
 
         /* NAV */
-        nav { background: rgba(255,255,255,.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--gray-2); height: 60px; display: flex; align-items: center; padding: 0 32px; flex-shrink: 0; }
+        nav { background: rgba(255,255,255,.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--gray-2); height: 60px; display: flex; align-items: center; padding: 0 32px; position: sticky; top: 0; z-index: 100; }
         .nav-inner { width: 100%; max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
         .nav-left { display: flex; gap: 28px; }
         .nav-left a { font-size: 13px; font-weight: 500; color: var(--gray-7); text-decoration: none; }
@@ -29,53 +30,84 @@
         .logo-icon svg { width: 16px; height: 16px; fill: white; }
         .logo-type { font-size: 17px; font-weight: 800; color: var(--navy); letter-spacing: .5px; }
         .nav-right { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
-        .btn-outline { padding: 7px 16px; border: 1.5px solid var(--gray-3); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--navy); background: transparent; text-decoration: none; transition: border-color .18s; display: inline-block; }
+        .btn-outline { padding: 7px 16px; border: 1.5px solid var(--gray-3); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--navy); background: transparent; text-decoration: none; display: inline-block; }
         .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
-        .btn-solid { padding: 7px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; background: var(--blue); text-decoration: none; display: inline-block; transition: background .18s; }
+        .btn-solid { padding: 7px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; background: var(--blue); text-decoration: none; display: inline-block; }
         .btn-solid:hover { background: var(--blue-dark); }
 
+        /* STEP BAR */
+        .step-bar { background: white; border-bottom: 1px solid var(--gray-2); padding: 16px 32px; display: flex; justify-content: center; gap: 8px; }
+        .step { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--gray-3); }
+        .step.active { color: var(--blue); }
+        .step.done { color: var(--gray-5); }
+        .step-num { width: 22px; height: 22px; border-radius: 50%; border: 2px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+        .step.active .step-num { background: var(--blue); border-color: var(--blue); color: white; }
+        .step.done .step-num { background: var(--gray-2); border-color: var(--gray-3); }
+        .step-div { width: 32px; height: 2px; background: var(--gray-2); border-radius: 2px; margin: 0 4px; align-self: center; }
+
         /* MAIN */
-        main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 32px; }
-        .intro-card {
-          background: white; border-radius: 20px; border: 1px solid var(--gray-2);
-          max-width: 860px; width: 100%; padding: 64px;
-          display: grid; grid-template-columns: 280px 1fr; gap: 60px; align-items: center;
-          box-shadow: 0 4px 24px rgba(13,27,42,.07);
-          animation: fadeUp .5s ease both;
+        main { flex: 1; padding: 48px 32px 80px; }
+        .content { max-width: 800px; margin: 0 auto; }
+        .page-head { text-align: center; margin-bottom: 40px; }
+        .page-head .sub { font-size: 13px; font-weight: 700; color: var(--blue); margin-bottom: 8px; letter-spacing: .5px; }
+        .page-head h1 { font-size: 28px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 10px; }
+        .page-head p { font-size: 14px; color: var(--gray-5); line-height: 1.6; }
+
+        /* TYPE CARDS */
+        .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 36px; }
+        .type-card {
+          background: white; border: 2px solid var(--gray-2); border-radius: 16px;
+          padding: 28px 20px 24px; cursor: pointer;
+          transition: border-color .2s, box-shadow .2s, transform .15s;
+          text-align: center; outline: none;
         }
-        .blob-wrap { display: flex; align-items: center; justify-content: center; }
-        .blob {
-          width: 220px; height: 220px;
-          background: var(--gray-2);
-          border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
-          animation: morph 6s ease-in-out infinite;
+        .type-card:hover { border-color: var(--blue); transform: translateY(-3px); box-shadow: 0 10px 28px rgba(26,107,255,.12); }
+        .type-card.selected { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(26,107,255,.12); }
+
+        .card-icon {
+          font-size: 56px; line-height: 1;
+          font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+          margin-bottom: 16px;
+          display: block;
+          filter: drop-shadow(0 2px 6px rgba(0,0,0,.08));
         }
-        @keyframes morph {
-          0%,100% { border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%; }
-          33%      { border-radius: 40% 60% 45% 55% / 60% 40% 55% 45%; }
-          66%      { border-radius: 55% 45% 60% 40% / 45% 55% 50% 50%; }
+        .type-card.selected .card-icon { filter: drop-shadow(0 4px 10px rgba(26,107,255,.2)); }
+
+        .card-badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; margin-bottom: 8px; }
+        .badge-blue   { background: var(--blue-bg); color: var(--blue); }
+        .badge-green  { background: #E6FBF3; color: #059669; }
+        .badge-amber  { background: #FEF3C7; color: #B45309; }
+
+        .card-name { font-size: 17px; font-weight: 800; letter-spacing: -.3px; margin-bottom: 8px; }
+        .card-desc { font-size: 12.5px; line-height: 1.65; color: var(--gray-5); margin-bottom: 14px; }
+
+        .card-tags { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+        .ctag { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--gray-1); color: var(--gray-7); }
+        .type-card.selected .ctag { background: var(--blue-bg); color: var(--blue); }
+
+        .selected-check {
+          display: none; width: 22px; height: 22px; border-radius: 50%;
+          background: var(--blue); margin: 14px auto 0;
+          align-items: center; justify-content: center;
         }
-        .intro-content { display: flex; flex-direction: column; gap: 20px; }
-        .intro-badge { font-size: 13px; font-weight: 700; color: var(--blue); letter-spacing: .5px; }
-        .intro-content h1 { font-size: 32px; font-weight: 800; line-height: 1.3; letter-spacing: -1px; }
-        .intro-content p { font-size: 15px; line-height: 1.75; color: var(--gray-5); }
-        .intro-star { font-size: 13px; color: var(--gray-5); display: flex; align-items: center; gap: 6px; }
-        .intro-star::before { content: '★★★★★'; color: #FFC107; font-size: 14px; letter-spacing: 2px; }
-        .start-btn {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 14px 32px; background: var(--blue); color: white;
-          font-size: 15px; font-weight: 700; font-family: var(--font);
-          border: none; border-radius: 10px; cursor: pointer;
-          text-decoration: none; width: fit-content;
-          transition: background .18s, transform .15s;
-        }
-        .start-btn:hover { background: var(--blue-dark); transform: translateY(-1px); }
-        .start-btn svg { width: 16px; height: 16px; fill: white; }
+        .selected-check svg { width: 12px; height: 12px; stroke: white; stroke-width: 2.5; fill: none; }
+        .type-card.selected .selected-check { display: flex; }
+
+        /* BOTTOM */
+        .bottom-nav { display: flex; justify-content: center; gap: 12px; }
+        .nav-next { padding: 14px 48px; background: var(--blue); color: white; font-size: 15px; font-weight: 700; font-family: var(--font); border: none; border-radius: 10px; cursor: pointer; transition: background .18s, opacity .18s; }
+        .nav-next:hover { background: var(--blue-dark); }
+        .nav-next:disabled { opacity: .45; cursor: not-allowed; }
+
+        /* TOAST */
+        .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px); background: #e33; color: white; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; z-index: 999; transition: transform .3s cubic-bezier(.34,1.56,.64,1); white-space: nowrap; pointer-events: none; }
+        .toast.show { transform: translateX(-50%) translateY(0); }
 
         footer { background: var(--navy); padding: 20px 32px; text-align: center; }
         footer p { font-size: 12px; color: rgba(255,255,255,.4); }
 
-        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        .content { animation: fadeUp .4s ease both; }
     </style>
 </head>
 <body>
@@ -93,23 +125,120 @@
     </div>
 </nav>
 
+<div class="step-bar">
+    <div class="step active"><div class="step-num">1</div> 진료 유형</div>
+    <div class="step-div"></div>
+    <div class="step"><div class="step-num">2</div> 페르소나</div>
+    <div class="step-div"></div>
+    <div class="step"><div class="step-num">3</div> 입지</div>
+    <div class="step-div"></div>
+    <div class="step"><div class="step-num">4</div> 운영 스타일</div>
+    <div class="step-div"></div>
+    <div class="step"><div class="step-num">5</div> 시작</div>
+</div>
+
 <main>
-    <div class="intro-card">
-        <div class="blob-wrap"><div class="blob"></div></div>
-        <div class="intro-content">
-            <p class="intro-badge">MEDSIM</p>
-            <h1>당신의 병원을<br>시작할 시간입니다.</h1>
-            <p>개원 이후 36개월 동안<br>당신은 수많은 의사결정을 내리게됩니다.</p>
-            <p class="intro-star">받습니다</p>
-            <a class="start-btn" href="start2.html">
-                시작하기
-                <svg viewBox="0 0 20 20"><path d="M7 4l8 6-8 6V4z"/></svg>
-            </a>
+    <div class="content">
+        <div class="page-head">
+            <p class="sub">STEP 1 · 진료 유형 선택</p>
+            <h1>어떤 방식으로 진료를 운영할 계획인가요?</h1>
+            <p>선택한 유형에 따라 수익 구조와 운영 패턴이 달라집니다.</p>
+        </div>
+
+        <div class="type-grid">
+            <!-- 균형형 -->
+            <div class="type-card" onclick="selectType(this,'BALANCED')">
+                <span class="card-icon">⚖️</span>
+                <span class="card-badge badge-blue">균형형</span>
+                <p class="card-name">균형형</p>
+                <p class="card-desc">급여와 비급여를 골고루 다루는 전형적 개원 모델. 안정성과 수익을 함께 추구합니다.</p>
+                <div class="card-tags">
+                    <span class="ctag">안정적</span>
+                    <span class="ctag">급여 + 비급여</span>
+                    <span class="ctag">표준 모델</span>
+                </div>
+                <div class="selected-check">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+            </div>
+
+            <!-- 급여 중심형 -->
+            <div class="type-card" onclick="selectType(this,'INSURANCE')">
+                <span class="card-icon">🏥</span>
+                <span class="card-badge badge-green">급여 중심형</span>
+                <p class="card-name">급여 중심형</p>
+                <p class="card-desc">건강보험 진료 위주의 안정적 운영. 환자 회전이 빠르고 예측 가능한 수익을 추구합니다.</p>
+                <div class="card-tags">
+                    <span class="ctag">건강보험</span>
+                    <span class="ctag">높은 환자수</span>
+                    <span class="ctag">예측 가능</span>
+                </div>
+                <div class="selected-check">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+            </div>
+
+            <!-- 비급여 중심형 -->
+            <div class="type-card" onclick="selectType(this,'PRIVATE')">
+                <span class="card-icon">💊</span>
+                <span class="card-badge badge-amber">비급여 중심형</span>
+                <p class="card-name">비급여 중심형</p>
+                <p class="card-desc">자유진료 중심의 고수익 지향 운영. 건당 수익이 높지만 마케팅과 환자 유치에 더 많은 노력이 필요합니다.</p>
+                <div class="card-tags">
+                    <span class="ctag">자유진료</span>
+                    <span class="ctag">고단가</span>
+                    <span class="ctag">마케팅 중요</span>
+                </div>
+                <div class="selected-check">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <button class="nav-next" id="btn-next" onclick="goNext()" disabled>다음</button>
         </div>
     </div>
 </main>
 
 <footer><p>MEDSIM © 2026. All rights reserved.</p></footer>
+<div class="toast" id="toast"></div>
+
+<script>
+    let selectedType = null;
+
+    function selectType(el, type) {
+        selectedType = type;
+        document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('btn-next').disabled = false;
+    }
+
+    function goNext() {
+        if (!selectedType) {
+            showToast('진료 유형을 선택해주세요.');
+            return;
+        }
+        localStorage.setItem('medsim_clinic_type', selectedType);
+        window.location.href = 'start2.html';
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    // 이전 선택 복원
+    window.addEventListener('DOMContentLoaded', () => {
+        const prev = localStorage.getItem('medsim_clinic_type');
+        if (prev) {
+            const el = document.querySelector(`.type-card[onclick*="'${prev}'"]`);
+            if (el) { el.classList.add('selected'); selectedType = prev; document.getElementById('btn-next').disabled = false; }
+        }
+    });
+</script>
 <script src="../common.js"></script>
 <script>requireAuth(); updateNav();</script>
 </body>
