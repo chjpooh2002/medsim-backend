@@ -58,8 +58,15 @@
         }
         .persona-card:hover { border-color:var(--blue); transform:translateY(-2px); box-shadow:0 8px 24px rgba(26,107,255,.1); }
         .persona-card.selected { border-color:var(--blue); box-shadow:0 0 0 4px rgba(26,107,255,.12); }
-        .card-img { width:100%; aspect-ratio:4/3; background:var(--gray-2); display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
-        .card-img svg { width:48px; height:48px; opacity:.3; }
+        .card-img { width:100%; aspect-ratio:4/3; background:var(--gray-1); display:flex; align-items:center; justify-content:center; margin-bottom:16px; transition:background .2s; }
+        .card-icon {
+          font-size:64px; line-height:1;
+          font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif;
+          display:block;
+          filter:drop-shadow(0 2px 6px rgba(0,0,0,.08));
+          user-select:none;
+        }
+        .persona-card.selected .card-icon { filter:drop-shadow(0 4px 10px rgba(26,107,255,.2)); }
         .card-body { padding:0 18px; }
         .card-tag { font-size:11px; font-weight:600; color:var(--gray-5); margin-bottom:4px; }
         .card-name { font-size:17px; font-weight:800; margin-bottom:8px; }
@@ -218,7 +225,7 @@
         <div class="persona-grid">
             <div class="persona-card" onclick="selectPersona(this,'안정형')">
                 <div class="card-img">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="#888" stroke-width="2"><rect x="8" y="8" width="32" height="32" rx="4"/><line x1="8" y1="8" x2="40" y2="40"/><line x1="40" y1="8" x2="8" y2="40"/></svg>
+                    <span class="card-icon">🛡️</span>
                 </div>
                 <div class="card-body">
                     <p class="card-tag">안정적인 것을 원하시나요?</p>
@@ -232,7 +239,7 @@
             </div>
             <div class="persona-card" onclick="selectPersona(this,'균형형')">
                 <div class="card-img">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="#888" stroke-width="2"><rect x="8" y="8" width="32" height="32" rx="4"/><line x1="8" y1="8" x2="40" y2="40"/><line x1="40" y1="8" x2="8" y2="40"/></svg>
+                    <span class="card-icon">⚖️</span>
                 </div>
                 <div class="card-body">
                     <p class="card-tag">균형적인 것을 원하시나요?</p>
@@ -246,7 +253,7 @@
             </div>
             <div class="persona-card" onclick="selectPersona(this,'공격형')">
                 <div class="card-img">
-                    <svg viewBox="0 0 48 48" fill="none" stroke="#888" stroke-width="2"><rect x="8" y="8" width="32" height="32" rx="4"/><line x1="8" y1="8" x2="40" y2="40"/><line x1="40" y1="8" x2="8" y2="40"/></svg>
+                    <span class="card-icon">🚀</span>
                 </div>
                 <div class="card-body">
                     <p class="card-tag">큰 수익을 원하시나요?</p>
@@ -486,11 +493,9 @@
       document.querySelectorAll('.persona-card').forEach(c => {
         c.classList.remove('selected');
         c.querySelector('.card-img').style.background = '';
-        c.querySelector('.card-img svg').style.stroke = '#888';
       });
       el.classList.add('selected');
       el.querySelector('.card-img').style.background = '#E8F0FF';
-      el.querySelector('.card-img svg').style.stroke = '#1A6BFF';
     }
 
     // ── 에러 핸들링 ───────────────────────────────────────────────────────────────

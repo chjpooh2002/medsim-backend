@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=f26eb17ba8fd4ab4399206b4665037ca&libraries=services"></script>
     <style>
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
         :root {
@@ -258,6 +259,74 @@
         .tab-placeholder p { font-size:15px; font-weight:700; color:var(--gray-7); margin-bottom:6px; }
         .tab-placeholder span { font-size:13px; }
 
+        /* ── EVENT TAB ── */
+        .ev-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+        .ev-title  { font-size:18px; font-weight:800; color:var(--navy); }
+        .ev-month-badge { font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-bg); padding:3px 10px; border-radius:20px; }
+        .ev-demo-tag { font-size:9px; color:var(--gray-5); background:var(--gray-2); padding:2px 6px; border-radius:4px; }
+
+        .ev-two-col      { display:grid; grid-template-columns:55% 1fr; gap:14px; margin-bottom:14px; }
+        .ev-two-col.even { grid-template-columns:1fr 1fr; }
+        .ev-section      { background:white; border:1px solid var(--gray-2); border-radius:12px; padding:18px 20px; }
+        .ev-section-title { font-size:13px; font-weight:800; color:var(--navy); margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+
+        .ev-cat-grid  { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .ev-cat       { background:var(--gray-1); border-radius:10px; padding:12px 14px; }
+        .ev-cat-label { font-size:10px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; margin-bottom:10px; }
+        .ev-event-list{ display:flex; flex-direction:column; gap:6px; }
+        .ev-event-item{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--navy); }
+        .ev-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+        .ev-dot.active-neg { background:var(--red);   box-shadow:0 0 0 2px rgba(255,59,59,.22); }
+        .ev-dot.active-pos { background:var(--green); box-shadow:0 0 0 2px rgba(34,201,122,.22); }
+        .ev-dot.inactive   { background:var(--gray-3); }
+        .ev-event-month { font-size:10px; color:var(--gray-5); margin-left:auto; }
+
+        .ev-map-wrap { border-radius:8px; overflow:hidden; border:1px solid var(--gray-2); height:190px; }
+        #ev-kakao-map { width:100%; height:190px; }
+        .ev-map-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+        .ev-chip { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; border:1px solid; }
+        .ev-chip.neg { color:var(--red);    border-color:rgba(255,59,59,.3);  background:rgba(255,59,59,.05); }
+        .ev-chip.pos { color:#15a05c; border-color:rgba(34,201,122,.3); background:rgba(34,201,122,.05); }
+        .ev-chip.neu { color:var(--gray-7); border-color:var(--gray-2);       background:white; }
+        .ev-map-kpi  { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+        .ev-map-kpi-item { background:var(--gray-1); border-radius:8px; padding:7px 10px; text-align:center; }
+        .ev-map-kpi-lbl  { font-size:10px; color:var(--gray-5); font-weight:600; }
+        .ev-map-kpi-val  { font-size:13px; font-weight:800; }
+
+        .ev-ai-text { font-size:13px; color:var(--gray-7); line-height:1.75; margin-bottom:12px; }
+        .ev-ai-rec-lbl  { font-size:11px; font-weight:700; color:var(--navy); margin-bottom:7px; }
+        .ev-ai-rec-list { list-style:none; padding:0; display:flex; flex-direction:column; gap:5px; }
+        .ev-ai-rec-list li { font-size:12px; color:var(--gray-7); padding-left:14px; position:relative; line-height:1.55; }
+        .ev-ai-rec-list li::before { content:'•'; position:absolute; left:0; color:var(--blue); font-weight:700; }
+
+        .ev-resp-list { display:flex; flex-direction:column; gap:7px; margin-bottom:12px; }
+        .ev-resp-item { display:flex; align-items:flex-start; gap:10px; padding:9px 12px; border:1.5px solid var(--gray-2); border-radius:9px; cursor:pointer; transition:border-color .15s,background .15s; }
+        .ev-resp-item.selected { border-color:var(--blue); background:var(--blue-bg); }
+        .ev-resp-item:hover:not(.selected) { border-color:var(--gray-3); background:var(--gray-1); }
+        .ev-resp-radio { width:15px; height:15px; border-radius:50%; border:2px solid var(--gray-3); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; transition:border-color .15s; }
+        .ev-resp-radio.on { border-color:var(--blue); }
+        .ev-resp-radio-dot { width:7px; height:7px; border-radius:50%; background:var(--blue); }
+        .ev-resp-label { font-size:13px; font-weight:600; color:var(--navy); }
+        .ev-resp-desc  { font-size:11px; color:var(--gray-5); margin-top:1px; }
+        .ev-impact-box { background:var(--gray-1); border-radius:8px; padding:9px 12px; }
+        .ev-impact-lbl { font-size:10px; font-weight:700; color:var(--gray-5); margin-bottom:6px; }
+        .ev-impact-row { display:flex; gap:6px; flex-wrap:wrap; }
+
+        .ev-sim-wrap { position:relative; height:160px; }
+
+        .ev-timeline { display:flex; flex-direction:column; position:relative; gap:0; }
+        .ev-timeline::before { content:''; position:absolute; left:11px; top:4px; bottom:4px; width:2px; background:var(--gray-2); }
+        .ev-tl-item    { display:flex; align-items:flex-start; gap:12px; padding:7px 0; position:relative; z-index:1; }
+        .ev-tl-dot     { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:800; flex-shrink:0; color:white; }
+        .ev-tl-dot.neg { background:var(--red); }
+        .ev-tl-dot.pos { background:var(--green); }
+        .ev-tl-dot.neu { background:var(--gray-3); }
+        .ev-tl-month   { font-size:10px; font-weight:700; color:var(--gray-5); }
+        .ev-tl-name    { font-size:12px; font-weight:700; color:var(--navy); }
+        .ev-tl-empty   { font-size:12px; color:var(--gray-5); padding:10px 0 10px 36px; }
+
+        .ev-compare-wrap { position:relative; height:220px; }
+
         /* ── FOOTER ── */
         footer { background:var(--navy); padding:14px 26px; text-align:center; }
         footer p { font-size:12px; color:rgba(255,255,255,.4); }
@@ -426,13 +495,7 @@
             <div id="tab-운영전략" class="tab-panel"></div>
 
             <!-- ──────────────── TAB: 이벤트 ──────────────── -->
-            <div id="tab-이벤트" class="tab-panel">
-                <div class="tab-placeholder">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    <p>이벤트 센터</p>
-                    <span>6개월 이후부터 이벤트가 발생합니다</span>
-                </div>
-            </div>
+            <div id="tab-이벤트" class="tab-panel"></div>
 
             <!-- ──────────────── TAB: 이력 ──────────────── -->
             <div id="tab-이력" class="tab-panel">
@@ -1275,6 +1338,7 @@ function switchTab(tabName, el) {
     document.getElementById('tab-' + tabName)?.classList.add('active');
     if (tabName === '운영전략') renderStrategyTab();
     if (tabName === '이력')    renderHistoryTab();
+    if (tabName === '이벤트')  renderEventTab();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1334,6 +1398,386 @@ async function advanceMonth() {
     initPatientChart();
     initExpChart();
     switchTab('요약');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  이벤트 탭
+// ═══════════════════════════════════════════════════════════════
+
+let evSimChart    = null;
+let evCompChart   = null;
+let evKakaoMapObj = null;
+let selectedEvResponse = 'maintain';
+
+const EV_CATS = [
+    { id:'market',    label:'시장 이벤트',  color:'#FF3B3B',
+      items:[{id:'competitor_open',label:'경쟁병원 개원',neg:true},{id:'rent_increase',label:'임대료 상승',neg:true},{id:'market_shift',label:'상권 변화',neg:true}] },
+    { id:'operation', label:'운영 이벤트',  color:'#FF8C42',
+      items:[{id:'staff_leave',label:'직원 퇴사',neg:true},{id:'medical_accident',label:'의료 사고',neg:true},{id:'equipment_break',label:'장비 고장',neg:true}] },
+    { id:'patient',   label:'환자 이벤트',  color:'#8B5CF6',
+      items:[{id:'review_drop',label:'리뷰 하락',neg:true},{id:'viral_post',label:'바이럴 발생',neg:false},{id:'complaint',label:'민원 증가',neg:true}] },
+    { id:'growth',    label:'성장 이벤트',  color:'#22C97A',
+      items:[{id:'local_referral',label:'지역 추천',neg:false},{id:'checkup_contract',label:'검진 계약',neg:false},{id:'patient_surge',label:'환자 증가',neg:false}] },
+];
+
+const EV_TYPE_MAP = {
+    COMPETITOR_OPEN:'competitor_open', RENT_INCREASE:'rent_increase',
+    TRAFFIC_DECREASE:'market_shift',   STAFF_LEAVE:'staff_leave',
+    MEDICAL_ACCIDENT:'medical_accident', EQUIPMENT_BREAKDOWN:'equipment_break',
+    REVIEW_DROP:'review_drop', VIRAL_POST:'viral_post', COMPLAINT:'complaint',
+    LOCAL_REFERRAL:'local_referral', CHECKUP_CONTRACT:'checkup_contract',
+    FLU_SEASON:'patient_surge',     PATIENT_SURGE:'patient_surge',
+};
+
+const EV_RESPONSES = [
+    {id:'ad_expand', label:'광고 확대',       desc:'SNS·블로그 광고 집중',       effects:[{t:'초진 환자',v:'+8%',pos:true},{t:'마케팅 비용',v:'+500만원',pos:false}]},
+    {id:'quality',   label:'상담 품질 강화',  desc:'진료 시간 연장·상담 강화',   effects:[{t:'재진율',v:'+5%',pos:true},{t:'처리량',v:'-10%',pos:false}]},
+    {id:'price',     label:'가격 경쟁',       desc:'주요 진료 10% 할인',         effects:[{t:'신규 환자',v:'+12%',pos:true},{t:'건당 수익',v:'-10%',pos:false}]},
+    {id:'checkup',   label:'검진 서비스 추가',desc:'건강검진 패키지 도입',        effects:[{t:'객단가',v:'+15%',pos:true},{t:'초기 비용',v:'+300만원',pos:false}]},
+    {id:'maintain',  label:'현재 전략 유지',  desc:'현 운영 방식 그대로',         effects:[{t:'안정성',v:'유지',pos:true}]},
+];
+
+function _evRand(seed, n) {
+    const x = Math.sin(seed * 9301 + n * 49297 + 233) * 10000;
+    return x - Math.floor(x);
+}
+
+function _getDerivedEvents(simId, upToMonth) {
+    const POOL = EV_CATS.flatMap(c => c.items.map(i => ({...i, cat:c.id})));
+    const cps  = [6,12,18,24,30,36].filter(m => m <= upToMonth);
+    const seed = simId ? simId.split('').reduce((a,c) => a*31 + c.charCodeAt(0), 7) : 12345;
+    const result = [];
+    cps.forEach((month, idx) => {
+        const i1 = Math.floor(_evRand(seed, idx*2)   * POOL.length);
+        const i2 = (i1+1+Math.floor(_evRand(seed, idx*2+1) * (POOL.length-1))) % POOL.length;
+        [POOL[i1], POOL[i2]].forEach(ev => result.push({month, ...ev}));
+    });
+    return result;
+}
+
+function _collectActiveIds() {
+    const ids = new Set();
+    getAllMonthlyData().forEach(r => {
+        (r.activeEvents||[]).forEach(ev => {
+            const k = ev.type || ev.eventType || '';
+            const mapped = EV_TYPE_MAP[k];
+            if (mapped) ids.add(mapped);
+        });
+    });
+    return ids;
+}
+
+function _collectTimeline() {
+    const result = [];
+    getAllMonthlyData().forEach(r => {
+        (r.activeEvents||[]).forEach(ev => {
+            result.push({
+                month: r.month,
+                name: ev.title || ev.description || '이벤트',
+                neg: ev.severity==='HIGH' || (ev.impactMap && ev.impactMap.revenueMultiplier < 1),
+            });
+        });
+    });
+    return result;
+}
+
+function selectEvResponse(id) {
+    selectedEvResponse = id;
+    document.querySelectorAll('.ev-resp-item').forEach(el => {
+        const on = el.dataset.id === id;
+        el.classList.toggle('selected', on);
+        const dot = el.querySelector('.ev-resp-radio');
+        dot.classList.toggle('on', on);
+        dot.innerHTML = on ? '<span class="ev-resp-radio-dot"></span>' : '';
+    });
+    const resp = EV_RESPONSES.find(r => r.id === id);
+    const box  = document.getElementById('ev-impact-badges');
+    if (resp && box) {
+        box.innerHTML = resp.effects.map(e =>
+            `<span class="ibadge ${e.pos?'pos':'neg'} sm">${e.t} ${e.v}</span>`
+        ).join('');
+    }
+}
+
+function renderEventTab() {
+    const panel = document.getElementById('tab-이벤트');
+
+    if (currentMonth < 6) {
+        panel.innerHTML = `
+            <div class="tab-placeholder">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gray-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <p>이벤트 센터</p>
+                <span>아직 발생한 이벤트가 없습니다. 6개월 이후부터 발생합니다.</span>
+            </div>`;
+        return;
+    }
+
+    const all    = getAllMonthlyData();
+    const last   = all.length ? all[all.length-1] : null;
+    const simId  = getSimulationId() || '';
+    const seed   = simId ? simId.split('').reduce((a,c)=>a*31+c.charCodeAt(0),7) : 12345;
+
+    const activeIds = _collectActiveIds();
+    const derived   = _getDerivedEvents(simId, currentMonth);
+    derived.forEach(d => { if (d.month <= currentMonth) activeIds.add(d.id); });
+
+    const hasBEEvents = all.some(r => r.activeEvents && r.activeEvents.length > 0);
+    const showDemo    = !hasBEEvents;
+
+    let timeline = _collectTimeline();
+    if (!timeline.length) {
+        timeline = derived.map(d => ({month:d.month, name:d.label, neg:d.neg}));
+    }
+
+    // Current checkpoint events for chips
+    const lastCp = [6,12,18,24,30,36].filter(m=>m<=currentMonth).pop();
+    let curChips = hasBEEvents
+        ? (last&&last.activeEvents||[]).map(ev=>({title:ev.title||ev.description||'이벤트',neg:ev.severity==='HIGH'||(ev.impactMap&&ev.impactMap.revenueMultiplier<1)}))
+        : derived.filter(d=>d.month===lastCp).map(d=>({title:d.label,neg:d.neg}));
+
+    // -- AI text --
+    const rep  = last ? (last.reputationScore||3.5) : 3.5;
+    const cash = last ? (last.cumulativeCash||0) : 0;
+    const hasNegEv = curChips.some(e=>e.neg);
+    const hasPosEv = curChips.some(e=>!e.neg);
+    let aiText = '현재 우리 병원은 ';
+    aiText += rep >= 4.0 ? '높은 평판을 바탕으로 안정적인 운영 중입니다. '
+            : rep >= 3.0 ? '평균적인 평판을 유지하며 운영 중입니다. '
+            : '평판이 다소 낮아 환자 유치에 어려움이 있습니다. ';
+    if (hasNegEv) aiText += '발생한 부정적 이벤트로 인해 단기 수익 압박이 예상됩니다. ';
+    if (hasPosEv) aiText += '긍정적 이벤트를 통해 신규 환자 유입 기회가 있습니다. ';
+    if (cash < 5000) aiText += '현금 여력이 부족하여 보수적 전략이 권장됩니다.';
+    const aiRecs = hasNegEv
+        ? ['마케팅 효율을 높여 신규 환자 유입 집중', '불필요한 고정비 항목 점검·절감', '재진 환자 관리 강화로 안정적 수익 확보']
+        : ['서비스 품질 개선으로 재진율 향상', '검진 서비스 등 추가 수익원 발굴', '지역 커뮤니티 마케팅 강화'];
+
+    // -- Category grid --
+    const catHtml = EV_CATS.map(cat => `
+        <div class="ev-cat">
+            <div class="ev-cat-label" style="color:${cat.color}">${cat.label}</div>
+            <div class="ev-event-list">
+                ${cat.items.map(item => {
+                    const act = activeIds.has(item.id);
+                    const dm  = derived.find(d=>d.id===item.id);
+                    const dotC = act ? (item.neg?'active-neg':'active-pos') : 'inactive';
+                    return `<div class="ev-event-item">
+                        <span class="ev-dot ${dotC}"></span>
+                        <span class="ev-event-label">${item.label}</span>
+                        ${act && dm ? `<span class="ev-event-month">M${dm.month}</span>` : ''}
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`).join('');
+
+    // -- Map chips --
+    const chipsHtml = curChips.length
+        ? curChips.slice(0,3).map(e=>`<span class="ev-chip ${e.neg?'neg':'pos'}">${e.title}</span>`).join('')
+        : '<span class="ev-chip neu">이벤트 없음</span>';
+
+    // -- KPI badges --
+    const pcrRate = last && last.patientsChangeRate!=null ? last.patientsChangeRate : null;
+    const repRate = last && last.reputationChangeRate!=null ? last.reputationChangeRate : null;
+    function fmtRate(r) { return r!=null ? (r>=0?'+':'')+(r*100).toFixed(1)+'%' : '–'; }
+
+    // -- Response HTML --
+    const selResp = EV_RESPONSES.find(r=>r.id===selectedEvResponse);
+    const respHtml = EV_RESPONSES.map(r => {
+        const on = r.id===selectedEvResponse;
+        return `<div class="ev-resp-item${on?' selected':''}" data-id="${r.id}" onclick="selectEvResponse('${r.id}')">
+            <span class="ev-resp-radio${on?' on':''}">${on?'<span class="ev-resp-radio-dot"></span>':''}</span>
+            <div>
+                <div class="ev-resp-label">${r.label}</div>
+                <div class="ev-resp-desc">${r.desc}</div>
+            </div>
+        </div>`;
+    }).join('');
+    const impactBadges = selResp ? selResp.effects.map(e=>`<span class="ibadge ${e.pos?'pos':'neg'} sm">${e.t} ${e.v}</span>`).join('') : '';
+
+    // -- Timeline HTML --
+    const tlHtml = timeline.length
+        ? timeline.slice(0,8).map(t=>`
+            <div class="ev-tl-item">
+                <div class="ev-tl-dot ${t.neg?'neg':'pos'}">M${t.month}</div>
+                <div>
+                    <div class="ev-tl-month">${t.month}개월차</div>
+                    <div class="ev-tl-name">${t.name}</div>
+                </div>
+            </div>`).join('')
+        : '<div class="ev-tl-empty">기록된 이벤트가 없습니다.</div>';
+
+    // Inject
+    panel.innerHTML = `
+        <div class="ev-header">
+            <span class="ev-title">발생 이벤트</span>
+            <span class="ev-month-badge">Month ${currentMonth}</span>
+            ${showDemo ? '<span class="ev-demo-tag">※ 데모 파생값</span>' : ''}
+        </div>
+
+        <div class="ev-two-col">
+            <div class="ev-section">
+                <div class="ev-section-title">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    이벤트 현황
+                </div>
+                <div class="ev-cat-grid">${catHtml}</div>
+            </div>
+            <div class="ev-section">
+                <div class="ev-section-title">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                    상권 현황
+                </div>
+                <div class="ev-map-wrap"><div id="ev-kakao-map"></div></div>
+                <div class="ev-map-chips">
+                    <span style="font-size:10px;font-weight:700;color:var(--gray-5)">이벤트</span>
+                    ${chipsHtml}
+                </div>
+                <div class="ev-map-kpi">
+                    <div class="ev-map-kpi-item">
+                        <div class="ev-map-kpi-lbl">환자수 변화</div>
+                        <div class="ev-map-kpi-val" style="color:${pcrRate!=null&&pcrRate>=0?'var(--green)':'var(--red)'}">${fmtRate(pcrRate)}</div>
+                    </div>
+                    <div class="ev-map-kpi-item">
+                        <div class="ev-map-kpi-lbl">평판 변화</div>
+                        <div class="ev-map-kpi-val" style="color:${repRate!=null&&repRate>=0?'var(--green)':'var(--red)'}">${fmtRate(repRate)}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ev-two-col even">
+            <div class="ev-section">
+                <div class="ev-section-title">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+                    AI 분석
+                </div>
+                <p class="ev-ai-text">${aiText}</p>
+                <div class="ev-ai-rec-lbl">추천 전략</div>
+                <ul class="ev-ai-rec-list">${aiRecs.map(r=>`<li>${r}</li>`).join('')}</ul>
+            </div>
+            <div class="ev-section">
+                <div class="ev-section-title">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    대응 전략 선택
+                </div>
+                <div class="ev-resp-list">${respHtml}</div>
+                <div class="ev-impact-box">
+                    <div class="ev-impact-lbl">선택 전략 예상 영향</div>
+                    <div class="ev-impact-row" id="ev-impact-badges">${impactBadges}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ev-section" style="margin-bottom:14px">
+            <div class="ev-section-title">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                실시간 영향 시뮬레이션
+                <span style="font-size:11px;font-weight:600;color:var(--gray-5);margin-left:auto">단위: 만원</span>
+            </div>
+            <div class="ev-sim-wrap"><canvas id="ev-sim-chart"></canvas></div>
+        </div>
+
+        <div class="ev-two-col even">
+            <div class="ev-section">
+                <div class="ev-section-title">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    이벤트 타임라인
+                </div>
+                <div class="ev-timeline">${tlHtml}</div>
+            </div>
+            <div class="ev-section">
+                <div class="ev-section-title">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    병원 vs 경쟁 비교
+                    <span class="ev-demo-tag" style="margin-left:auto">※ 데모 파생값</span>
+                </div>
+                <div class="ev-compare-wrap"><canvas id="ev-compare-chart"></canvas></div>
+            </div>
+        </div>
+    `;
+
+    // Charts & map after DOM injection
+    if (evSimChart)  { evSimChart.destroy();  evSimChart  = null; }
+    if (evCompChart) { evCompChart.destroy(); evCompChart = null; }
+    _initEvSimChart(all);
+    _initEvCompareChart(last, rep, seed);
+    _initEvKakaoMap();
+}
+
+function _initEvSimChart(all) {
+    const canvas = document.getElementById('ev-sim-chart');
+    if (!canvas || !all.length) return;
+    evSimChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: all.map(d => 'M'+d.month),
+            datasets: [
+                { label:'매출',   data:all.map(d=>d.revenue   ||0), borderColor:'#1A6BFF', backgroundColor:'rgba(26,107,255,.07)', fill:true,  tension:0.4, pointRadius:3, borderWidth:2 },
+                { label:'순이익', data:all.map(d=>d.netProfit ||0), borderColor:'#22C97A', backgroundColor:'transparent',          fill:false, tension:0.4, pointRadius:3, borderWidth:2,
+                  segment:{borderColor:ctx=>ctx.p1.parsed.y<0?'#FF3B3B':'#22C97A'} },
+            ]
+        },
+        options: {
+            responsive:true, maintainAspectRatio:false,
+            interaction:{mode:'index',intersect:false},
+            plugins:{
+                legend:{position:'top',labels:{font:{family:'Pretendard',weight:'600',size:11},padding:12,usePointStyle:true}},
+                tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}만원`}},
+            },
+            scales:{
+                x:{grid:{display:false},ticks:{font:{family:'Pretendard',size:11},color:'#7A8699'}},
+                y:{beginAtZero:false,grid:{color:'#E8ECF2'},ticks:{font:{family:'Pretendard',size:11},color:'#7A8699',callback:v=>v.toLocaleString()+'만'}},
+            }
+        }
+    });
+}
+
+function _initEvCompareChart(last, rep, seed) {
+    const canvas = document.getElementById('ev-compare-chart');
+    if (!canvas) return;
+    const r1 = 0.82 + _evRand(seed,10) * 0.36;
+    const r2 = 0.78 + _evRand(seed,11) * 0.40;
+    const r3 = 62   + Math.floor(_evRand(seed,12) * 22);
+    const myPat = last ? Math.max(1, Math.round((last.patientsCount||0)/22)) : 20;
+    const myRev = last ? Math.min(100, Math.round((last.revenue||0)/150))   : 50;
+    const myMor = last ? Math.round((last.staffMorale||0.7)*100)            : 70;
+    evCompChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: ['일 환자수(명)', '평판(×20)', '매출지수', '직원사기'],
+            datasets: [
+                { label:'우리 병원',  data:[myPat, Math.round(rep*20), myRev, myMor],                                                       backgroundColor:'rgba(26,107,255,.72)', borderRadius:4 },
+                { label:'경쟁 병원', data:[Math.round(myPat*r1), Math.round(rep*20*r2), Math.round(myRev*r2), r3], backgroundColor:'rgba(200,208,220,.8)', borderRadius:4 },
+            ]
+        },
+        options: {
+            responsive:true, maintainAspectRatio:false,
+            plugins:{legend:{position:'top',labels:{font:{family:'Pretendard',weight:'600',size:11},padding:12,usePointStyle:true}}},
+            scales:{
+                x:{grid:{display:false},ticks:{font:{family:'Pretendard',size:10},color:'#7A8699',maxRotation:0}},
+                y:{beginAtZero:true,grid:{color:'#E8ECF2'},ticks:{font:{family:'Pretendard',size:11},color:'#7A8699'}},
+            }
+        }
+    });
+}
+
+function _initEvKakaoMap() {
+    if (typeof kakao === 'undefined') return;
+    const container = document.getElementById('ev-kakao-map');
+    if (!container) return;
+    const sg = LS('medsim_sigungu') || '';
+    const COORDS = {'강남구':[37.5175,127.0473],'서초구':[37.4837,127.0324],'송파구':[37.5145,127.1059],'마포구':[37.5663,126.9018],'종로구':[37.5730,126.9794],'중구':[37.5640,126.9977],'노원구':[37.6542,127.0568],'관악구':[37.4784,126.9516]};
+    const center = COORDS[sg] || [37.5175,127.0473];
+    try {
+        if (!evKakaoMapObj) {
+            evKakaoMapObj = new kakao.maps.Map(container, { center:new kakao.maps.LatLng(center[0],center[1]), level:5 });
+        } else {
+            evKakaoMapObj.setCenter(new kakao.maps.LatLng(center[0],center[1]));
+        }
+        new kakao.maps.Circle({ map:evKakaoMapObj, center:new kakao.maps.LatLng(center[0],center[1]), radius:1000, strokeWeight:2, strokeColor:'#FF3B3B', strokeOpacity:0.6, fillColor:'#FF3B3B', fillOpacity:0.05 });
+        const marker = new kakao.maps.Marker({ position:new kakao.maps.LatLng(center[0],center[1]), map:evKakaoMapObj });
+        const iw = new kakao.maps.InfoWindow({ content:'<div style="padding:4px 8px;font-size:11px;font-family:Pretendard,sans-serif;font-weight:700;white-space:nowrap">우리 병원</div>' });
+        iw.open(evKakaoMapObj, marker);
+    } catch(e) { console.warn('Kakao map error', e); }
 }
 
 // ═══════════════════════════════════════════════════════════════
