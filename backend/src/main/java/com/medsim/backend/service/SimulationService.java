@@ -1,11 +1,14 @@
 package com.medsim.backend.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.medsim.backend.domain.*;
 import com.medsim.backend.dto.request.SimulationRequest;
 import com.medsim.backend.dto.request.StaffRequest;
 import com.medsim.backend.dto.response.KpiMessage;
 import com.medsim.backend.dto.response.SimulationResult;
 import com.medsim.backend.dto.response.SimulationTurnResult;
+import com.medsim.backend.repository.SimulationStateRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -13,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class SimulationService {
 
     // ── 재무 상수 (기존 유지) ─────────────────────────────────────────────────────
@@ -23,7 +27,11 @@ public class SimulationService {
     private static final double INSURANCE_RATE      = 0.106;
     private static final int    DEPRECIATION_MONTHS = 60;
 
-    // ── 턴제 시뮬레이션 인메모리 저장소 ──────────────────────────────────────────
+    // ── DB 영구 저장 + 직렬화 ────────────────────────────────────────────────────
+    private final SimulationStateRepository simulationStateRepository;
+    private final ObjectMapper objectMapper;
+
+    // ── 인메모리 캐시 (성능용 write-through) ──────────────────────────────────────
     private final Map<String, SimulationState> simulationStore = new ConcurrentHashMap<>();
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -68,6 +76,7 @@ public class SimulationService {
         MonthlyData monthData = runOneTurn(state, Collections.emptyList());
         advanceState(state, 1);
         simulationStore.put(simId, state);
+        persistState(simId, state);
 
         return buildTurnResult(simId, 1, monthData, state);
     }
@@ -79,7 +88,7 @@ public class SimulationService {
      * @param decisionIds  이번 달 적용할 Decision ID 목록 (빈 리스트 가능)
      */
     public SimulationTurnResult nextTurn(String simulationId, List<String> decisionIds) {
-        SimulationState state = simulationStore.get(simulationId);
+        SimulationState state = loadState(simulationId);
         if (state == null) {
             throw new IllegalArgumentException("존재하지 않는 시뮬레이션입니다: " + simulationId);
         }
@@ -95,7 +104,49 @@ public class SimulationService {
         MonthlyData monthData = runOneTurn(state, selected);
         advanceState(state, thisTurnMonth);
 
+        simulationStore.put(simulationId, state);
+        persistState(simulationId, state);
+
         return buildTurnResult(simulationId, thisTurnMonth, monthData, state);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 상태 저장/조회 (인메모리 캐시 + DB write-through)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /** 인메모리 캐시 우선 조회 → miss 시 DB fallback 후 캐시에 저장 */
+    private SimulationState loadState(String simulationId) {
+        SimulationState cached = simulationStore.get(simulationId);
+        if (cached != null) return cached;
+
+        return simulationStateRepository.findBySimulationId(simulationId)
+                .map(entity -> {
+                    try {
+                        SimulationState state = objectMapper.readValue(entity.getStateJson(), SimulationState.class);
+                        simulationStore.put(simulationId, state);
+                        return state;
+                    } catch (Exception e) {
+                        throw new RuntimeException("SimulationState 역직렬화 실패: " + simulationId, e);
+                    }
+                })
+                .orElse(null);
+    }
+
+    /** 상태를 JSON으로 직렬화해 DB에 저장 (실패해도 인메모리는 유효) */
+    private void persistState(String simulationId, SimulationState state) {
+        try {
+            String json = objectMapper.writeValueAsString(state);
+            SimulationStateEntity entity = SimulationStateEntity.builder()
+                    .simulationId(simulationId)
+                    .stateJson(json)
+                    .currentMonth(state.getCurrentMonth())
+                    .isCompleted(state.isCompleted())
+                    .isBankrupt(state.isBankrupt())
+                    .build();
+            simulationStateRepository.save(entity);
+        } catch (Exception e) {
+            System.err.println("[SimulationService] DB 저장 실패 — " + simulationId + " / " + e.getMessage());
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

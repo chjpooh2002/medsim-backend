@@ -1,5 +1,6 @@
 package com.medsim.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.medsim.backend.dto.request.SimulationRequest;
 import lombok.*;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SimulationState {
 
     private String simulationId;
