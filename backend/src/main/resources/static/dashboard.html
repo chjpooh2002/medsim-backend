@@ -1264,13 +1264,28 @@ function updateTabBadges() {
     const eventBadge   = document.getElementById('badge-event');
     const historyBadge = document.getElementById('badge-history');
 
-    const events  = getNextEvents ? getNextEvents() : [];
     if (eventBadge) {
-        if (!events || events.length === 0) {
+        if (currentMonth < 6) {
             eventBadge.style.display = 'none';
         } else {
-            eventBadge.textContent = events.length > 99 ? '99+' : String(events.length);
-            eventBadge.style.display = '';
+            const simId = (typeof getSimulationId === 'function') ? getSimulationId() || '' : '';
+            const derivedEvs = (typeof _getDerivedEvents === 'function') ? _getDerivedEvents(simId, currentMonth) : [];
+            const unifiedIds = new Set();
+            (getAllMonthlyData ? getAllMonthlyData() : []).forEach(r => {
+                (r.activeEvents||[]).forEach(ev => {
+                    const k = ev.type || ev.eventType || '';
+                    const mapped = (typeof EV_TYPE_MAP !== 'undefined') ? EV_TYPE_MAP[k] : null;
+                    if (mapped) unifiedIds.add(mapped);
+                });
+            });
+            derivedEvs.filter(d => d.month <= currentMonth).forEach(d => unifiedIds.add(d.id));
+            const count = unifiedIds.size;
+            if (count === 0) {
+                eventBadge.style.display = 'none';
+            } else {
+                eventBadge.textContent = count > 99 ? '99+' : String(count);
+                eventBadge.style.display = '';
+            }
         }
     }
 
@@ -1517,23 +1532,43 @@ function renderEventTab() {
     const simId  = getSimulationId() || '';
     const seed   = simId ? simId.split('').reduce((a,c)=>a*31+c.charCodeAt(0),7) : 12345;
 
-    const activeIds = _collectActiveIds();
-    const derived   = _getDerivedEvents(simId, currentMonth);
-    derived.forEach(d => { if (d.month <= currentMonth) activeIds.add(d.id); });
-
-    const hasBEEvents = all.some(r => r.activeEvents && r.activeEvents.length > 0);
+    // ── 단일 소스: 백엔드 이벤트 + 파생 이벤트를 하나의 배열로 병합 ──
+    const POOL_FLAT = EV_CATS.flatMap(c => c.items.map(i => ({...i, cat:c.id})));
+    const backendEvList = [];
+    all.forEach(r => {
+        (r.activeEvents||[]).forEach(ev => {
+            const k = ev.type || ev.eventType || '';
+            const mapped = EV_TYPE_MAP[k];
+            if (mapped) {
+                const meta = POOL_FLAT.find(p => p.id === mapped);
+                backendEvList.push({
+                    id:    mapped,
+                    label: ev.title || ev.description || (meta && meta.label) || '이벤트',
+                    neg:   ev.severity === 'HIGH' || (ev.impactMap && ev.impactMap.revenueMultiplier < 1) || !!(meta && meta.neg),
+                    month: r.month,
+                });
+            }
+        });
+    });
+    const derivedAll = _getDerivedEvents(simId, currentMonth).filter(d => d.month <= currentMonth);
+    const backendIds = new Set(backendEvList.map(e => e.id));
+    // 파생 이벤트 중 백엔드에 없는 것만 추가 (백엔드 우선)
+    const activeEvList = [
+        ...backendEvList,
+        ...derivedAll.filter(d => !backendIds.has(d.id)).map(d => ({id:d.id, label:d.label, neg:d.neg, month:d.month})),
+    ];
+    const activeIds   = new Set(activeEvList.map(e => e.id));
+    const hasBEEvents = backendEvList.length > 0;
     const showDemo    = !hasBEEvents;
 
-    let timeline = _collectTimeline();
-    if (!timeline.length) {
-        timeline = derived.map(d => ({month:d.month, name:d.label, neg:d.neg}));
-    }
+    // 타임라인 = activeEvList 월순 정렬 (단일 소스)
+    const timeline = [...activeEvList].sort((a, b) => a.month - b.month);
 
-    // Current checkpoint events for chips
-    const lastCp = [6,12,18,24,30,36].filter(m=>m<=currentMonth).pop();
-    let curChips = hasBEEvents
-        ? (last&&last.activeEvents||[]).map(ev=>({title:ev.title||ev.description||'이벤트',neg:ev.severity==='HIGH'||(ev.impactMap&&ev.impactMap.revenueMultiplier<1)}))
-        : derived.filter(d=>d.month===lastCp).map(d=>({title:d.label,neg:d.neg}));
+    // 현재 체크포인트 칩 (단일 소스)
+    const lastCp = [6,12,18,24,30,36].filter(m => m <= currentMonth).pop();
+    const curChips = activeEvList.filter(e => e.month === lastCp).map(e => ({title: e.label, neg: e.neg}));
+
+    console.log('[발생이벤트]', {month: currentMonth, events: activeEvList});
 
     // -- AI text --
     const rep  = last ? (last.reputationScore||3.5) : 3.5;
@@ -1558,12 +1593,12 @@ function renderEventTab() {
             <div class="ev-event-list">
                 ${cat.items.map(item => {
                     const act = activeIds.has(item.id);
-                    const dm  = derived.find(d=>d.id===item.id);
+                    const ev  = activeEvList.find(e => e.id === item.id);
                     const dotC = act ? (item.neg?'active-neg':'active-pos') : 'inactive';
                     return `<div class="ev-event-item">
                         <span class="ev-dot ${dotC}"></span>
                         <span class="ev-event-label">${item.label}</span>
-                        ${act && dm ? `<span class="ev-event-month">M${dm.month}</span>` : ''}
+                        ${act && ev ? `<span class="ev-event-month">M${ev.month}</span>` : ''}
                     </div>`;
                 }).join('')}
             </div>
@@ -1600,7 +1635,7 @@ function renderEventTab() {
                 <div class="ev-tl-dot ${t.neg?'neg':'pos'}">M${t.month}</div>
                 <div>
                     <div class="ev-tl-month">${t.month}개월차</div>
-                    <div class="ev-tl-name">${t.name}</div>
+                    <div class="ev-tl-name">${t.label || t.name}</div>
                 </div>
             </div>`).join('')
         : '<div class="ev-tl-empty">기록된 이벤트가 없습니다.</div>';
