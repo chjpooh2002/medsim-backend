@@ -1,5 +1,6 @@
 package com.medsim.backend.controller;
 
+import com.medsim.backend.dto.request.EventResponseRequest;
 import com.medsim.backend.dto.request.SimulationRequest;
 import com.medsim.backend.dto.response.SimulationResult;
 import com.medsim.backend.dto.response.SimulationTurnResult;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "Simulation", description = "개원 시뮬레이션 API")
 @RestController
@@ -49,5 +51,14 @@ public class SimulationController {
             @PathVariable String id,
             @RequestBody List<String> decisionIds) {
         return ResponseEntity.ok(simulationService.nextTurn(id, decisionIds));
+    }
+
+    @Operation(summary = "이벤트 대응 옵션 선택",
+            description = "발생한 이벤트에 대한 대응 옵션을 선택한다. 다음 턴 진행 시 효과 반영.")
+    @PostMapping("/{id}/event-response")
+    public ResponseEntity<Map<String, String>> applyEventResponse(
+            @PathVariable String id,
+            @RequestBody EventResponseRequest request) {
+        return ResponseEntity.ok(simulationService.applyEventResponse(id, request.getEventId(), request.getOptionId()));
     }
 }

@@ -28,4 +28,12 @@ public class SimulationState {
 
     // 내부용: 향후 발생 예정 이벤트 풀
     private List<SimulationEvent> pendingEvents;
+
+    // 파산 관련
+    private String  bankruptReason;
+    private Integer bankruptMonth;
+    private int     consecutiveLossMonths;
+
+    // 이벤트 대응 선택 (eventId → optionId)
+    private java.util.Map<String, String> selectedEventResponses;
 }

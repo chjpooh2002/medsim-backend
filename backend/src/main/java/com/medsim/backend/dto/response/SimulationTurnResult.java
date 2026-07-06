@@ -19,5 +19,7 @@ public class SimulationTurnResult {
     private List<Decision> availableDecisions;// 선택 가능한 의사결정 옵션
     private Boolean isBankrupt;
     private Boolean isCompleted;
+    private String  bankruptReason;           // 파산 사유 (null = 정상)
+    private Integer bankruptMonth;            // 파산 발생 월 (null = 정상)
     private SimulationResult finalResult;     // 완료/파산 시에만 채워짐
 }

@@ -70,7 +70,9 @@ public class SimulationService {
                 .bankrupt(false)
                 .completed(false)
                 .initialSetup(req)
-                .pendingEvents(new ArrayList<>(buildMockEvents()))
+                .pendingEvents(new ArrayList<>(generateEventsForSimulation(simId)))
+                .consecutiveLossMonths(0)
+                .selectedEventResponses(new HashMap<>())
                 .build();
 
         MonthlyData monthData = runOneTurn(state, Collections.emptyList());
@@ -93,7 +95,17 @@ public class SimulationService {
             throw new IllegalArgumentException("존재하지 않는 시뮬레이션입니다: " + simulationId);
         }
         if (state.isCompleted() || state.isBankrupt()) {
-            throw new IllegalStateException("이미 종료된 시뮬레이션입니다.");
+            return SimulationTurnResult.builder()
+                    .simulationId(simulationId)
+                    .currentMonth(state.getCurrentMonth())
+                    .isBankrupt(state.isBankrupt())
+                    .isCompleted(state.isCompleted())
+                    .bankruptReason(state.getBankruptReason())
+                    .bankruptMonth(state.getBankruptMonth())
+                    .nextEvents(Collections.emptyList())
+                    .availableDecisions(Collections.emptyList())
+                    .finalResult(buildFinalResult(state))
+                    .build();
         }
 
         List<Decision> selected = getAvailableDecisions().stream()
@@ -190,8 +202,11 @@ public class SimulationService {
             if (eff.containsKey("staffMorale"))  state.setStaffMorale(clamp(state.getStaffMorale()           + eff.get("staffMorale"),   0, 1));
         }
 
-        // ② 이벤트 효과 적용
+        // ② 이벤트 효과 + 선택한 대응 옵션 효과 적용
         List<SimulationEvent> activeEventIds = new ArrayList<>();
+        Map<String, String> selectedResponses = state.getSelectedEventResponses() != null
+                ? state.getSelectedEventResponses() : Collections.emptyMap();
+
         for (SimulationEvent ev : state.getPendingEvents()) {
             if (ev.getTriggerMonth() == month) {
                 activeEventIds.add(ev);
@@ -202,6 +217,30 @@ public class SimulationService {
                 if (imp.containsKey("satisfaction")) state.setSatisfactionScore(clamp(state.getSatisfactionScore() + imp.get("satisfaction"), 0, 5));
                 if (imp.containsKey("returnRate"))   state.setReturnPatientRate(clamp(state.getReturnPatientRate() + imp.get("returnRate"),   0, 1));
                 if (imp.containsKey("staffMorale"))  state.setStaffMorale(clamp(state.getStaffMorale()           + imp.get("staffMorale"),   0, 1));
+
+                // 선택한 대응 옵션 효과 추가 반영
+                String selectedOptionId = selectedResponses.get(ev.getEventId());
+                if (selectedOptionId != null && ev.getResponseOptions() != null) {
+                    for (SimulationEvent.EventResponseOption opt : ev.getResponseOptions()) {
+                        if (selectedOptionId.equals(opt.getOptionId()) && opt.getEffectMap() != null) {
+                            Map<String, Double> eff = opt.getEffectMap();
+                            if (eff.containsKey("revenue"))      revMultiplier += eff.get("revenue");
+                            if (eff.containsKey("extraCost"))    extraCost     += Math.round(eff.get("extraCost"));
+                            if (eff.containsKey("reputation"))   state.setReputationScore(clamp(state.getReputationScore()   + eff.get("reputation"),   0, 5));
+                            if (eff.containsKey("satisfaction")) state.setSatisfactionScore(clamp(state.getSatisfactionScore() + eff.get("satisfaction"), 0, 5));
+                            if (eff.containsKey("returnRate"))   state.setReturnPatientRate(clamp(state.getReturnPatientRate() + eff.get("returnRate"),   0, 1));
+                            if (eff.containsKey("staffMorale"))  state.setStaffMorale(clamp(state.getStaffMorale()           + eff.get("staffMorale"),   0, 1));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 처리 완료된 이벤트의 대응 선택 초기화
+        if (state.getSelectedEventResponses() != null) {
+            for (SimulationEvent ev : activeEventIds) {
+                state.getSelectedEventResponses().remove(ev.getEventId());
             }
         }
 
@@ -242,7 +281,26 @@ public class SimulationService {
                 : -principalPayment;
 
         state.setCashBalance(state.getCashBalance() + operatingCF + investingCF + financingCF);
-        if (state.getCashBalance() <= 0) state.setBankrupt(true);
+
+        // ─ 파산 조건 1: 현금 소진
+        if (state.getCashBalance() <= 0 && !state.isBankrupt()) {
+            state.setBankrupt(true);
+            state.setBankruptReason("현금 소진");
+            state.setBankruptMonth(month);
+        }
+
+        // ─ 파산 조건 2: 3개월 연속 순손실 + 현금 < 월 고정비
+        if (netProfit < 0) {
+            state.setConsecutiveLossMonths(state.getConsecutiveLossMonths() + 1);
+        } else {
+            state.setConsecutiveLossMonths(0);
+        }
+        if (!state.isBankrupt() && state.getConsecutiveLossMonths() >= 3
+                && state.getCashBalance() < baseFixedMonthly) {
+            state.setBankrupt(true);
+            state.setBankruptReason("3개월 연속 적자로 인한 자금 고갈");
+            state.setBankruptMonth(month);
+        }
 
         // ⑩ 비재무 지표 갱신 (기존 공식 유지)
         double moraleDelta = (operatingProfit > 0) ? 0.005 : -0.02;
@@ -354,6 +412,8 @@ public class SimulationService {
                 .availableDecisions(done ? Collections.emptyList() : getAvailableDecisions())
                 .isBankrupt(state.isBankrupt())
                 .isCompleted(state.isCompleted())
+                .bankruptReason(state.getBankruptReason())
+                .bankruptMonth(state.getBankruptMonth())
                 .finalResult(done ? buildFinalResult(state) : null)
                 .build();
     }
@@ -470,6 +530,388 @@ public class SimulationService {
         return events.stream()
                 .filter(e -> e.getTriggerMonth() == month)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 이벤트 대응 옵션 선택 — 다음 턴 진행 시 효과가 반영된다.
+     */
+    public Map<String, String> applyEventResponse(String simulationId, String eventId, String optionId) {
+        SimulationState state = loadState(simulationId);
+        if (state == null) throw new IllegalArgumentException("존재하지 않는 시뮬레이션입니다: " + simulationId);
+        if (state.isCompleted() || state.isBankrupt()) throw new IllegalStateException("이미 종료된 시뮬레이션입니다.");
+
+        int nextMonth = state.getCurrentMonth();
+        boolean valid = state.getPendingEvents().stream()
+                .anyMatch(ev -> ev.getEventId().equals(eventId) && ev.getTriggerMonth() == nextMonth);
+        if (!valid) throw new IllegalArgumentException("해당 월(" + nextMonth + ")에 해당 이벤트가 없습니다: " + eventId);
+
+        if (state.getSelectedEventResponses() == null) state.setSelectedEventResponses(new HashMap<>());
+        state.getSelectedEventResponses().put(eventId, optionId);
+
+        simulationStore.put(simulationId, state);
+        persistState(simulationId, state);
+
+        return Map.of("status", "ok", "eventId", eventId, "optionId", optionId);
+    }
+
+    /**
+     * simId 기반 시드로 6개월 주기 이벤트를 생성한다 (재현 가능).
+     * 6/12/18/24/30/36개월에 각 1~2개 이벤트 배정.
+     */
+    private List<SimulationEvent> generateEventsForSimulation(String simId) {
+        long seed = simId.hashCode();
+        Random rng = new Random(seed);
+
+        List<SimulationEvent> pool = buildEventPool();
+        List<SimulationEvent> negPool = pool.stream()
+                .filter(e -> e.getEventType() == SimulationEvent.EventType.COMPETITOR_OPEN
+                          || e.getEventType() == SimulationEvent.EventType.RENT_INCREASE
+                          || e.getEventType() == SimulationEvent.EventType.TRAFFIC_DECREASE
+                          || e.getEventType() == SimulationEvent.EventType.STAFF_QUIT
+                          || e.getEventType() == SimulationEvent.EventType.MEDICAL_ACCIDENT
+                          || e.getEventType() == SimulationEvent.EventType.EQUIPMENT_BREAK
+                          || e.getEventType() == SimulationEvent.EventType.REVIEW_DROP
+                          || e.getEventType() == SimulationEvent.EventType.COMPLAINT)
+                .collect(Collectors.toList());
+        List<SimulationEvent> posPool = pool.stream()
+                .filter(e -> e.getEventType() == SimulationEvent.EventType.REVIEW_VIRAL
+                          || e.getEventType() == SimulationEvent.EventType.LOCAL_REFERRAL
+                          || e.getEventType() == SimulationEvent.EventType.CHECKUP_CONTRACT
+                          || e.getEventType() == SimulationEvent.EventType.FLU_SEASON)
+                .collect(Collectors.toList());
+
+        int[]    checkpoints = {6, 12, 18, 24, 30, 36};
+        double[] negRatios   = {0.5, 0.5, 0.6, 0.6, 0.5, 0.5};
+
+        List<SimulationEvent> result = new ArrayList<>();
+        for (int i = 0; i < checkpoints.length; i++) {
+            int    month    = checkpoints[i];
+            double negRatio = negRatios[i];
+            int    count    = rng.nextDouble() < 0.3 ? 2 : 1;
+
+            Set<String> usedAtMonth = new HashSet<>();
+            for (int j = 0; j < count; j++) {
+                boolean useNeg = rng.nextDouble() < negRatio;
+                List<SimulationEvent> candidates = useNeg ? negPool : posPool;
+                List<SimulationEvent> available  = candidates.stream()
+                        .filter(e -> !usedAtMonth.contains(e.getEventType().name()))
+                        .collect(Collectors.toList());
+                if (available.isEmpty()) available = candidates;
+
+                SimulationEvent tmpl = available.get(rng.nextInt(available.size()));
+                usedAtMonth.add(tmpl.getEventType().name());
+
+                result.add(SimulationEvent.builder()
+                        .eventId("EVT_" + tmpl.getEventType().name() + "_M" + month + "_" + j)
+                        .triggerMonth(month)
+                        .eventType(tmpl.getEventType())
+                        .category(tmpl.getCategory())
+                        .description(tmpl.getDescription())
+                        .impactMap(tmpl.getImpactMap())
+                        .responseOptions(tmpl.getResponseOptions())
+                        .build());
+            }
+        }
+        return result;
+    }
+
+    /** 12개 이벤트 템플릿 풀 (4 카테고리 × 3) */
+    private List<SimulationEvent> buildEventPool() {
+        List<SimulationEvent> pool = new ArrayList<>();
+
+        // ── MARKET ──────────────────────────────────────────────────────────
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.COMPETITOR_OPEN)
+            .category(SimulationEvent.EventCategory.MARKET)
+            .description("인근에 경쟁 병원 개원 — 신환 유입 감소 및 평판 하락")
+            .impactMap(Map.of("revenue", -0.10, "reputation", -0.1))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_COMPETITOR_AD").label("광고 확대")
+                    .description("광고비 200만원 추가로 신환 유입 회복 시도")
+                    .effectMap(Map.of("revenue", 0.09, "extraCost", 200.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_COMPETITOR_QUALITY").label("상담 품질 강화")
+                    .description("상담 교육 100만원 투자, 평판·만족도 회복")
+                    .effectMap(Map.of("reputation", 0.2, "satisfaction", 0.15, "extraCost", 100.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_COMPETITOR_PRICE").label("가격 경쟁")
+                    .description("가격 인하로 환자 유지 시도, 마진 소폭 감소")
+                    .effectMap(Map.of("revenue", 0.05)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_COMPETITOR_WAIT").label("현재 전략 유지")
+                    .description("별도 대응 없이 현재 전략 유지")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.RENT_INCREASE)
+            .category(SimulationEvent.EventCategory.MARKET)
+            .description("임대인 임대료 인상 통보 — 월 고정비 150만원 증가")
+            .impactMap(Map.of("extraCost", 150.0))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_RENT_NEGOTIATE").label("임대인 협상")
+                    .description("협상을 통해 인상분 100만원 절감")
+                    .effectMap(Map.of("extraCost", -100.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_RENT_REVENUE").label("수익 강화")
+                    .description("비용 흡수를 위한 수익 확대 전략, 매출 +5%")
+                    .effectMap(Map.of("revenue", 0.05)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_RENT_CUTCOST").label("다른 비용 절감")
+                    .description("기타 비용 50만원 삭감, 사기 소폭 하락")
+                    .effectMap(Map.of("extraCost", -50.0, "staffMorale", -0.05)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_RENT_ACCEPT").label("수용")
+                    .description("인상을 그대로 수용")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.TRAFFIC_DECREASE)
+            .category(SimulationEvent.EventCategory.MARKET)
+            .description("상권 변화로 유동인구 감소 — 매출 8% 하락")
+            .impactMap(Map.of("revenue", -0.08))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_TRAFFIC_MARKETING").label("마케팅 강화")
+                    .description("광고비 150만원 추가로 원거리 환자 유치")
+                    .effectMap(Map.of("revenue", 0.06, "extraCost", 150.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_TRAFFIC_ONLINE").label("온라인 채널 확대")
+                    .description("온라인 예약·홍보 80만원 투자, 매출 회복 + 평판 향상")
+                    .effectMap(Map.of("revenue", 0.04, "reputation", 0.1, "extraCost", 80.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_TRAFFIC_SPECIALIZE").label("전문화 강화")
+                    .description("특화 진료 강화로 충성 환자 유지")
+                    .effectMap(Map.of("revenue", 0.03, "satisfaction", 0.1)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_TRAFFIC_WAIT").label("관망")
+                    .description("상권 회복을 기대하며 대기")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        // ── OPERATION ────────────────────────────────────────────────────────
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.STAFF_QUIT)
+            .category(SimulationEvent.EventCategory.OPERATION)
+            .description("핵심 직원 갑작스러운 퇴사 — 채용비 100만원, 매출·사기 하락")
+            .impactMap(Map.of("staffMorale", -0.15, "extraCost", 100.0, "revenue", -0.05))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_STAFFQUIT_RECRUIT").label("즉시 채용")
+                    .description("채용비 150만원 추가 투자, 빠른 공백 해소")
+                    .effectMap(Map.of("extraCost", 150.0, "revenue", 0.04, "staffMorale", 0.1)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_STAFFQUIT_BONUS").label("남은 직원 인센티브")
+                    .description("80만원 인센티브로 기존 직원 사기 회복")
+                    .effectMap(Map.of("extraCost", 80.0, "staffMorale", 0.15)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_STAFFQUIT_OUTSOURCE").label("외부 위탁")
+                    .description("50만원 위탁비로 업무 일부 커버")
+                    .effectMap(Map.of("extraCost", 50.0, "revenue", 0.02)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_STAFFQUIT_WAIT").label("채용 보류")
+                    .description("당분간 기존 인원으로 운영")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.MEDICAL_ACCIDENT)
+            .category(SimulationEvent.EventCategory.OPERATION)
+            .description("의료 사고 발생 — 평판 급락, 합의금 300만원, 만족도 하락")
+            .impactMap(Map.of("reputation", -0.4, "extraCost", 300.0, "satisfaction", -0.3))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_ACCIDENT_LEGAL").label("법적 대응 + 보상")
+                    .description("200만원 추가 비용으로 신속 합의, 평판 일부 회복")
+                    .effectMap(Map.of("extraCost", 200.0, "reputation", 0.1)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_ACCIDENT_PR").label("대외 홍보 관리")
+                    .description("150만원 PR 투자로 부정 여론 최소화")
+                    .effectMap(Map.of("extraCost", 150.0, "reputation", 0.15, "satisfaction", 0.1)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_ACCIDENT_PROTOCOL").label("안전 프로토콜 강화")
+                    .description("50만원 교육 투자, 재발 방지 + 평판 소폭 회복")
+                    .effectMap(Map.of("extraCost", 50.0, "reputation", 0.05, "satisfaction", 0.05)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_ACCIDENT_MINIMIZE").label("최소 대응")
+                    .description("별도 비용 없이 사태 수습 대기")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.EQUIPMENT_BREAK)
+            .category(SimulationEvent.EventCategory.OPERATION)
+            .description("핵심 의료 장비 고장 — 수리비 250만원, 진료 차질로 매출 하락")
+            .impactMap(Map.of("extraCost", 250.0, "revenue", -0.05))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_EQUIP_REPAIR").label("즉시 수리")
+                    .description("추가 100만원으로 긴급 수리, 빠른 정상화")
+                    .effectMap(Map.of("extraCost", 100.0, "revenue", 0.04)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_EQUIP_RENT").label("장비 임대")
+                    .description("월 80만원 임대 장비로 진료 유지")
+                    .effectMap(Map.of("extraCost", 80.0, "revenue", 0.03)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_EQUIP_PARTIAL").label("부분 진료 유지")
+                    .description("장비 불요 진료만 유지, 추가 비용 30만원")
+                    .effectMap(Map.of("extraCost", 30.0, "revenue", 0.01)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_EQUIP_WAIT").label("수리 대기")
+                    .description("제조사 수리 일정 대기, 추가 비용 없음")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        // ── PATIENT ──────────────────────────────────────────────────────────
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.REVIEW_DROP)
+            .category(SimulationEvent.EventCategory.PATIENT)
+            .description("포털 부정 리뷰 급증 — 평판 하락, 신환 감소")
+            .impactMap(Map.of("reputation", -0.3, "revenue", -0.07))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_REVIEW_RESPONSE").label("리뷰 적극 응대")
+                    .description("50만원 투자로 부정 리뷰 대응 + 만족도 개선")
+                    .effectMap(Map.of("reputation", 0.2, "satisfaction", 0.1, "extraCost", 50.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_REVIEW_IMPROVE").label("서비스 개선")
+                    .description("80만원 투자로 근본적 서비스 품질 향상")
+                    .effectMap(Map.of("satisfaction", 0.2, "reputation", 0.1, "extraCost", 80.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_REVIEW_AD").label("긍정 리뷰 캠페인")
+                    .description("120만원으로 긍정 리뷰 유도 캠페인 운영")
+                    .effectMap(Map.of("reputation", 0.15, "extraCost", 120.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_REVIEW_IGNORE").label("무대응")
+                    .description("별도 조치 없이 자연 회복 대기")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.REVIEW_VIRAL)
+            .category(SimulationEvent.EventCategory.PATIENT)
+            .description("포털 긍정 리뷰 바이럴 — 신환 급증 및 평판 대폭 상승 [긍정]")
+            .impactMap(Map.of("revenue", 0.15, "reputation", 0.4))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_VIRAL_AMPLIFY").label("홍보 증폭")
+                    .description("100만원 추가 광고로 바이럴 효과 극대화")
+                    .effectMap(Map.of("revenue", 0.05, "extraCost", 100.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_VIRAL_CAPACITY").label("진료 역량 확대")
+                    .description("150만원 투자로 증가한 환자 수용, 사기 소폭 하락")
+                    .effectMap(Map.of("satisfaction", 0.1, "staffMorale", -0.05, "extraCost", 150.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_VIRAL_PREMIUM").label("프리미엄 전환")
+                    .description("80만원 투자로 고품질 서비스 강조, 매출·만족도 향상")
+                    .effectMap(Map.of("revenue", 0.03, "satisfaction", 0.15, "extraCost", 80.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_VIRAL_STANDARD").label("표준 대응")
+                    .description("기본 운영 유지, 추가 비용 없음")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.COMPLAINT)
+            .category(SimulationEvent.EventCategory.PATIENT)
+            .description("환자 민원 급증 — 만족도·평판 동반 하락")
+            .impactMap(Map.of("satisfaction", -0.2, "reputation", -0.15))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_COMPLAINT_RESOLVE").label("적극 해결")
+                    .description("80만원 투자로 민원 신속 대응, 만족도·평판 회복")
+                    .effectMap(Map.of("satisfaction", 0.15, "reputation", 0.1, "extraCost", 80.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_COMPLAINT_TRAINING").label("직원 교육")
+                    .description("60만원 교육으로 서비스 역량 향상")
+                    .effectMap(Map.of("satisfaction", 0.1, "staffMorale", 0.05, "extraCost", 60.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_COMPLAINT_PROCESS").label("프로세스 개선")
+                    .description("40만원으로 접수·안내 프로세스 개선")
+                    .effectMap(Map.of("satisfaction", 0.08, "reputation", 0.05, "extraCost", 40.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_COMPLAINT_DENY").label("방어적 대응")
+                    .description("민원에 소극적으로 대응")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        // ── GROWTH ───────────────────────────────────────────────────────────
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.LOCAL_REFERRAL)
+            .category(SimulationEvent.EventCategory.GROWTH)
+            .description("지역 내 입소문 확산 — 매출 10% 상승, 평판 향상 [긍정]")
+            .impactMap(Map.of("revenue", 0.10, "reputation", 0.2))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_REFERRAL_PROGRAM").label("추천 프로그램 도입")
+                    .description("80만원 투자로 공식 추천인 제도 운영")
+                    .effectMap(Map.of("revenue", 0.05, "reputation", 0.1, "extraCost", 80.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_REFERRAL_PARTNER").label("지역 파트너 확대")
+                    .description("120만원 투자로 약국·기관 협력 네트워크 구축")
+                    .effectMap(Map.of("revenue", 0.08, "extraCost", 120.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_REFERRAL_EVENT").label("감사 이벤트")
+                    .description("60만원으로 기존 환자 감사 이벤트 진행")
+                    .effectMap(Map.of("satisfaction", 0.15, "reputation", 0.1, "extraCost", 60.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_REFERRAL_STANDARD").label("기본 유지")
+                    .description("별도 투자 없이 현재 흐름 유지")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.CHECKUP_CONTRACT)
+            .category(SimulationEvent.EventCategory.GROWTH)
+            .description("기업·단체 검진 계약 성사 — 매출 18% 상승 [긍정]")
+            .impactMap(Map.of("revenue", 0.18))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_CONTRACT_EXPAND").label("계약 확장")
+                    .description("100만원 투자로 계약 규모 및 기업 수 확대")
+                    .effectMap(Map.of("revenue", 0.05, "extraCost", 100.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_CONTRACT_QUALITY").label("품질 강화")
+                    .description("80만원 투자로 검진 품질 향상, 재계약률 상승")
+                    .effectMap(Map.of("satisfaction", 0.1, "reputation", 0.1, "extraCost", 80.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_CONTRACT_STAFF").label("인력 보강")
+                    .description("150만원으로 검진 전담 인력 확충")
+                    .effectMap(Map.of("staffMorale", 0.05, "extraCost", 150.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_CONTRACT_STANDARD").label("표준 이행")
+                    .description("계약 기본 사항만 이행")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        pool.add(SimulationEvent.builder()
+            .eventType(SimulationEvent.EventType.FLU_SEASON)
+            .category(SimulationEvent.EventCategory.GROWTH)
+            .description("독감 시즌 도래 — 환자 급증으로 매출 20% 상승, 직원 과로로 사기 하락 [긍정+부작용]")
+            .impactMap(Map.of("revenue", 0.20, "staffMorale", -0.1))
+            .responseOptions(Arrays.asList(
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_FLU_STAFF_UP").label("임시 인력 충원")
+                    .description("200만원으로 임시 의료진 고용, 과로 해소")
+                    .effectMap(Map.of("staffMorale", 0.15, "extraCost", 200.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_FLU_HOURS").label("진료 시간 확대")
+                    .description("50만원 추가로 연장 진료, 매출 극대화")
+                    .effectMap(Map.of("revenue", 0.05, "staffMorale", -0.05, "extraCost", 50.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_FLU_PREMIUM").label("독감 케어 패키지")
+                    .description("60만원으로 독감 특화 케어 상품 운영")
+                    .effectMap(Map.of("revenue", 0.03, "satisfaction", 0.1, "extraCost", 60.0)).build(),
+                SimulationEvent.EventResponseOption.builder()
+                    .optionId("RESP_FLU_STANDARD").label("표준 운영")
+                    .description("추가 비용 없이 기본 운영 유지")
+                    .effectMap(Map.of()).build()
+            )).build());
+
+        return pool;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
