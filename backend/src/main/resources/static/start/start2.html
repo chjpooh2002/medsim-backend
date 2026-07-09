@@ -203,15 +203,13 @@
 </nav>
 
 <div class="step-bar">
-    <div class="step done"><div class="step-num">✓</div> 진료 유형</div>
-    <div class="step-div done"></div>
-    <div class="step active"><div class="step-num">2</div> 페르소나</div>
+    <div class="step active"><div class="step-num">1</div> 페르소나</div>
     <div class="step-div"></div>
-    <div class="step"><div class="step-num">3</div> 입지</div>
+    <div class="step"><div class="step-num">2</div> 입지</div>
     <div class="step-div"></div>
-    <div class="step"><div class="step-num">4</div> 운영 스타일</div>
+    <div class="step"><div class="step-num">3</div> 자본 &amp; 운영</div>
     <div class="step-div"></div>
-    <div class="step"><div class="step-num">5</div> 시작</div>
+    <div class="step"><div class="step-num">4</div> 시작</div>
 </div>
 
 <main>
@@ -333,7 +331,6 @@
         </div>
 
         <div class="bottom-nav">
-            <a class="nav-prev" href="start1.html">이전</a>
             <button class="nav-next" onclick="goNext()">다음</button>
         </div>
     </div>
@@ -551,12 +548,18 @@
       }
 
       const careerYears = parseInt(document.getElementById('inp-career').value) || 0;
+      const subVal = S.subOther ? document.getElementById('txt-sub').value.trim() : (S.sub || '');
       sessionStorage.setItem('start2Data', JSON.stringify({
         persona: S.persona,
         university: univVal,
         specialty: specVal,
+        subspecialty: subVal,
         careerYears: careerYears
       }));
+
+      // 진료과 → 진료 유형 자동 매핑
+      const clinicType = getDeptClinicType(specVal, subVal);
+      localStorage.setItem('medsim_clinic_type', clinicType);
 
       window.location.href = 'start3.html';
     }
@@ -574,6 +577,7 @@
       if (!e.target.closest('.custom-select-wrap')) closeAllDrops();
     });
 </script>
+<script src="dept-type-mapping.js"></script>
 <script src="../common.js"></script>
 <script>requireAuth(); updateNav();</script>
 </body>

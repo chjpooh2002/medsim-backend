@@ -518,7 +518,7 @@ function updateNav() {
     if (token) {
         navRight.innerHTML =
             '<span style="font-size:13px;font-weight:600;color:var(--navy,#0D1B2A);">' + name + '님</span>' +
-            '<a class="btn-outline" href="/start/start1.html">시뮬레이션</a>' +
+            '<a class="btn-outline" href="/start/start2.html">시뮬레이션</a>' +
             '<a class="btn-solid" href="#" onclick="logout();return false;">로그아웃</a>';
     } else {
         navRight.innerHTML =
